@@ -38,7 +38,7 @@ const AppHeader = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 z-99999 flex w-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 lg:border-b">
+    <header className="sticky top-0 z-99 flex w-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 lg:border-b">
       <div className="flex flex-col lg:flex-row w-full items-center justify-between lg:px-6">
 
         {/* Left Section */}

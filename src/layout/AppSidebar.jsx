@@ -27,23 +27,43 @@ const navItems = [
     name: "Dashboard",
     subItems: [{ name: "Ecommerce", path: "/", pro: false }],
   },
-  // {
-  //   icon: <CalenderIcon />,
-  //   name: "Calendar",
-  //   path: "/calendar",
-  // },
+
    {
     name: "Vendors",
     icon: <VendorIcon className=" w-5" />,
     subItems: [
-      { name: "Add Item", path: "/basic-tables", pro: false },
-      { name: "Basic Tables", path: "/basic-tables", pro: false }
+      { name: "Category", path: "/category", pro: false },
+      { name: "Item", path: "/items", pro: false },
+      { name: "Vendor ", path: "/vendor", pro: false }
     ],
   },
      {
     name: "Stock",
     icon: <StockIcon className=" w-5" />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
+    subItems: [
+       { name: "Stock", path: "/stock" },
+  { name: "Add Stock", path: "/stock/add-stock" },
+  { name: "Broadband Issue", path: "/stock/broadband-issue" },
+  { name: "Lease Issue", path: "/stock/lease-issue" },
+  { name: "BPL Issue", path: "/stock/bpl-issue" },
+  { name: "Issued Detail", path: "/stock/issued-detail" },
+  { name: "Assigned Item", path: "/stock/assigned-item" },
+  { name: "Transferred Item", path: "/stock/transferred-item" },
+  { name: "Items", path: "/stock/items" },
+  { name: "Add Item", path: "/stock/add-item" },
+  { name: "Stock Purchase", path: "/stock/stock-purchase" },
+  { name: "Stock Approval", path: "/stock/stock-approval" },
+  { name: "Stock Return Approval", path: "/stock/stock-return-approval" },
+  { name: "Disconnection/Replacement Approval", path: "/stock/disconnection-replacement-approval" },
+  { name: "Faulty", path: "/stock/faulty" },
+  { name: "Repair Report", path: "/stock/repair-report" },
+  { name: "Approval Pending", path: "/stock/approval-pending" },
+  { name: "Add Site", path: "/stock/add-site" },
+  { name: "Purchase Order", path: "/stock/purchase-order" },
+  { name: "View Purchase Order", path: "/stock/view-purchase-order" },
+  { name: "Serial Status", path: "/stock/serial-status" },
+  { name: "Stock Expire", path: "/stock/stock-expire" }
+    ],
   },
      {
     name: "Tickets",
@@ -79,26 +99,26 @@ const navItems = [
 ];
 
 const othersItems = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
-    ],
-  },
+  // {
+  //   icon: <PieChartIcon />,
+  //   name: "Charts",
+  //   subItems: [
+  //     { name: "Line Chart", path: "/line-chart", pro: false },
+  //     { name: "Bar Chart", path: "/bar-chart", pro: false },
+  //   ],
+  // },
+  // {
+  //   icon: <BoxCubeIcon />,
+  //   name: "UI Elements",
+  //   subItems: [
+  //     { name: "Alerts", path: "/alerts", pro: false },
+  //     { name: "Avatar", path: "/avatars", pro: false },
+  //     { name: "Badge", path: "/badge", pro: false },
+  //     { name: "Buttons", path: "/buttons", pro: false },
+  //     { name: "Images", path: "/images", pro: false },
+  //     { name: "Videos", path: "/videos", pro: false },
+  //   ],
+  // },
   {
     icon: <PlugInIcon />,
     name: "Authentication",

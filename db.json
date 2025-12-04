@@ -1,0 +1,76 @@
+{
+  "vendors": [],
+  "categories": {
+    "list": [
+      {
+        "id": 1764837701368,
+        "name": "ddd",
+        "slug": "dd",
+        "parentId": null,
+        "status": true,
+        "children": [
+          {
+            "id": 1764841401418,
+            "name": "sdf",
+            "slug": "sdf",
+            "parentId": 1764837701368,
+            "status": true,
+            "children": [
+              {
+                "id": 1764841486817,
+                "name": "sdf",
+                "slug": "sdf",
+                "parentId": 1764841401418,
+                "status": true,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 1764841463818,
+        "name": "sdfsd",
+        "slug": "sdf",
+        "parentId": null,
+        "status": true,
+        "children": []
+      }
+    ]
+  },
+  "branches": [
+    {
+      "id": "0445",
+      "branchName": "Azadpur",
+      "branchAddress": "Kiran Building",
+      "createdAt": "2025-12-03T09:25:12.236Z"
+    },
+    {
+      "id": "11ae",
+      "branchName": "Yotta",
+      "branchAddress": "Ghazibad",
+      "createdAt": "2025-12-03T09:59:06.353Z",
+      "status": true
+    }
+  ],
+  "products": [
+    {
+      "store": "0445",
+      "productName": "mouse",
+      "isSerial": "1",
+      "brand": "Porro omnis officia ",
+      "unit": "num",
+      "description": "fsdfsd",
+      "category": [
+        1764841401418
+      ],
+      "images": [],
+      "createdAt": "2025-12-04T10:06:38.748Z",
+      "id": "882d"
+    }
+    
+    
+  ],
+  "transfers": [],
+  "saveStocks": []
+}
