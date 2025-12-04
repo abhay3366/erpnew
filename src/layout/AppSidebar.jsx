@@ -49,8 +49,7 @@ const navItems = [
   { name: "Issued Detail", path: "/stock/issued-detail" },
   { name: "Assigned Item", path: "/stock/assigned-item" },
   { name: "Transferred Item", path: "/stock/transferred-item" },
-  { name: "Items", path: "/stock/items" },
-  { name: "Add Item", path: "/stock/add-item" },
+
   { name: "Stock Purchase", path: "/stock/stock-purchase" },
   { name: "Stock Approval", path: "/stock/stock-approval" },
   { name: "Stock Return Approval", path: "/stock/stock-return-approval" },
