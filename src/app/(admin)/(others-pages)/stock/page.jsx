@@ -48,7 +48,7 @@ export default function Stock() {
     setEditItem(null);
     fetchData();
   };
-
+console.log("🚀 ~ Stock ~ items:", items)
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Stock List</h1>
