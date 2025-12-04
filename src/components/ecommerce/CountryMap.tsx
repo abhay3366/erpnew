@@ -22,7 +22,7 @@ const CountryMap = ({ mapColor }) => {
       markers={[
         {
           latLng: [37.2580397, -104.657039],
-          name: "United States",
+          name: "India",
           style: {
             fill: "#465FFF",
             borderWidth: 1,

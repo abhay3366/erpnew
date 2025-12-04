@@ -1,8 +1,11 @@
 import React from 'react'
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 
 const DisconnectionReplacementApproval = () => {
   return (
-    <div>DisconnectionReplacementApproval</div>
+    <div>
+        <PageBreadcrumb pageTitle="Disconnection Replacement Approval" />
+        DisconnectionReplacementApproval</div>
   )
 }
 

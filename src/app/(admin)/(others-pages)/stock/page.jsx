@@ -1,12 +1,12 @@
 import React from 'react'
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 
-const Faulty = () => {
+const Stock = () => {
   return (
     <div>
-        <PageBreadcrumb pageTitle="Faulty" />
-        Faulty</div>
+      <PageBreadcrumb pageTitle="Stock" />
+      Stock</div>
   )
 }
 
-export default Faulty
+export default Stock

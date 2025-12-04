@@ -5,21 +5,15 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import {
-  BoxCubeIcon,
-  CalenderIcon,
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
-  ListIcon,
-  PageIcon,
-  PieChartIcon,
   PlugInIcon,
   TableIcon,
   VendorIcon,
   StockIcon,
   UserCircleIcon,
 } from "../icons/index";
-import SidebarWidget from "./SidebarWidget";
 
 const navItems = [
   {
@@ -49,8 +43,7 @@ const navItems = [
   { name: "Issued Detail", path: "/stock/issued-detail" },
   { name: "Assigned Item", path: "/stock/assigned-item" },
   { name: "Transferred Item", path: "/stock/transferred-item" },
-  { name: "Items", path: "/stock/items" },
-  { name: "Add Item", path: "/stock/add-item" },
+
   { name: "Stock Purchase", path: "/stock/stock-purchase" },
   { name: "Stock Approval", path: "/stock/stock-approval" },
   { name: "Stock Return Approval", path: "/stock/stock-return-approval" },
@@ -386,7 +379,6 @@ const AppSidebar = () => {
           </div>
         </nav>
 
-        {(isExpanded || isHovered || isMobileOpen) && <SidebarWidget />}
       </div>
     </aside>
   );

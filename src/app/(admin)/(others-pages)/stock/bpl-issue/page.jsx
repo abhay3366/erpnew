@@ -1,12 +1,12 @@
 import React from 'react'
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 
-const Faulty = () => {
+const BplIssue = () => {
   return (
     <div>
-        <PageBreadcrumb pageTitle="Faulty" />
-        Faulty</div>
+      <PageBreadcrumb pageTitle="BPL Issue" />
+      BplIssue</div>
   )
 }
 
-export default Faulty
+export default BplIssue
