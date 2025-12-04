@@ -86,7 +86,7 @@ const AppHeader = () => {
           </Link>
 
           {/* Application Menu (Mobile Only) */}
-          <button
+          {/* <button
             onClick={toggleApplicationMenu}
             className="flex lg:hidden items-center justify-center w-10 h-10 rounded-lg text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
@@ -96,10 +96,10 @@ const AppHeader = () => {
                 d="M6 10.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm12 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm-6 1.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"
               />
             </svg>
-          </button>
+          </button> */}
 
           {/* Search (Desktop Only) */}
-          <div className="hidden lg:block">
+          {/* <div className="hidden lg:block">
             <form>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -120,7 +120,7 @@ const AppHeader = () => {
                 </button>
               </div>
             </form>
-          </div>
+          </div> */}
         </div>
 
         {/* Right Section */}
@@ -129,7 +129,7 @@ const AppHeader = () => {
         >
           <div className="flex items-center gap-3">
             <ThemeToggleButton />
-            <NotificationDropdown />
+            {/* <NotificationDropdown /> */}
           </div>
           <UserDropdown />
         </div>
