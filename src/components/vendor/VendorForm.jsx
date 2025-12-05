@@ -790,21 +790,11 @@ const FormFields = ({ register, errors, isViewMode = false, mode = "create" }) =
                 )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+       
                 {renderFormField("GSTIN Number", "gstin_no", "text", true, {}, "Enter GSTIN number")}
-
-                {renderFormField(
-                    "PAN Number",
-                    "pan_no",
-                    "text",
-                    true,
-                    { pattern: { value: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: "Invalid PAN format" } },
-                    "Enter PAN number"
-                )}
-            </div>
+   
 
             {renderStatusField()}
-            {renderFormField("Service Tax Number", "service_tax", "text", false, {}, "Enter service tax number")}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {renderFormField("Contact Person", "contact_person", "text", true, {}, "Enter contact person name")}
@@ -973,8 +963,6 @@ export default function VendorForm({ mode = "create", vendor = null, onBack, onS
         setValue("vendor_address", vendor.vendor_address || "");
         setValue("vendor_phone", vendor.vendor_phone || "");
         setValue("gstin_no", vendor.gstin_no || "");
-        setValue("pan_no", vendor.pan_no || "");
-        setValue("service_tax", vendor.service_tax || "");
         setValue("email", vendor.email || "");
         setValue("bank_name", vendor.bank_name || "");
         setValue("account_no", vendor.account_no || "");
@@ -1023,8 +1011,6 @@ export default function VendorForm({ mode = "create", vendor = null, onBack, onS
             vendor_address: data.vendor_address,
             vendor_phone: data.vendor_phone,
             gstin_no: data.gstin_no,
-            pan_no: data.pan_no,
-            service_tax: data.service_tax,
             email: data.email,
             bank_name: data.bank_name,
             account_no: data.account_no,

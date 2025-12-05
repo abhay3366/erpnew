@@ -372,7 +372,7 @@ export default function VendorTable({ onCreateVendor, onEditVendor, onViewDetail
         if (vendor.blacklisted) {
             return 'bg-red-100 text-red-800 border border-red-200';
         }
-        
+
         switch (vendor.status?.toLowerCase()) {
             case 'active':
                 return 'bg-green-100 text-green-800 border border-green-200';
@@ -628,18 +628,16 @@ export default function VendorTable({ onCreateVendor, onEditVendor, onViewDetail
                                                 <div className="flex space-x-3">
                                                     <button
                                                         onClick={() => handleEdit(vendor)}
-                                                        className={`transition-colors transform hover:scale-110 ${
-                                                            vendor.blacklisted ? 'text-red-600 hover:text-red-900' : 'text-blue-600 hover:text-blue-900'
-                                                        }`}
+                                                        className={`transition-colors transform hover:scale-110 ${vendor.blacklisted ? 'text-red-600 hover:text-red-900' : 'text-blue-600 hover:text-blue-900'
+                                                            }`}
                                                         title="Edit"
                                                     >
                                                         <EditIcon className="w-5 h-5" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleView(vendor)}
-                                                        className={`transition-colors transform hover:scale-110 ${
-                                                            vendor.blacklisted ? 'text-red-600 hover:text-red-900' : 'text-gray-600 hover:text-gray-900'
-                                                        }`}
+                                                        className={`transition-colors transform hover:scale-110 ${vendor.blacklisted ? 'text-red-600 hover:text-red-900' : 'text-gray-600 hover:text-gray-900'
+                                                            }`}
                                                         title="View Details"
                                                     >
                                                         <EyeIcon className="w-5 h-5" />
@@ -648,7 +646,7 @@ export default function VendorTable({ onCreateVendor, onEditVendor, onViewDetail
                                             </td>
                                         </tr>
                                     )
-                                ))}
+                                    ))}
                             </tbody>
                         </table>
                     </div>
@@ -658,9 +656,10 @@ export default function VendorTable({ onCreateVendor, onEditVendor, onViewDetail
                         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
                             <div className="flex items-center justify-between">
                                 <div className="text-sm text-gray-700">
-                                    Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">
+                                    Showing  <span className='pr-1'>
                                         {Math.min(endIndex, totalItems)}
-                                    </span> of <span className="font-medium">{totalItems}</span> vendors
+                                    </span>
+                                    of <span className="font-medium">{totalItems}</span> vendors
                                     {(searchQuery || statusFilter !== 'all' || sortBy !== 'newest') && (
                                         <span className="ml-2 text-blue-600">(filtered)</span>
                                     )}

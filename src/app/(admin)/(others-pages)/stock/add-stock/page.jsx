@@ -1,480 +1,586 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { useSearchParams } from 'next/navigation';
 
-// ================================================
-// 1. MAIN COMPONENT - AddStockForm
-// ================================================
 function AddStock({ onClose, onSuccess }) {
-    // ALL STATES (Data Storage)
-
-    // Form Data State (Vendor, Category, Warranty)
+    const searchParams = useSearchParams();
+    
+    // Check if we're in edit mode
+    const isEditMode = searchParams.get('edit') === 'true';
+    const stockGroupId = searchParams.get('stockGroupId');
+    
     const [formData, setFormData] = useState({
-        categoryItem: '',      // Selected category (like "Samsung")
-        vendor: '',            // Selected vendor (like "John Electronics")
-        warrantyYears: 0,      // Warranty in years (0-4)
+        categoryItem: '',
+        vendor: '',
+        warrantyYears: 0,
     });
 
-    // Stock Items State (Table Rows)
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [serialMode, setSerialMode] = useState(null);
+    const [selectedBranch, setSelectedBranch] = useState(''); // Auto-selected branch
+
     const [stockItems, setStockItems] = useState([
-        {
-            id: 1,               
-            serialNumber: '',  
-            macAddress: '', // MAC address (like "AA:BB:CC:DD:EE:FF")
-            quantity: 1,        
-            warranty: 0,
-        }
+        { id: 1, serialNumber: '', macAddress: '', quantity: 1, warranty: 0 }
     ]);
 
-    // API Data States
-    const [categories, setCategories] = useState([]);      // All categories from server
-    const [vendors, setVendors] = useState([]);           // All vendors from server
-    const [vendorProducts, setVendorProducts] = useState([]); // Vendor's products
-    const [filteredProducts, setFilteredProducts] = useState([]); // Filtered products for dropdown
+    const [categories, setCategories] = useState([]);
+    const [vendors, setVendors] = useState([]);
+    const [vendorProducts, setVendorProducts] = useState([]);
+    const [filteredProducts, setFilteredProducts] = useState([]);
 
-    // UI States
-    const [isLoading, setIsLoading] = useState({
-        categories: true,      // Loading categories?
-        vendors: true,         // Loading vendors?
-        submitting: false,     // Submitting form?
+    const [loading, setLoading] = useState({ 
+        categories: true, 
+        vendors: true, 
+        submitting: false,
+        loadingEditData: isEditMode 
     });
-    const [showCategoryDropdown, setShowCategoryDropdown] = useState(false); // Show category list?
-    const [showVendorDropdown, setShowVendorDropdown] = useState(false);    // Show vendor list?
-    const [error, setError] = useState('');               // Error messages
+    const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+    const [showVendorDropdown, setShowVendorDropdown] = useState(false);
+    const [error, setError] = useState('');
 
-    // References (for clicking outside)
     const categoryDropdownRef = useRef(null);
     const vendorDropdownRef = useRef(null);
 
-    // 2. HELPER FUNCTIONS (Small Tasks)
-
-    // Function 1: Get vendor status color (Active=Green, Blacklisted=Red)
-    const getVendorStatusColor = (status, blacklisted) => {
-        if (blacklisted) return 'bg-red-100 text-red-800';
-        if (status === 'Active') return 'bg-green-100 text-green-800';
-        return 'bg-gray-100 text-gray-800';
-    };
-
-    // Function 2: Get warranty color (4 years=Green, 0=Red)
-    const getWarrantyBadgeColor = (years) => {
-        if (years >= 4) return 'bg-green-100 text-green-800';
-        if (years >= 3) return 'bg-blue-100 text-blue-800';
-        if (years >= 2) return 'bg-yellow-100 text-yellow-800';
-        if (years >= 1) return 'bg-gray-100 text-gray-800';
-        return 'bg-red-100 text-red-800';
-    };
-
-    // Function 3: Count vendor's products
-    const getVendorProductsCount = (vendor) => {
-        if (!vendor || !vendor.selected_products) return 0;
-        return vendor.selected_products.length;
-    };
-
-    // 3. API FUNCTIONS (Fetch Data from Server)
-
-    // Function 4: Fetch categories from API
-    const fetchCategories = useCallback(async () => {
-        try {
-            setIsLoading(prev => ({ ...prev, categories: true }));
-            const response = await fetch('http://localhost:5001/categories');
-
-            if (!response.ok) throw new Error(`Failed to fetch categories`);
-            const dataList = await response.json();
-            const data = dataList.list || [];
-
-            // Convert nested categories to flat list
-            const flattenedCategories = flattenCategories(data);
-
-            setCategories(flattenedCategories);
-            setIsLoading(prev => ({ ...prev, categories: false }));
-
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-            setError('Failed to load categories. Please try again.');
-            setIsLoading(prev => ({ ...prev, categories: false }));
+    // LOAD EDIT DATA IF IN EDIT MODE
+    useEffect(() => {
+        if (isEditMode && stockGroupId) {
+            loadEditData();
         }
-    }, []);
+    }, [isEditMode, stockGroupId]);
 
-    // Function 5: Fetch vendors from API
-    const fetchVendors = useCallback(async () => {
+    const loadEditData = async () => {
         try {
-            setIsLoading(prev => ({ ...prev, vendors: true }));
-            const response = await fetch('http://localhost:5001/vendors');
-
-            if (!response.ok) throw new Error(`Failed to fetch vendors`);
-            const data = await response.json();
-
-            // Show only active, non-blacklisted vendors
-            const activeVendors = data.filter(vendor =>
-                vendor.status === 'Active' && !vendor.blacklisted
-            );
-
-            setVendors(activeVendors);
-            setIsLoading(prev => ({ ...prev, vendors: false }));
-
+            setLoading(prev => ({ ...prev, loadingEditData: true }));
+            
+            // Fetch the stock group data
+            const response = await fetch(`http://localhost:5001/stocks/${stockGroupId}`);
+            if (!response.ok) throw new Error('Failed to load edit data');
+            
+            const stockGroup = await response.json();
+            
+            // Set form data from stock group
+            setFormData({
+                categoryItem: stockGroup.category || '',
+                vendor: stockGroup.vendor || '',
+                warrantyYears: stockGroup.globalWarranty || 0,
+            });
+            
+            // Set branch from stock group
+            setSelectedBranch(stockGroup.branch || '');
+            
+            // Set selected product
+            if (stockGroup.product) {
+                const product = {
+                    id: stockGroup.product.id,
+                    name: stockGroup.product.name,
+                    fullPath: stockGroup.product.fullPath,
+                    originalProduct: stockGroup.product
+                };
+                setSelectedProduct(product);
+                
+                // Set serial mode
+                const needsSerial = stockGroup.serialMode === true;
+                setSerialMode(needsSerial);
+                
+                // Set stock items
+                if (stockGroup.items && stockGroup.items.length > 0) {
+                    const itemsWithIds = stockGroup.items.map((item, index) => ({
+                        id: index + 1,
+                        serialNumber: item.serialNumber || '',
+                        macAddress: item.macAddress || '',
+                        quantity: item.quantity || 1,
+                        warranty: item.warranty || 0,
+                    }));
+                    setStockItems(itemsWithIds);
+                }
+            }
+            
+            // Load vendor products if vendor is set
+            if (stockGroup.vendor) {
+                getVendorProducts(stockGroup.vendor);
+            }
+            
         } catch (error) {
-            console.error('Error fetching vendors:', error);
-            setError('Failed to load vendors. Please try again.');
-            setIsLoading(prev => ({ ...prev, vendors: false }));
+            console.error('Error loading edit data:', error);
+            toast.error('Failed to load data for editing');
+        } finally {
+            setLoading(prev => ({ ...prev, loadingEditData: false }));
         }
-    }, []);
+    };
 
-    // Function 6: Convert nested categories to flat list
-    const flattenCategories = useCallback((categories, level = 0, parentPath = '') => {
-        let result = [];
-
-        categories.forEach(category => {
-            const currentPath = parentPath ? `${parentPath} > ${category.name}` : category.name;
-
-            result.push({
-                ...category,
-                fullPath: currentPath,
-                displayName: level > 0 ? '  '.repeat(level) + '↳ ' + category.name : category.name,
-                level: level
+    // 1. FETCH INITIAL DATA
+    useEffect(() => {
+        // Load categories
+        fetch('http://localhost:5001/categories')
+            .then(res => res.json())
+            .then(data => {
+                const list = data.list || [];
+                const flatCategories = flattenCategories(list);
+                setCategories(flatCategories);
+                setLoading(prev => ({ ...prev, categories: false }));
+            })
+            .catch(err => {
+                console.error('Error fetching categories:', err);
+                setError('Failed to load categories');
+                setLoading(prev => ({ ...prev, categories: false }));
             });
 
-            // Add children if exists
-            if (category.children && category.children.length > 0) {
-                const childCategories = flattenCategories(category.children, level + 1, currentPath);
-                result = result.concat(childCategories);
-            }
-        });
-
-        return result;
+        // Load vendors
+        fetch('http://localhost:5001/vendors')
+            .then(res => res.json())
+            .then(data => {
+                const activeVendors = data.filter(v => v.status === 'Active' && !v.blacklisted);
+                setVendors(activeVendors);
+                setLoading(prev => ({ ...prev, vendors: false }));
+            })
+            .catch(err => {
+                console.error('Error fetching vendors:', err);
+                setError('Failed to load vendors');
+                setLoading(prev => ({ ...prev, vendors: false }));
+            });
     }, []);
 
-    // Function 7: Get vendor's products
-    const getVendorProducts = useCallback((vendorName) => {
+    // 2. FLATTEN CATEGORIES
+    const flattenCategories = (categories, level = 0, parentPath = '') => {
+        let result = [];
+        categories.forEach(cat => {
+            const path = parentPath ? `${parentPath} > ${cat.name}` : cat.name;
+            result.push({
+                ...cat,
+                fullPath: path,
+                displayName: level > 0 ? '  '.repeat(level) + '↳ ' + cat.name : cat.name,
+                level: level
+            });
+            if (cat.children?.length) {
+                result = result.concat(flattenCategories(cat.children, level + 1, path));
+            }
+        });
+        return result;
+    };
+
+    // 3. GET VENDOR PRODUCTS - Updated to extract branch from product
+    const getVendorProducts = (vendorName) => {
         if (!vendorName) {
             setVendorProducts([]);
             setFilteredProducts([]);
             return [];
         }
 
-        // Find selected vendor
-        const selectedVendor = vendors.find(v => v.vendor_name === vendorName);
-        if (!selectedVendor) {
+        const vendor = vendors.find(v => v.vendor_name === vendorName);
+        if (!vendor) {
             setVendorProducts([]);
             setFilteredProducts([]);
             return [];
         }
 
-        // Get vendor's products
-        const products = selectedVendor.selected_products || [];
+        const products = vendor.selected_products || [];
+        
+        // Extract branch ID from the first product that has it
+        let branchFound = null;
+        const formattedProducts = products.map(p => {
+            // Check if product has branch information
+            if (p.branchId && !branchFound) {
+                branchFound = p.branchId;
+            }
+            
+            return {
+                id: p.id,
+                name: p.name || p.productName,
+                fullPath: p.fullPath || p.name,
+                description: p.description || '',
+                categoryIds: p.category || [],
+                branchId: p.branchId || null, // Store branch ID from product
+                branchName: p.branchName || null,
+                originalProduct: p.originalProduct || p
+            };
+        });
 
-        // Transform products to display format
-        const transformedProducts = products.map(product => ({
-            id: product.id,
-            name: product.name || product.productName,
-            fullPath: product.fullPath || product.name,
-            description: product.description || '',
-            categoryIds: product.category || []
-        }));
-
-        console.log("Vendor products:", transformedProducts);
-        setVendorProducts(transformedProducts);
-        setFilteredProducts(transformedProducts);
-        return transformedProducts;
-    }, [vendors]);
-
-    // Function 8: Filter products by search
-    const filterProductsBySearch = useCallback((searchTerm) => {
-        if (!searchTerm.trim()) {
-            setFilteredProducts(vendorProducts);
-        } else {
-            const filtered = vendorProducts.filter(product =>
-                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.fullPath.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
-            );
-            setFilteredProducts(filtered);
+        // If branch found in products, set it
+        if (branchFound) {
+            // Find branch name from branches API or use ID
+            setSelectedBranch(branchFound);
         }
-    }, [vendorProducts]);
 
-    // 4. EVENT HANDLERS (User Actions)
+        setVendorProducts(formattedProducts);
+        setFilteredProducts(formattedProducts);
+        return formattedProducts;
+    };
 
-    // Function 9: When user selects a product
+    // 4. HANDLE PRODUCT SELECTION - Auto-set branch from product
     const handleProductSelect = (product) => {
-        setFormData(prev => ({
-            ...prev,
-            categoryItem: product.fullPath || product.name
-        }));
+        setSelectedProduct(product);
+        setFormData(prev => ({ ...prev, categoryItem: product.fullPath || product.name }));
+
+        // Check if product needs serial numbers
+        let needsSerial = false;
+        if (product.originalProduct) {
+            const op = product.originalProduct;
+            needsSerial = op.isSerial === true || op.isSerial === "1" || op.isSerial === "true";
+        }
+
+        setSerialMode(needsSerial);
+
+        // Set branch from product if available
+        if (product.branchId) {
+            setSelectedBranch(product.branchId);
+        }
+
+        // Reset table based on mode
+        if (needsSerial) {
+            setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: 1, warranty: 0 }]);
+        } else {
+            setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: 1, warranty: 0 }]);
+        }
+
         setShowCategoryDropdown(false);
         setError('');
     };
 
-    // Function 10: When user selects a vendor
+    // 5. HANDLE VENDOR SELECTION - Auto-extract branch from vendor's products
     const handleVendorSelect = (vendor) => {
         setFormData({
             categoryItem: '',
             vendor: vendor.vendor_name,
             warrantyYears: 0
         });
+        setSelectedProduct(null);
+        setSerialMode(null);
+        setSelectedBranch(''); // Reset branch
 
-        // Get vendor's products
         const products = getVendorProducts(vendor.vendor_name);
-
         if (products.length === 0) {
-            setError('This vendor has no products available.');
-        } else {
-            setError('');
+            setError('This vendor has no products.');
         }
 
         setShowVendorDropdown(false);
         setShowCategoryDropdown(false);
     };
 
-    // Function 11: Search/filter products
-    const filterProducts = (searchTerm) => {
-        filterProductsBySearch(searchTerm);
-        setFormData(prev => ({ ...prev, categoryItem: searchTerm }));
-        setError('');
+    // 6. FILTER FUNCTIONS
+    const filterProducts = (search) => {
+        if (!search.trim()) {
+            setFilteredProducts(vendorProducts);
+        } else {
+            const filtered = vendorProducts.filter(p =>
+                p.name.toLowerCase().includes(search.toLowerCase()) ||
+                p.fullPath.toLowerCase().includes(search.toLowerCase())
+            );
+            setFilteredProducts(filtered);
+        }
+        setFormData(prev => ({ ...prev, categoryItem: search }));
     };
 
-    // Function 12: Search/filter vendors
-    const filterVendors = (searchTerm) => {
-        setFormData(prev => ({
-            ...prev,
-            vendor: searchTerm,
-            categoryItem: ''
-        }));
+    const filterVendors = (search) => {
+        setFormData(prev => ({ ...prev, vendor: search, categoryItem: '' }));
+        setSelectedProduct(null);
+        setSerialMode(null);
+        setSelectedBranch(''); // Reset branch
         setVendorProducts([]);
         setFilteredProducts([]);
-        setError('');
     };
 
-    // Function 13: When user clicks on product input
-    const handleProductFocus = (e) => {
-        e.stopPropagation();
-        if (!formData.vendor) {
-            setError('Please select vendor first');
-            return;
+    // 7. ADD/REMOVE ROWS (same as before)
+    const addMultipleRows = (count) => {
+        const newItems = [];
+        const startId = stockItems.length + 1;
+        for (let i = 0; i < count; i++) {
+            newItems.push({
+                id: startId + i,
+                serialNumber: '',
+                macAddress: '',
+                quantity: 1,
+                warranty: 0,
+            });
         }
-
-        // Get vendor's products if not already loaded
-        if (vendorProducts.length === 0) {
-            getVendorProducts(formData.vendor);
-        }
-
-        setShowCategoryDropdown(true);
-        if (showVendorDropdown) setShowVendorDropdown(false);
+        setStockItems([...stockItems, ...newItems]);
     };
 
-
-    // Function 15: Select warranty (1,2,3,4 years or 0)
-    const handleWarrantyChange = (years) => {
-        setFormData(prev => ({ ...prev, warrantyYears: years }));
-
-        // Update all items' warranty
-        const updatedItems = stockItems.map(item => ({
-            ...item,
-            warranty: years
-        }));
-        setStockItems(updatedItems);
-        setError('');
-    };
-
-    // Function 16: Add new row to table
-    const addStockItemRow = () => {
+    const addSingleRow = () => {
         const newItem = {
             id: stockItems.length + 1,
             serialNumber: '',
             macAddress: '',
             quantity: 1,
-            warranty: formData.warrantyYears,
+            warranty: 0,
         };
         setStockItems([...stockItems, newItem]);
-        setError('');
     };
 
-    // Function 17: Remove row from table
-    const removeStockItemRow = (id) => {
+    const removeRow = (id) => {
         if (stockItems.length > 1) {
-            const updatedItems = stockItems.filter(item => item.id !== id);
-            // Re-number IDs (1,2,3...)
-            const reindexedItems = updatedItems.map((item, index) => ({
-                ...item,
-                id: index + 1
-            }));
-            setStockItems(reindexedItems);
-        } else {
-            setError('At least one row required');
+            const updated = stockItems.filter(item => item.id !== id);
+            const renumbered = updated.map((item, idx) => ({ ...item, id: idx + 1 }));
+            setStockItems(renumbered);
         }
     };
 
-    // Function 18: Change table cell value
-    const handleStockItemChange = (id, field, value) => {
-        const updatedItems = stockItems.map(item => {
+    // 8. CHANGE TABLE VALUES (same as before)
+    const changeItemValue = (id, field, value) => {
+        const updated = stockItems.map(item => {
             if (item.id === id) {
-                // Convert quantity to number
                 if (field === 'quantity') {
-                    const numValue = parseInt(value) || 0;
-                    return { ...item, [field]: numValue };
+                    return { ...item, [field]: parseInt(value) || 0 };
+                }
+                if (field === 'warranty') {
+                    return { ...item, [field]: parseInt(value) || 0 };
                 }
                 return { ...item, [field]: value };
             }
             return item;
         });
-        setStockItems(updatedItems);
-        setError('');
+        setStockItems(updated);
     };
 
-    
+    // 9. APPLY WARRANTY TO ALL ROWS (same as before)
+    const applyWarrantyToAll = (years) => {
+        setFormData(prev => ({ ...prev, warrantyYears: years }));
+        const updated = stockItems.map(item => ({ ...item, warranty: years }));
+        setStockItems(updated);
+    };
 
-    // Function 20: Save data to API
-    const saveStockToAPI = async (stockData) => {
-        try {
-            setIsLoading(prev => ({ ...prev, submitting: true }));
-            const response = await fetch('http://localhost:5001/stocks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(stockData),
-            });
-
-            if (!response.ok) throw new Error('Failed to save');
-            const result = await response.json();
-            setIsLoading(prev => ({ ...prev, submitting: false }));
-            return { success: true, data: result };
-        } catch (error) {
-            console.error('Error saving:', error);
-            setIsLoading(prev => ({ ...prev, submitting: false }));
-            return { success: false, error: error.message };
+    // 10. VALIDATE FORM - Updated for auto-branch
+    const validateForm = () => {
+        if (!formData.categoryItem.trim()) {
+            setError('Please select product');
+            return false;
         }
+        if (!formData.vendor.trim()) {
+            setError('Please select vendor');
+            return false;
+        }
+
+        if (serialMode === true) {
+            const hasSerialNumber = stockItems.some(item => 
+                item.serialNumber && item.serialNumber.trim() !== ''
+            );
+            if (!hasSerialNumber) {
+                setError('Please enter at least one serial number');
+                return false;
+            }
+        } else if (serialMode === false) {
+            if (stockItems[0].quantity <= 0) {
+                setError('Please enter a valid quantity');
+                return false;
+            }
+        }
+        return true;
     };
 
-    // Function 21: Submit form
-    const handleSubmit = async (e) => {
+    // 11. SUBMIT FORM - Include auto-selected branch
+    const submitForm = async (e) => {
         e.preventDefault();
         setError('');
 
-     
+        if (!validateForm()) return;
 
-        // Find selected product
-        const selectedProduct = vendorProducts.find(p =>
-            p.fullPath === formData.categoryItem || p.name === formData.categoryItem
-        );
+        // Filter out empty rows based on mode
+        let itemsToSave = [];
+
+        if (serialMode === true) {
+            itemsToSave = stockItems.filter(item =>
+                item.serialNumber && item.serialNumber.trim() !== ''
+            );
+
+            if (itemsToSave.length === 0) {
+                setError('Please enter at least one serial number');
+                return;
+            }
+
+            itemsToSave = itemsToSave.map(item => ({
+                serialNumber: item.serialNumber.trim(),
+                macAddress: item.macAddress.trim(),
+                quantity: 1,
+                warranty: item.warranty
+            }));
+
+        } else if (serialMode === false) {
+            itemsToSave = stockItems.filter(item => item.quantity > 0);
+
+            if (itemsToSave.length === 0) {
+                setError('Please enter a valid quantity');
+                return;
+            }
+
+            itemsToSave = itemsToSave.map(item => ({
+                serialNumber: '',
+                macAddress: '',
+                quantity: item.quantity,
+                warranty: item.warranty
+            }));
+        } else {
+            setError('Please select a product first');
+            return;
+        }
 
         const stockData = {
             product: selectedProduct ? {
                 id: selectedProduct.id,
                 name: selectedProduct.name,
-                fullPath: selectedProduct.fullPath
+                fullPath: selectedProduct.fullPath,
+                branchId: selectedProduct.branchId || selectedBranch
             } : null,
             category: formData.categoryItem,
             vendor: formData.vendor,
-            warrantyYears: formData.warrantyYears,
-            items: stockItems.map(item => ({
-                serialNumber: item.serialNumber || '',
-                macAddress: item.macAddress || '',
-                quantity: item.quantity,
-                warranty: item.warranty
-            })),
-            addedAt: new Date().toISOString(),
+            branch: selectedBranch, // Auto-selected branch from product
+            globalWarranty: formData.warrantyYears,
+            serialMode: serialMode,
+            items: itemsToSave,
+            totalItems: itemsToSave.reduce((sum, item) => sum + item.quantity, 0),
+            addedAt: isEditMode ? new Date().toISOString() : new Date().toISOString(),
+            updatedAt: isEditMode ? new Date().toISOString() : null
         };
 
-        const result = await saveStockToAPI(stockData);
-        if (result.success) {
+        try {
+            setLoading(prev => ({ ...prev, submitting: true }));
+            
+            let response;
+            
+            if (isEditMode) {
+                // UPDATE existing stock
+                response = await fetch(`http://localhost:5001/stocks/${stockGroupId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(stockData),
+                });
+            } else {
+                // CREATE new stock
+                response = await fetch('http://localhost:5001/stocks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(stockData),
+                });
+            }
+
+            if (!response.ok) throw new Error('Failed to save');
+
             // Reset form
             setFormData({ categoryItem: '', vendor: '', warrantyYears: 0 });
+            setSelectedBranch('');
             setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: 1, warranty: 0 }]);
+            setSelectedProduct(null);
+            setSerialMode(null);
             setVendorProducts([]);
             setFilteredProducts([]);
+
+            toast.success(isEditMode ? 
+                `Stock updated successfully! ${itemsToSave.length} item(s) updated.` : 
+                `Stock added successfully! ${itemsToSave.length} item(s) saved.`
+            );
             
-            toast.success('Stock added successfully!');
             if (onSuccess) onSuccess();
             if (onClose) onClose();
-        } else {
-            setError(result.error || 'Failed to save');
+
+        } catch (error) {
+            console.error('Error saving:', error);
+            setError(isEditMode ? 'Failed to update stock' : 'Failed to save stock');
+        } finally {
+            setLoading(prev => ({ ...prev, submitting: false }));
         }
     };
 
-    // Function 22: Cancel form
-    const handleCancel = () => {
-        if (onClose) onClose();
-    };
-
-    // 5. USE EFFECTS (Run code on events)
-
-    // Effect 1: Load data when page opens
-    useEffect(() => {
-        fetchCategories();
-        fetchVendors();
-    }, [fetchCategories, fetchVendors]);
-
-    // Effect 2: Close dropdown when clicking outside
+    // 12. CLOSE DROPDOWNS ON OUTSIDE CLICK
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (showCategoryDropdown && categoryDropdownRef.current &&
-                !categoryDropdownRef.current.contains(event.target)) {
+            if (showCategoryDropdown && categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
                 setShowCategoryDropdown(false);
             }
-
-            if (showVendorDropdown && vendorDropdownRef.current &&
-                !vendorDropdownRef.current.contains(event.target)) {
+            if (showVendorDropdown && vendorDropdownRef.current && !vendorDropdownRef.current.contains(event.target)) {
                 setShowVendorDropdown(false);
             }
         };
-
         document.addEventListener('click', handleClickOutside);
         return () => document.removeEventListener('click', handleClickOutside);
     }, [showCategoryDropdown, showVendorDropdown]);
 
-    // Effect 3: When vendor changes, update products
+    // 13. GET VENDOR PRODUCTS WHEN VENDOR CHANGES
     useEffect(() => {
         if (formData.vendor) {
             getVendorProducts(formData.vendor);
         }
-    }, [formData.vendor, getVendorProducts]);
+    }, [formData.vendor]);
 
-    // --------------------------------------------
-    // 6. RENDER COMPONENTS (UI Parts)
-    // --------------------------------------------
+    // 14. WARRANTY BADGE COLOR
+    const getWarrantyColor = (years) => {
+        if (years >= 4) return 'bg-green-100 text-green-800 border-green-200';
+        if (years >= 3) return 'bg-blue-100 text-blue-800 border-blue-200';
+        if (years >= 2) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        if (years >= 1) return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-red-100 text-red-800 border-red-200';
+    };
 
+    // Show loading when loading edit data
+    if (loading.loadingEditData) {
+        return (
+            <div className="p-4 md:p-6">
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                        <p className="mt-4 text-gray-600">Loading stock data...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // RENDER
     return (
         <div className="p-4 md:p-6">
-            {/* Header */}
             <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Add New Stock</h2>
-                <p className="text-gray-600 text-sm mt-1">Add new stock items to inventory</p>
+                <h2 className="text-xl font-bold text-gray-800">
+                    {isEditMode ? 'Edit Stock' : 'Add New Stock'}
+                </h2>
+                <p className="text-gray-600 text-sm mt-1">
+                    {isEditMode ? 'Edit existing stock items' : 'Add new stock items to inventory'}
+                </p>
+                
+                {isEditMode && (
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg inline-block">
+                        <span className="text-sm text-blue-700">
+                            Editing Stock ID: {stockGroupId}
+                        </span>
+                    </div>
+                )}
             </div>
 
-            {/* Error Message */}
             {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-red-600 text-sm">{error}</p>
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Show auto-selected branch info */}
+            {selectedBranch && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-700 text-sm">
+                        <span className="font-medium">Auto-selected Branch:</span> {selectedBranch}
+                        {selectedProduct?.branchName && ` (${selectedProduct.branchName})`}
+                    </p>
+                </div>
+            )}
 
-                {/* SECTION 1: VENDOR & PRODUCT */}
+            <form onSubmit={submitForm} className="space-y-6">
+                {/* VENDOR & PRODUCT SECTION */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-
                     {/* Vendor Dropdown */}
                     <div className="relative">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Vendor *
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Vendor *</label>
                         <div className="relative">
                             <input
                                 type="text"
                                 value={formData.vendor}
                                 onChange={(e) => filterVendors(e.target.value)}
-                               
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (!showVendorDropdown) {
-                                        setShowVendorDropdown(true);
-                                        setShowCategoryDropdown(false);
-                                    }
+                                    setShowVendorDropdown(true);
+                                    setShowCategoryDropdown(false);
                                 }}
-                                placeholder="Select or type to search vendor"
+                                placeholder="Select vendor"
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                required
-                                disabled={isLoading.vendors}
+                                disabled={loading.vendors}
                             />
-                            {isLoading.vendors ? (
+                            {loading.vendors ? (
                                 <div className="absolute right-3 top-2.5">
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
                                 </div>
@@ -487,34 +593,17 @@ function AddStock({ onClose, onSuccess }) {
                             )}
                         </div>
 
-                        {/* Vendor List */}
                         {showVendorDropdown && vendors.length > 0 && (
-                            <div
-                                ref={vendorDropdownRef}
-                                className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                {vendors.map((vendor, index) => (
+                            <div ref={vendorDropdownRef} className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                {vendors.map((vendor) => (
                                     <div
-                                        key={vendor.id || index}
-                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 text-sm"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleVendorSelect(vendor);
-                                        }}
+                                        key={vendor.id}
+                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100"
+                                        onClick={() => handleVendorSelect(vendor)}
                                     >
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <div className="font-medium text-gray-800">{vendor.vendor_name}</div>
-                                                <div className="text-xs text-gray-500 mt-0.5">
-                                                    Products: {getVendorProductsCount(vendor)} available
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col items-end gap-0.5">
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getVendorStatusColor(vendor.status, vendor.blacklisted)}`}>
-                                                    {vendor.blacklisted ? 'Blacklisted' : vendor.status}
-                                                </span>
-                                            </div>
+                                        <div className="font-medium text-gray-800">{vendor.vendor_name}</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">
+                                            Products: {vendor.selected_products?.length || 0}
                                         </div>
                                     </div>
                                 ))}
@@ -524,28 +613,29 @@ function AddStock({ onClose, onSuccess }) {
 
                     {/* Product Dropdown */}
                     <div className="relative">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Product *
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Items *</label>
                         <div className="relative">
                             <input
                                 type="text"
                                 value={formData.categoryItem}
                                 onChange={(e) => filterProducts(e.target.value)}
-                                
-                                onClick={(e) => {   
-                                    e.preventDefault();
-                                    
-                                        handleProductFocus(e);
-                                  
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (formData.vendor) {
+                                        if (vendorProducts.length === 0) {
+                                            getVendorProducts(formData.vendor);
+                                        }
+                                        setShowCategoryDropdown(true);
+                                        setShowVendorDropdown(false);
+                                    } else {
+                                        setError('Please select vendor first');
+                                    }
                                 }}
-                                
-                                placeholder={formData.vendor ? "Select or type to search product" : "Select vendor first"}
+                                placeholder={formData.vendor ? "Select product" : "Select vendor first"}
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                required
-                                disabled={isLoading.categories || !formData.vendor}
+                                disabled={loading.categories || !formData.vendor}
                             />
-                            {isLoading.categories ? (
+                            {loading.categories ? (
                                 <div className="absolute right-3 top-2.5">
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
                                 </div>
@@ -558,72 +648,90 @@ function AddStock({ onClose, onSuccess }) {
                             )}
                         </div>
 
-                        {/* Product List */}
                         {showCategoryDropdown && formData.vendor && (
-                            <div
-                                ref={categoryDropdownRef}
-                                className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto"
-                                onClick={(e) => e.stopPropagation()}
-                            >
+                            <div ref={categoryDropdownRef} className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
                                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
                                     <p className="text-xs font-medium text-gray-700">
                                         Products from: <span className="text-blue-600">{formData.vendor}</span>
                                         <span className="ml-2 text-green-600">({filteredProducts.length} items)</span>
+                                        {selectedBranch && (
+                                            <span className="ml-2 text-orange-600">
+                                                Branch: {selectedBranch}
+                                            </span>
+                                        )}
                                     </p>
                                 </div>
 
                                 {filteredProducts.length > 0 ? (
-                                    <div>
-                                        {filteredProducts.map((product, index) => (
-                                            <div
-                                                key={`${product.id}-${index}`}
-                                                className="px-3 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 text-sm"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleProductSelect(product);
-                                                }}
-                                            >
-                                                <div className="font-medium text-gray-800">
-                                                    {product.name}
-                                                </div>
-                                                {product.fullPath && product.fullPath !== product.name && (
-                                                    <div className="text-xs text-gray-500 mt-0.5 truncate">
-                                                        {product.fullPath}
-                                                    </div>
-                                                )}
-                                                {product.description && (
-                                                    <div className="text-xs text-gray-400 mt-0.5 truncate">
-                                                        {product.description}
-                                                    </div>
+                                    filteredProducts.map((product) => (
+                                        <div
+                                            key={product.id}
+                                            className="px-3 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100"
+                                            onClick={() => handleProductSelect(product)}
+                                        >
+                                            <div className="font-medium text-gray-800">{product.name}</div>
+                                            <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+                                                <span className="truncate">{product.fullPath}</span>
+                                                {product.branchId && (
+                                                    <span className="text-blue-600 ml-2">
+                                                        Branch: {product.branchId}
+                                                    </span>
                                                 )}
                                             </div>
-                                        ))}
-                                    </div>
+                                        </div>
+                                    ))
                                 ) : (
                                     <div className="px-3 py-6 text-center">
-                                        {vendorProducts.length === 0 ? (
-                                            <p className="text-gray-500 text-sm">Loading products...</p>
-                                        ) : (
-                                            <p className="text-gray-500 text-sm">No products found matching your search</p>
-                                        )}
+                                        <p className="text-gray-500 text-sm">No products found</p>
                                     </div>
                                 )}
                             </div>
                         )}
                     </div>
 
-                    {/* Warranty Selection */}
+                    {/* Branch Display (Read-only) */}
+                    {selectedBranch && (
+                        <div className="md:col-span-2">
+                            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                <p className="text-sm text-gray-700">
+                                    <span className="font-medium">Auto-selected Branch:</span> {selectedBranch}
+                                    <span className="ml-2 text-xs text-gray-500">
+                                        (From selected product)
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Quick Add Rows (only for serial mode) */}
+                    {serialMode === true && (
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Quick Add Rows</label>
+                            <div className="flex flex-wrap gap-2">
+                                {[10, 20, 30, 40].map((count) => (
+                                    <button
+                                        key={count}
+                                        type="button"
+                                        onClick={() => addMultipleRows(count)}
+                                        className="px-3 py-1.5 bg-gray-100 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                                    >
+                                        Add {count} Rows
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Apply Warranty to All (Optional) */}
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Warranty (Years)
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Apply Warranty to All Items (Optional)</label>
                         <div className="flex flex-wrap gap-2">
                             {[1, 2, 3, 4].map((year) => (
                                 <button
                                     key={year}
                                     type="button"
-                                    onClick={() => handleWarrantyChange(year)}
-                                    className={`px-3 py-1.5 rounded-lg border transition-colors text-sm ${formData.warrantyYears >= year
+                                    onClick={() => applyWarrantyToAll(year)}
+                                    className={`px-3 py-1.5 rounded-lg border text-sm ${formData.warrantyYears >= year
                                         ? 'bg-blue-500 text-white border-blue-500'
                                         : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                                         }`}
@@ -633,7 +741,7 @@ function AddStock({ onClose, onSuccess }) {
                             ))}
                             <button
                                 type="button"
-                                onClick={() => handleWarrantyChange(0)}
+                                onClick={() => applyWarrantyToAll(0)}
                                 className={`px-3 py-1.5 rounded-lg border text-sm ${formData.warrantyYears === 0
                                     ? 'bg-red-500 text-white border-red-500'
                                     : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
@@ -643,123 +751,146 @@ function AddStock({ onClose, onSuccess }) {
                             </button>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                            Selecting 4 years will automatically select 1, 2, and 3 years
+                            Apply same warranty to all items (optional) - Each item can also have individual warranty
                         </p>
                     </div>
                 </div>
 
-                {/* SECTION 2: STOCK ITEMS TABLE */}
+                {/* STOCK ITEMS TABLE (same as before) */}
                 <div>
                     <div className="flex justify-between items-center mb-3">
                         <h2 className="text-base md:text-lg font-semibold text-gray-800">Stock Details</h2>
-                        <button
-                            type="button"
-                            onClick={addStockItemRow}
-                            className="px-3 py-1.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors text-sm"
-                        >
-                            + Add Row
-                        </button>
+                        {serialMode === true && (
+                            <button
+                                type="button"
+                                onClick={addSingleRow}
+                                className="px-3 py-1.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 text-sm"
+                            >
+                                + Add Single Row
+                            </button>
+                        )}
                     </div>
 
                     <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
                         <table className="w-full min-w-[600px]">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.No</th>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MAC Address</th>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warranty</th>
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">S.No</th>
+                                    {serialMode === true && (
+                                        <>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Serial Number *</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">MAC Address</th>
+                                        </>
+                                    )}
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantity {serialMode === false && '*'}</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Warranty (Years)</th>
+                                    {serialMode === true && stockItems.length > 1 && (
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                                 {stockItems.map((item, index) => (
                                     <tr key={item.id} className="hover:bg-gray-50">
                                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">{index + 1}</td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={item.serialNumber}
-                                                    onChange={(e) => handleStockItemChange(item.id, 'serialNumber', e.target.value)}
-                                                    placeholder="Enter Serial Number"
-                                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                />
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <input
-                                                type="text"
-                                                value={item.macAddress}
-                                                onChange={(e) => handleStockItemChange(item.id, 'macAddress', e.target.value)}
-                                                placeholder="AA:BB:CC:DD:EE:FF"
-                                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
-                                            />
-                                        </td>
+
+                                        {serialMode === true && (
+                                            <>
+                                                <td className="px-4 py-3">
+                                                    <input
+                                                        type="text"
+                                                        value={item.serialNumber}
+                                                        onChange={(e) => changeItemValue(item.id, 'serialNumber', e.target.value)}
+                                                        placeholder="Enter Serial Number..."
+                                                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <input
+                                                        type="text"
+                                                        value={item.macAddress}
+                                                        onChange={(e) => changeItemValue(item.id, 'macAddress', e.target.value)}
+                                                        placeholder="Enter macAddress..."
+                                                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono"
+                                                    />
+                                                </td>
+                                            </>
+                                        )}
+
                                         <td className="px-4 py-3">
                                             <input
                                                 type="number"
-                                                disabled
                                                 min="0"
-                                                step="1"
                                                 value={item.quantity}
-                                                onChange={(e) => handleStockItemChange(item.id, 'quantity', e.target.value)}
-                                                placeholder="Enter quantity (0 or more)"
-                                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                onChange={(e) => changeItemValue(item.id, 'quantity', e.target.value)}
+                                                placeholder="Enter quantity"
+                                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                             />
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getWarrantyBadgeColor(item.warranty)}`}>
-                                                {item.warranty > 0 ? `${item.warranty} Year${item.warranty > 1 ? 's' : ''}` : 'No Warranty'}
-                                            </span>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    value={item.warranty}
+                                                    onChange={(e) => changeItemValue(item.id, 'warranty', e.target.value)}
+                                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="0">No Warranty</option>
+                                                    <option value="1">1 Year</option>
+                                                    <option value="2">2 Years</option>
+                                                    <option value="3">3 Years</option>
+                                                    <option value="4">4 Years</option>
+                                                </select>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getWarrantyColor(item.warranty)}`}>
+                                                    {item.warranty > 0 ? `${item.warranty}Y` : 'No'}
+                                                </span>
+                                            </div>
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            {stockItems.length > 1 && (
+                                        {serialMode === true && stockItems.length > 1 && (
+                                            <td className="px-4 py-3 whitespace-nowrap">
                                                 <button
                                                     type="button"
-                                                    onClick={() => removeStockItemRow(item.id)}
-                                                    className="px-2 py-1 text-red-600 hover:text-red-900 font-medium text-sm border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                                                    onClick={() => removeRow(item.id)}
+                                                    className="px-2 py-1 text-red-600 hover:text-red-900 text-sm border border-red-200 rounded-lg hover:bg-red-50"
                                                 >
                                                     Remove
                                                 </button>
-                                            )}
-                                        </td>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-
-                    <p className="text-xs text-gray-500 mt-2">
-                        * All fields are optional. You can enter 0 quantity.
-                    </p>
                 </div>
 
-                {/* SECTION 3: SUBMIT BUTTONS */}
+                {/* SUBMIT BUTTONS */}
                 <div className="flex flex-col md:flex-row md:justify-between gap-4 md:items-center pt-4 border-t border-gray-200">
-                    <div></div>
+                    <div className="text-sm text-gray-600">
+                        <span className="font-medium">Mode:</span> {serialMode === true ? 'Serial Numbers' : serialMode === false ? 'Quantity Only' : 'Not Selected'} |
+                        <span className="font-medium ml-2">Rows:</span> {stockItems.length} |
+                        <span className="font-medium ml-2">Branch:</span> {selectedBranch || 'Will auto-select from product'}
+                    </div>
                     <div className="flex gap-3">
                         <button
                             type="button"
-                            onClick={handleCancel}
-                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300 font-medium text-sm transition-colors"
-                            disabled={isLoading.submitting}
+                            onClick={onClose}
+                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300 font-medium text-sm"
+                            disabled={loading.submitting}
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={isLoading.submitting || !formData.vendor || !formData.categoryItem}
+                            className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 text-sm disabled:opacity-50"
+                            disabled={loading.submitting || !formData.vendor || !formData.categoryItem}
                         >
-                            {isLoading.submitting ? (
+                            {loading.submitting ? (
                                 <span className="flex items-center gap-2">
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                    Adding...
+                                    {isEditMode ? 'Updating...' : 'Adding...'}
                                 </span>
                             ) : (
-                                'Add Stock'
+                                isEditMode ? 'Update Stock' : 'Add Stock'
                             )}
                         </button>
                     </div>
