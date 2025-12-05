@@ -1,8 +1,11 @@
 import React from 'react'
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 
 const StockExpire = () => {
   return (
-    <div>StockExpire</div>
+    <div>
+      <PageBreadcrumb pageTitle="Stock Expire" />
+      StockExpire</div>
   )
 }
 

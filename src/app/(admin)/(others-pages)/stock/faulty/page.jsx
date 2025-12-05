@@ -1,8 +1,11 @@
 import React from 'react'
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 
 const Faulty = () => {
   return (
-    <div>Faulty</div>
+    <div>
+        <PageBreadcrumb pageTitle="Faulty" />
+        Faulty</div>
   )
 }
 

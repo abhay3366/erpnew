@@ -1,8 +1,11 @@
 import React from 'react'
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 
 const SerialStatus = () => {
   return (
-    <div>SerialStatus</div>
+    <div>
+      <PageBreadcrumb pageTitle="Serial Status" />
+      SerialStatus</div>
   )
 }
 

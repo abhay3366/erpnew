@@ -1,8 +1,11 @@
 import React from 'react'
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 
 const  RepairReport= () => {
   return (
-    <div></div>
+    <div>
+        <PageBreadcrumb pageTitle="Repair Report" />
+    </div>
   )
 }
 

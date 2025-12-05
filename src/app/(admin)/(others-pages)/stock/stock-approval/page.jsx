@@ -1,8 +1,11 @@
 import React from 'react'
-
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 const StockApproval = () => {
   return (
-    <div>StockApproval</div>
+    <div>
+        <PageBreadcrumb pageTitle="Stock Approval" />
+        StockApproval
+    </div>
   )
 }
 

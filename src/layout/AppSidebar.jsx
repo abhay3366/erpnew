@@ -5,21 +5,15 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import {
-  BoxCubeIcon,
-  CalenderIcon,
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
-  ListIcon,
-  PageIcon,
-  PieChartIcon,
   PlugInIcon,
   TableIcon,
   VendorIcon,
   StockIcon,
   UserCircleIcon,
 } from "../icons/index";
-import SidebarWidget from "./SidebarWidget";
 
 const navItems = [
   {
@@ -385,7 +379,6 @@ const AppSidebar = () => {
           </div>
         </nav>
 
-        {(isExpanded || isHovered || isMobileOpen) && <SidebarWidget />}
       </div>
     </aside>
   );

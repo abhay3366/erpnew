@@ -1,8 +1,11 @@
 import React from 'react'
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 
 const BroadbandIssue = () => {
   return (
-    <div>BroadbandIssue</div>
+    <div>
+      <PageBreadcrumb pageTitle="Broadband Issue" />
+      BroadbandIssue</div>
   )
 }
 

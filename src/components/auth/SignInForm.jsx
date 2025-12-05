@@ -22,7 +22,6 @@ export default function SignInForm() {
           Back to dashboard
         </Link>
       </div>
-
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
           <div className="mb-5 sm:mb-8">
