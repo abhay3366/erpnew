@@ -203,7 +203,7 @@ export default function AddCategory() {
                                 onClick={() => setShowModal(true)}
                                 className="bg-brand-500 shadow-theme-xs hover:bg-brand-600 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition"
                             >
-                               <IoMdAdd /> Add Category
+                                <IoMdAdd /> Add Category
                             </button>
 
                             <button
@@ -272,81 +272,81 @@ export default function AddCategory() {
 
             {/* MODAL */}
             {showModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-[9999]">
+                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-[9999]">
 
-    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative animate-[zoomIn_0.2s_ease]">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative animate-[zoomIn_0.2s_ease]">
 
-      <button
-        onClick={() => setShowModal(false)}
-        className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-xl"
-      >
-        ✕
-      </button>
+                        <button
+                            onClick={() => setShowModal(false)}
+                            className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-xl"
+                        >
+                            ✕
+                        </button>
 
-      <h2 className="text-xl font-bold mb-4">
-        {editId ? "Edit Category" : "Add Category"}
-      </h2>
+                        <h2 className="text-xl font-bold mb-4">
+                            {editId ? "Edit Category" : "Add Category"}
+                        </h2>
 
-      <form onSubmit={submit} className="space-y-4">
+                        <form onSubmit={submit} className="space-y-4">
 
-        {/* Category Name */}
-        <input
-          className="inputCss"
-          placeholder="Category Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+                            {/* Category Name */}
+                            <input
+                                className="inputCss"
+                                placeholder="Category Name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
 
-        {/* Slug */}
-        <input
-          className="inputCss"
-          placeholder="Slug"
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-        />
+                            {/* Slug */}
+                            <input
+                                className="inputCss"
+                                placeholder="Slug"
+                                value={slug}
+                                onChange={(e) => setSlug(e.target.value)}
+                            />
 
-        {/* Parent Category Dropdown */}
-        <Select
-          className="w-full"
-          classNamePrefix="react-select"
-          options={[
-            { value: "", label: "(Root category)" },
-            ...options.map((o) => ({
-              value: o.id,
-              label: o.label,
-            })),
-          ]}
-          value={
-            parentId === ""
-              ? { value: "", label: "(Root category)" }
-              : options
-                  .map((o) => ({ value: o.id, label: o.label }))
-                  .find((item) => item.value === parentId)
-          }
-          onChange={(e) => setParentId(e?.value ?? "")}
-        />
+                            {/* Parent Category Dropdown */}
+                            <Select
+                                className="w-full"
+                                classNamePrefix="react-select"
+                                options={[
+                                    { value: "", label: "(Root category)" },
+                                    ...options.map((o) => ({
+                                        value: o.id,
+                                        label: o.label,
+                                    })),
+                                ]}
+                                value={
+                                    parentId === ""
+                                        ? { value: "", label: "(Root category)" }
+                                        : options
+                                            .map((o) => ({ value: o.id, label: o.label }))
+                                            .find((item) => item.value === parentId)
+                                }
+                                onChange={(e) => setParentId(e?.value ?? "")}
+                            />
 
-        {/* Status Selector */}
-        <select
-          className="border border-gray-300 w-full p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={status ? "active" : "inactive"}
-          onChange={(e) =>
-            setStatus(e.target.value === "active" ? true : false)
-          }
-        >
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+                            {/* Status Selector */}
+                            <select
+                                className="border border-gray-300 w-full p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={status ? "active" : "inactive"}
+                                onChange={(e) =>
+                                    setStatus(e.target.value === "active" ? true : false)
+                                }
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
 
-        {/* Button */}
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md transition w-full font-semibold">
-          {editId ? "Update" : "Save"}
-        </button>
+                            {/* Button */}
+                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md transition w-full font-semibold">
+                                {editId ? "Update" : "Save"}
+                            </button>
 
-      </form>
-    </div>
-  </div>
-)}
+                        </form>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

@@ -43,7 +43,6 @@ const navItems = [
   { name: "Issued Detail", path: "/stock/issued-detail" },
   { name: "Assigned Item", path: "/stock/assigned-item" },
   { name: "Transferred Item", path: "/stock/transferred-item" },
-
   { name: "Stock Purchase", path: "/stock/stock-purchase" },
   { name: "Stock Approval", path: "/stock/stock-approval" },
   { name: "Stock Return Approval", path: "/stock/stock-return-approval" },
@@ -305,7 +304,7 @@ const AppSidebar = () => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className={`py-8 flex ${
+        className={`py-2 flex ${
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}
       >
@@ -316,14 +315,14 @@ const AppSidebar = () => {
                 className="dark:hidden"
                 src="/images/logo/logo.webp"
                 alt="Logo"
-                width={100}
+                width={50}
                 height={40}
               />
               <Image
                 className="hidden dark:block"
                 src="/images/logo/logo.webp"
                 alt="Logo"
-                width={100}
+                width={50}
                 height={40}
               />
             </>
@@ -339,7 +338,7 @@ const AppSidebar = () => {
       </div>
 
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
-        <nav className="mb-6">
+        <nav className="mb-2">
           <div className="flex flex-col gap-4">
             <div>
               <h2

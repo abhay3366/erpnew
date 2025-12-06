@@ -462,6 +462,20 @@
       ],
       "images": [],
       "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "83d7",
+      "branch_id": "0445",
+      "category_ids": [
+        1764935010892
+      ],
+      "product_name": "Bottle",
+      "item_code": "123",
+      "slug": "hii",
+      "unit": "pc",
+      "isSerial": "0",
+      "sku": "HELLO",
+      "image": ""
     }
   ],
   "transfers": [],
