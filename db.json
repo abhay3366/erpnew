@@ -231,154 +231,7 @@
   ],
   "categories": {
     "list": [
-      {
-        "id": 1765014145088,
-        "name": "SDF",
-        "slug": "DD",
-        "parentId": null,
-        "status": true,
-        "children": [
-          {
-            "id": 1765016159291,
-            "name": "SDF2",
-            "slug": "/",
-            "parentId": 1765014145088,
-            "status": true,
-            "children": []
-          },
-          {
-            "id": 1765016506089,
-            "name": "EEE",
-            "slug": "EE",
-            "parentId": 1765014145088,
-            "status": true,
-            "children": [
-              {
-                "id": 1765016517281,
-                "name": "RRR",
-                "slug": "RR",
-                "parentId": 1765016506089,
-                "status": true,
-                "children": [
-                  {
-                    "id": 1765016532798,
-                    "name": "GGG",
-                    "slug": "RRR",
-                    "parentId": 1765016517281,
-                    "status": true,
-                    "children": []
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "id": 1765014555585,
-        "name": "sdfs",
-        "slug": "sdf",
-        "parentId": null,
-        "status": true,
-        "children": []
-      },
-      {
-        "id": 1765014568131,
-        "name": "sdfsdf",
-        "slug": "sdfsdf",
-        "parentId": null,
-        "status": true,
-        "children": []
-      },
-      {
-        "id": 1765014596689,
-        "name": "SFS",
-        "slug": "SDF",
-        "parentId": null,
-        "status": true,
-        "children": []
-      },
-      {
-        "id": 1765015584731,
-        "name": "RRR",
-        "slug": "RR",
-        "parentId": null,
-        "status": true,
-        "children": []
-      },
-      {
-        "id": 1765015650058,
-        "name": "TTTT",
-        "slug": "TT",
-        "parentId": null,
-        "status": true,
-        "children": []
-      },
-      {
-        "id": 1765015674332,
-        "name": "2222",
-        "slug": "SDFSD",
-        "parentId": null,
-        "status": true,
-        "children": []
-      },
-      {
-        "id": 1765015761187,
-        "name": "RRR",
-        "slug": "TT",
-        "parentId": null,
-        "status": true,
-        "children": [
-          {
-            "id": 1765015778154,
-            "name": "QQQQQQQ",
-            "slug": "QQQ",
-            "parentId": 1765015761187,
-            "status": true,
-            "children": []
-          }
-        ]
-      },
-      {
-        "id": 1765016907280,
-        "name": "utyuty",
-        "slug": "tyu",
-        "parentId": null,
-        "status": true,
-        "children": []
-      },
-      {
-        "id": 1765016972820,
-        "name": "ertret",
-        "slug": "erte",
-        "parentId": null,
-        "status": true,
-        "children": []
-      },
-      {
-        "id": 1765017670735,
-        "name": "uuuu",
-        "slug": "uu",
-        "parentId": null,
-        "status": true,
-        "children": []
-      },
-      {
-        "id": 1765021487829,
-        "name": "111",
-        "slug": "11",
-        "parentId": null,
-        "status": true,
-        "children": []
-      },
-      {
-        "id": 1765024016307,
-        "name": "ra,",
-        "slug": "sdfg",
-        "parentId": null,
-        "status": true,
-        "children": []
-      }
+      
     ]
   },
   "branches": [
@@ -398,18 +251,15 @@
   ],
   "products": [
     {
-      "id": "dc6a",
+      "id": "6db9",
       "store": "0445",
-      "category": [
-        1765016159291,
-        1765016506089
-      ],
-      "productName": "item 1",
-      "slug": "home",
+      "category": [],
+      "productName": "Tucker Garrett",
+      "slug": "Aut sint eveniet at",
       "unit": "liter",
-      "isSerial": "1",
-      "sku": "wer",
-      "image": ""
+      "isSerial": "0",
+      "sku": "Repellendus Quia au",
+      "image": "Autem vitae ab qui q"
     }
   ],
   "transfers": [
