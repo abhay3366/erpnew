@@ -9,10 +9,9 @@ export default function AddItem() {
   const [branches, setBranches] = useState([]);
   const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
-    branch_id: "",
-    category_ids: [],
-    product_name: "",
-    item_code: "",
+    store: "",
+    category: [],
+    productName: "",
     slug: "",
     unit: "",
     isSerial: "",
@@ -74,9 +73,9 @@ export default function AddItem() {
   const toggleCategory = (id) => {
     setFormData((prev) => ({
       ...prev,
-      category_ids: prev.category_ids.includes(id)
-        ? prev.category_ids.filter((cid) => cid !== id)
-        : [...prev.category_ids, id],
+      category: prev.category.includes(id)
+        ? prev.category.filter((cid) => cid !== id)
+        : [...prev.category, id],
     }));
   };
 
@@ -104,7 +103,7 @@ export default function AddItem() {
 
   const CategoryItem = ({ item, level }) => {
     const [expanded, setExpanded] = useState(true);
-    const isSelected = formData.category_ids.includes(item.id);
+    const isSelected = formData.category.includes(item.id);
 
     return (
       <div>
@@ -140,7 +139,7 @@ export default function AddItem() {
     const flatten = (arr) =>
       arr.flatMap((c) => [c, ...(c.children ? flatten(c.children) : [])]);
     return flatten(categories)
-      .filter((c) => formData.category_ids.includes(c.id))
+      .filter((c) => formData.category.includes(c.id))
       .map((c) => c.name)
       .join(", ");
   };
@@ -159,10 +158,10 @@ export default function AddItem() {
 
     // Reset form
     setFormData({
-      branch_id: "",
-      category_ids: [],
-      product_name: "",
-      item_code: "",
+      store: "",
+      category: [],
+      productName: "",
+      
       slug: "",
       unit: "",
       isSerial: "",
@@ -184,23 +183,19 @@ export default function AddItem() {
         <div className="grid grid-cols-3 gap-6">
           <InputSelect
             label="Warehouse"
-            name="branch_id"
-            value={formData.branch_id}
+            name="store"
+            value={formData.store}
             onChange={handleChange}
             options={branches.map((b) => ({ value: b.id, label: b.branchName }))}
           />
           <Input
             label="Product Name"
-            name="product_name"
-            value={formData.product_name}
+            name="productName"
+            value={formData.productName}
             onChange={handleChange}
           />
-          <Input
-            label="Item Code"
-            name="item_code"
-            value={formData.item_code}
-            onChange={handleChange}
-          />
+         
+          <Input label="SKU" name="sku" value={formData.sku} onChange={handleChange} />
         </div>
 
         {/* Category */}
@@ -211,7 +206,7 @@ export default function AddItem() {
             onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
           >
             <span className="truncate text-sm">
-              {formData.category_ids.length
+              {formData.category.length
                 ? getSelectedCategoryNames()
                 : "Select Product Group"}
             </span>
@@ -264,10 +259,7 @@ export default function AddItem() {
           />
         </div>
 
-        {/* Row 3 */}
-        <div className="grid grid-cols-3 gap-6 mt-4">
-          <Input label="SKU" name="sku" value={formData.sku} onChange={handleChange} />
-        </div>
+      
 
         {/* Image */}
         <div className="p-4 border rounded-lg mt-6 bg-gray-50">

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "json-server": " json-server --watch db.json --port 5001",
     "start": "next start",
     "lint": "next lint"
   },
