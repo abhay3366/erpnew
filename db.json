@@ -193,6 +193,61 @@
       "selected_items_display": "Category: Main, Product: Main > V5 HUAWEI GPON HG8145V5",
       "createdAt": "2025-12-06T10:37:08.272Z",
       "lastUpdated": "2025-12-06T10:37:08.272Z"
+    },
+    {
+      "id": "1765028098942",
+      "vendor_name": "Quinn Branch",
+      "vendor_address": "Rk high school chhapra chowk rampur hari",
+      "vendor_phone": "0966732247",
+      "email": "byqoqy@mailinator.com",
+      "gstin_no": "Incididunt sunt comm",
+      "status": "Active",
+      "contact_person": "Manish kumar",
+      "signatory": "Quas sint non illo ",
+      "bank_name": "Janna Sweet",
+      "account_no": "52525252525",
+      "account_type": "Minim veniam ut id",
+      "micr_code": "Unde rerum maiores n",
+      "rtgs_ifsc_code": "Dolore reprehenderit",
+      "neft_ifsc_code": "Eos aute quis error",
+      "blacklisted": false,
+      "selected_categories": [
+        {
+          "id": 1765027924270,
+          "name": "iphone 11",
+          "slug": "",
+          "parentId": 1765027911233,
+          "status": true,
+          "children": [],
+          "fullPath": "Apple > iphone > iphone 11"
+        }
+      ],
+      "selected_products": [
+        {
+          "id": "0d08",
+          "name": "Android",
+          "fullPath": "Apple > iphone > iphone 11 > Android",
+          "description": "",
+          "type": "product",
+          "isProduct": true,
+          "originalProduct": {
+            "id": "0d08",
+            "store": "0445",
+            "category": [
+              1765027924270
+            ],
+            "productName": "Android",
+            "slug": "helllo",
+            "unit": "pc",
+            "isSerial": "1",
+            "sku": "AND",
+            "image": ""
+          }
+        }
+      ],
+      "selected_items_display": "Category: Apple > iphone > iphone 11, Product: Apple > iphone > iphone 11 > Android",
+      "createdAt": "2025-12-06T13:34:58.942Z",
+      "lastUpdated": "2025-12-06T13:34:58.942Z"
     }
   ],
   "categories": {
@@ -204,6 +259,32 @@
         "parentId": null,
         "status": true,
         "children": []
+      },
+      {
+        "id": 1765027896471,
+        "name": "Apple",
+        "slug": "apple",
+        "parentId": null,
+        "status": true,
+        "children": [
+          {
+            "id": 1765027911233,
+            "name": "iphone",
+            "slug": "",
+            "parentId": 1765027896471,
+            "status": true,
+            "children": [
+              {
+                "id": 1765027924270,
+                "name": "iphone 11",
+                "slug": "",
+                "parentId": 1765027911233,
+                "status": true,
+                "children": []
+              }
+            ]
+          }
+        ]
       }
     ]
   },
@@ -464,17 +545,16 @@
       "createdAt": "2025-12-05T11:43:57.967Z"
     },
     {
-      "id": "83d7",
-      "branch_id": "0445",
-      "category_ids": [
-        1764935010892
+      "id": "0d08",
+      "store": "0445",
+      "category": [
+        1765027924270
       ],
-      "product_name": "Bottle",
-      "item_code": "123",
-      "slug": "hii",
+      "productName": "Android",
+      "slug": "helllo",
       "unit": "pc",
-      "isSerial": "0",
-      "sku": "HELLO",
+      "isSerial": "1",
+      "sku": "AND",
       "image": ""
     }
   ],
@@ -633,6 +713,33 @@
       "addedAt": "2025-12-06T12:45:27.820Z",
       "updatedAt": "2025-12-06T12:45:27.820Z",
       "id": "61b6"
+    },
+    {
+      "product": {
+        "id": "0d08",
+        "name": "Android",
+        "fullPath": "Apple > iphone > iphone 11 > Android",
+        "branchId": "",
+        "unit": "pc"
+      },
+      "category": "Apple > iphone > iphone 11 > Android",
+      "vendor": "Quinn Branch",
+      "branch": "",
+      "globalWarranty": 2,
+      "serialMode": true,
+      "items": [
+        {
+          "serialNumber": "ABC-123-OB",
+          "macAddress": "WI-WI",
+          "quantity": 1,
+          "warranty": 2
+        }
+      ],
+      "totalItems": 1,
+      "unit": "pc",
+      "addedAt": "2025-12-06T13:38:38.602Z",
+      "updatedAt": "2025-12-06T13:38:38.602Z",
+      "id": "b68f"
     }
   ]
 }

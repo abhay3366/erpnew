@@ -291,9 +291,6 @@ function AddStock({ onClose, onSuccess, editData = null }) {
     const changeItemValue = (id, field, value) => {
         const updated = stockItems.map(item => {
             if (item.id === id) {
-                if (field === 'quantity') {
-                    return { ...item, [field]: parseInt(value) || 0 };
-                }
                 if (field === 'warranty') {
                     return { ...item, [field]: parseInt(value) || 0 };
                 }
@@ -524,24 +521,6 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                 </div>
             )}
 
-            {/* Show auto-selected branch and unit info */}
-            {(selectedBranch || selectedProduct?.unit) && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex flex-wrap gap-4">
-                        {selectedBranch && (
-                            <p className="text-green-700 text-sm">
-                                <span className="font-medium">Auto-selected Branch ID:</span> {selectedBranch}
-                            </p>
-                        )}
-                        {selectedProduct?.unit && (
-                            <p className="text-blue-700 text-sm">
-                                <span className="font-medium">Unit:</span> {selectedProduct.unit}
-                            </p>
-                        )}
-                    </div>
-                </div>
-            )}
-
             <form onSubmit={submitForm} className="space-y-6">
                 {/* VENDOR & PRODUCT SECTION */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -719,8 +698,6 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                         </p>
                     </div>
                 </div>
-
- 
 
                 {/* STOCK ITEMS TABLE */}
                 <div>
