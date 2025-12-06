@@ -98,29 +98,6 @@ const AppHeader = () => {
             </svg>
           </button> 
 
-          {/* Search (Desktop Only) */}
-          <div className="hidden lg:block">
-            <form>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg width="20" height="20" className="fill-gray-500 dark:fill-gray-400">
-                    <path d="M3.04 9.37c0-3.5 2.84-6.33 6.33-6.33s6.33 2.83 6.33 6.33-2.84 6.33-6.33 6.33-6.33-2.84-6.33-6.33Zm6.33-7.83c-4.33 0-7.83 3.5-7.83 7.83s3.5 7.83 7.83 7.83c1.9 0 3.64-.67 5-1.78l2.82 2.82a.75.75 0 1 0 1.06-1.06l-2.82-2.82A7.8 7.8 0 0 0 17.21 9.37c0-4.33-3.5-7.83-7.83-7.83Z" />
-                  </svg>
-                </span>
-
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Search or type command..."
-                  className="h-11 xl:w-[430px] w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-transparent dark:bg-gray-900 pl-12 pr-14 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-white/30 shadow-theme-xs focus:border-brand-300 dark:focus:border-brand-800 focus:ring-3 focus:ring-brand-500/10"
-                />
-
-                <button className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-1 text-xs border rounded-lg border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/5 text-gray-500 dark:text-gray-400">
-                  ⌘ K
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
 
         {/* Right Section */}

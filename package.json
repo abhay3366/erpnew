@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "json-server":" json-server --watch db.json --port 5001",
+    "json-server": " json-server --watch db.json --port 5001",
     "start": "next start",
     "lint": "next lint"
   },
@@ -16,6 +16,7 @@
     "@fullcalendar/list": "^6.1.19",
     "@fullcalendar/react": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
+    "@headlessui/react": "^2.2.9",
     "@react-jvectormap/core": "^1.0.4",
     "@react-jvectormap/world": "^1.1.2",
     "@tailwindcss/forms": "^0.5.10",

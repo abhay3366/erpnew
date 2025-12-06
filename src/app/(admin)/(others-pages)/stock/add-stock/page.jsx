@@ -2,15 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { useSearchParams } from 'next/navigation';
 
-function AddStock({ onClose, onSuccess }) {
-    const searchParams = useSearchParams();
-    
-    // Check if we're in edit mode
-    const isEditMode = searchParams.get('edit') === 'true';
-    const stockGroupId = searchParams.get('stockGroupId');
-    
+function AddStock({ onClose, onSuccess, editData = null }) {
+    const isEditMode = editData !== null;
+
     const [formData, setFormData] = useState({
         categoryItem: '',
         vendor: '',
@@ -19,23 +14,22 @@ function AddStock({ onClose, onSuccess }) {
 
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [serialMode, setSerialMode] = useState(null);
-    const [selectedBranch, setSelectedBranch] = useState(''); // Auto-selected branch
+    const [selectedBranch, setSelectedBranch] = useState('');
 
     const [stockItems, setStockItems] = useState([
-        { id: 1, serialNumber: '', macAddress: '', quantity: 1, warranty: 0 }
+        { id: 1, serialNumber: '', macAddress: '', quantity: '', warranty: 0 }
     ]);
 
-    const [categories, setCategories] = useState([]);
     const [vendors, setVendors] = useState([]);
     const [vendorProducts, setVendorProducts] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
 
-    const [loading, setLoading] = useState({ 
-        categories: true, 
-        vendors: true, 
+    const [loading, setLoading] = useState({
+        vendors: true,
         submitting: false,
-        loadingEditData: isEditMode 
+        loadingEditData: false
     });
+
     const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
     const [showVendorDropdown, setShowVendorDropdown] = useState(false);
     const [error, setError] = useState('');
@@ -43,124 +37,106 @@ function AddStock({ onClose, onSuccess }) {
     const categoryDropdownRef = useRef(null);
     const vendorDropdownRef = useRef(null);
 
-    // LOAD EDIT DATA IF IN EDIT MODE
+    // FETCH VENDORS FIRST
     useEffect(() => {
-        if (isEditMode && stockGroupId) {
-            loadEditData();
-        }
-    }, [isEditMode, stockGroupId]);
+        const fetchVendors = async () => {
+            try {
+                const response = await fetch('http://localhost:5001/vendors');
+                const data = await response.json();
+                const activeVendors = data.filter(v => v.status === 'Active' && !v.blacklisted);
+                setVendors(activeVendors);
+                
+                // After vendors are loaded, initialize edit data if needed
+                if (isEditMode && editData) {
+                    initializeEditData(activeVendors);
+                }
+            } catch (err) {
+                console.error('Error fetching vendors:', err);
+                setError('Failed to load vendors');
+            } finally {
+                setLoading(prev => ({ ...prev, vendors: false }));
+            }
+        };
 
-    const loadEditData = async () => {
+        fetchVendors();
+    }, []);
+
+    // INITIALIZE EDIT DATA AFTER VENDORS ARE LOADED
+    const initializeEditData = (vendorsList) => {
         try {
             setLoading(prev => ({ ...prev, loadingEditData: true }));
             
-            // Fetch the stock group data
-            const response = await fetch(`http://localhost:5001/stocks/${stockGroupId}`);
-            if (!response.ok) throw new Error('Failed to load edit data');
-            
-            const stockGroup = await response.json();
-            
-            // Set form data from stock group
+            // Set form data from editData
             setFormData({
-                categoryItem: stockGroup.category || '',
-                vendor: stockGroup.vendor || '',
-                warrantyYears: stockGroup.globalWarranty || 0,
+                categoryItem: editData.category || '',
+                vendor: editData.vendor || '',
+                warrantyYears: editData.globalWarranty || 0,
             });
-            
-            // Set branch from stock group
-            setSelectedBranch(stockGroup.branch || '');
-            
+
+            // Set branch from editData
+            setSelectedBranch(editData.branch || '');
+
+            // Set serial mode
+            setSerialMode(editData.serialMode || false);
+
             // Set selected product
-            if (stockGroup.product) {
-                const product = {
-                    id: stockGroup.product.id,
-                    name: stockGroup.product.name,
-                    fullPath: stockGroup.product.fullPath,
-                    originalProduct: stockGroup.product
-                };
-                setSelectedProduct(product);
-                
-                // Set serial mode
-                const needsSerial = stockGroup.serialMode === true;
-                setSerialMode(needsSerial);
-                
-                // Set stock items
-                if (stockGroup.items && stockGroup.items.length > 0) {
-                    const itemsWithIds = stockGroup.items.map((item, index) => ({
-                        id: index + 1,
-                        serialNumber: item.serialNumber || '',
-                        macAddress: item.macAddress || '',
-                        quantity: item.quantity || 1,
-                        warranty: item.warranty || 0,
-                    }));
-                    setStockItems(itemsWithIds);
+            if (editData.product) {
+                setSelectedProduct({
+                    id: editData.product.id,
+                    name: editData.product.name,
+                    fullPath: editData.product.fullPath,
+                    branchId: editData.product.branchId || editData.branch || '', // Fix: Use both sources
+                    unit: editData.unit || editData.product.unit || ''
+                });
+            }
+
+            // Set stock items
+            if (editData.items && editData.items.length > 0) {
+                const itemsWithIds = editData.items.map((item, index) => ({
+                    id: index + 1,
+                    serialNumber: item.serialNumber || '',
+                    macAddress: item.macAddress || '',
+                    quantity: item.quantity || 1,
+                    warranty: item.warranty || 0,
+                }));
+                setStockItems(itemsWithIds);
+            }
+
+            // If vendor exists, load vendor products
+            if (editData.vendor && vendorsList) {
+                // Find vendor from the loaded list
+                const vendor = vendorsList.find(v => v.vendor_name === editData.vendor);
+                if (vendor) {
+                    // Load vendor products
+                    const products = vendor.selected_products || [];
+                    
+                    // Extract branch ID from products
+                    const formattedProducts = products.map(p => {
+                        return {
+                            id: p.id,
+                            name: p.name || p.productName,
+                            fullPath: p.fullPath || p.name,
+                            branchId: p.branchId || null,
+                            branchName: p.branchName || null,
+                            unit: p.originalProduct?.unit || '',
+                            originalProduct: p.originalProduct || p
+                        };
+                    });
+
+                    setVendorProducts(formattedProducts);
+                    setFilteredProducts(formattedProducts);
                 }
             }
-            
-            // Load vendor products if vendor is set
-            if (stockGroup.vendor) {
-                getVendorProducts(stockGroup.vendor);
-            }
-            
+
         } catch (error) {
-            console.error('Error loading edit data:', error);
-            toast.error('Failed to load data for editing');
+            console.error('Error initializing edit data:', error);
+            toast.error('Failed to initialize edit data');
         } finally {
             setLoading(prev => ({ ...prev, loadingEditData: false }));
         }
     };
 
-    // 1. FETCH INITIAL DATA
-    useEffect(() => {
-        // Load categories
-        fetch('http://localhost:5001/categories')
-            .then(res => res.json())
-            .then(data => {
-                const list = data.list || [];
-                const flatCategories = flattenCategories(list);
-                setCategories(flatCategories);
-                setLoading(prev => ({ ...prev, categories: false }));
-            })
-            .catch(err => {
-                console.error('Error fetching categories:', err);
-                setError('Failed to load categories');
-                setLoading(prev => ({ ...prev, categories: false }));
-            });
-
-        // Load vendors
-        fetch('http://localhost:5001/vendors')
-            .then(res => res.json())
-            .then(data => {
-                const activeVendors = data.filter(v => v.status === 'Active' && !v.blacklisted);
-                setVendors(activeVendors);
-                setLoading(prev => ({ ...prev, vendors: false }));
-            })
-            .catch(err => {
-                console.error('Error fetching vendors:', err);
-                setError('Failed to load vendors');
-                setLoading(prev => ({ ...prev, vendors: false }));
-            });
-    }, []);
-
-    // 2. FLATTEN CATEGORIES
-    const flattenCategories = (categories, level = 0, parentPath = '') => {
-        let result = [];
-        categories.forEach(cat => {
-            const path = parentPath ? `${parentPath} > ${cat.name}` : cat.name;
-            result.push({
-                ...cat,
-                fullPath: path,
-                displayName: level > 0 ? '  '.repeat(level) + '↳ ' + cat.name : cat.name,
-                level: level
-            });
-            if (cat.children?.length) {
-                result = result.concat(flattenCategories(cat.children, level + 1, path));
-            }
-        });
-        return result;
-    };
-
-    // 3. GET VENDOR PRODUCTS - Updated to extract branch from product
+    // GET VENDOR PRODUCTS
     const getVendorProducts = (vendorName) => {
         if (!vendorName) {
             setVendorProducts([]);
@@ -176,41 +152,33 @@ function AddStock({ onClose, onSuccess }) {
         }
 
         const products = vendor.selected_products || [];
-        
-        // Extract branch ID from the first product that has it
-        let branchFound = null;
+
         const formattedProducts = products.map(p => {
-            // Check if product has branch information
-            if (p.branchId && !branchFound) {
-                branchFound = p.branchId;
-            }
-            
             return {
                 id: p.id,
                 name: p.name || p.productName,
                 fullPath: p.fullPath || p.name,
-                description: p.description || '',
-                categoryIds: p.category || [],
-                branchId: p.branchId || null, // Store branch ID from product
+                branchId: p.branchId || null,
                 branchName: p.branchName || null,
+                unit: p.originalProduct?.unit || '',
                 originalProduct: p.originalProduct || p
             };
         });
-
-        // If branch found in products, set it
-        if (branchFound) {
-            // Find branch name from branches API or use ID
-            setSelectedBranch(branchFound);
-        }
 
         setVendorProducts(formattedProducts);
         setFilteredProducts(formattedProducts);
         return formattedProducts;
     };
 
-    // 4. HANDLE PRODUCT SELECTION - Auto-set branch from product
+    // HANDLE PRODUCT SELECTION
     const handleProductSelect = (product) => {
-        setSelectedProduct(product);
+        const productData = {
+            ...product,
+            unit: product.unit || product.originalProduct?.unit || '',
+            branchId: product.branchId || ''
+        };
+        
+        setSelectedProduct(productData);
         setFormData(prev => ({ ...prev, categoryItem: product.fullPath || product.name }));
 
         // Check if product needs serial numbers
@@ -222,23 +190,28 @@ function AddStock({ onClose, onSuccess }) {
 
         setSerialMode(needsSerial);
 
-        // Set branch from product if available
+        // IMPORTANT: Set branch from product if available
         if (product.branchId) {
             setSelectedBranch(product.branchId);
+        } else {
+            // If product doesn't have branchId, reset to empty
+            setSelectedBranch('');
         }
 
-        // Reset table based on mode
-        if (needsSerial) {
-            setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: 1, warranty: 0 }]);
-        } else {
-            setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: 1, warranty: 0 }]);
-        }
+        // Reset table
+        setStockItems([{ 
+            id: 1, 
+            serialNumber: '', 
+            macAddress: '', 
+            quantity: '', 
+            warranty: 0
+        }]);
 
         setShowCategoryDropdown(false);
         setError('');
     };
 
-    // 5. HANDLE VENDOR SELECTION - Auto-extract branch from vendor's products
+    // HANDLE VENDOR SELECTION
     const handleVendorSelect = (vendor) => {
         setFormData({
             categoryItem: '',
@@ -247,18 +220,15 @@ function AddStock({ onClose, onSuccess }) {
         });
         setSelectedProduct(null);
         setSerialMode(null);
-        setSelectedBranch(''); // Reset branch
+        setSelectedBranch(''); // Reset branch when vendor changes
 
-        const products = getVendorProducts(vendor.vendor_name);
-        if (products.length === 0) {
-            setError('This vendor has no products.');
-        }
+        getVendorProducts(vendor.vendor_name);
 
         setShowVendorDropdown(false);
         setShowCategoryDropdown(false);
     };
 
-    // 6. FILTER FUNCTIONS
+    // FILTER PRODUCTS
     const filterProducts = (search) => {
         if (!search.trim()) {
             setFilteredProducts(vendorProducts);
@@ -281,16 +251,17 @@ function AddStock({ onClose, onSuccess }) {
         setFilteredProducts([]);
     };
 
-    // 7. ADD/REMOVE ROWS (same as before)
+    // ADD/REMOVE ROWS
     const addMultipleRows = (count) => {
         const newItems = [];
         const startId = stockItems.length + 1;
+        
         for (let i = 0; i < count; i++) {
             newItems.push({
                 id: startId + i,
                 serialNumber: '',
                 macAddress: '',
-                quantity: 1,
+                quantity: '',
                 warranty: 0,
             });
         }
@@ -302,7 +273,7 @@ function AddStock({ onClose, onSuccess }) {
             id: stockItems.length + 1,
             serialNumber: '',
             macAddress: '',
-            quantity: 1,
+            quantity: '',
             warranty: 0,
         };
         setStockItems([...stockItems, newItem]);
@@ -316,7 +287,7 @@ function AddStock({ onClose, onSuccess }) {
         }
     };
 
-    // 8. CHANGE TABLE VALUES (same as before)
+    // CHANGE TABLE VALUES
     const changeItemValue = (id, field, value) => {
         const updated = stockItems.map(item => {
             if (item.id === id) {
@@ -333,14 +304,14 @@ function AddStock({ onClose, onSuccess }) {
         setStockItems(updated);
     };
 
-    // 9. APPLY WARRANTY TO ALL ROWS (same as before)
+    // APPLY WARRANTY TO ALL ROWS
     const applyWarrantyToAll = (years) => {
         setFormData(prev => ({ ...prev, warrantyYears: years }));
         const updated = stockItems.map(item => ({ ...item, warranty: years }));
         setStockItems(updated);
     };
 
-    // 10. VALIDATE FORM - Updated for auto-branch
+    // VALIDATE FORM
     const validateForm = () => {
         if (!formData.categoryItem.trim()) {
             setError('Please select product');
@@ -352,7 +323,7 @@ function AddStock({ onClose, onSuccess }) {
         }
 
         if (serialMode === true) {
-            const hasSerialNumber = stockItems.some(item => 
+            const hasSerialNumber = stockItems.some(item =>
                 item.serialNumber && item.serialNumber.trim() !== ''
             );
             if (!hasSerialNumber) {
@@ -368,7 +339,7 @@ function AddStock({ onClose, onSuccess }) {
         return true;
     };
 
-    // 11. SUBMIT FORM - Include auto-selected branch
+    // SUBMIT FORM
     const submitForm = async (e) => {
         e.preventDefault();
         setError('');
@@ -391,7 +362,7 @@ function AddStock({ onClose, onSuccess }) {
             itemsToSave = itemsToSave.map(item => ({
                 serialNumber: item.serialNumber.trim(),
                 macAddress: item.macAddress.trim(),
-                quantity: 1,
+                quantity: '',
                 warranty: item.warranty
             }));
 
@@ -419,27 +390,34 @@ function AddStock({ onClose, onSuccess }) {
                 id: selectedProduct.id,
                 name: selectedProduct.name,
                 fullPath: selectedProduct.fullPath,
-                branchId: selectedProduct.branchId || selectedBranch
+                branchId: selectedProduct.branchId || selectedBranch, // Make sure branchId is included
+                unit: selectedProduct.unit || '' // Add unit from vendor
             } : null,
             category: formData.categoryItem,
             vendor: formData.vendor,
-            branch: selectedBranch, // Auto-selected branch from product
+            branch: selectedBranch, // This should contain the branchId
             globalWarranty: formData.warrantyYears,
             serialMode: serialMode,
             items: itemsToSave,
             totalItems: itemsToSave.reduce((sum, item) => sum + item.quantity, 0),
-            addedAt: isEditMode ? new Date().toISOString() : new Date().toISOString(),
+            unit: selectedProduct?.unit || '', // Add unit at root level
+            addedAt: new Date().toISOString(),
             updatedAt: isEditMode ? new Date().toISOString() : null
         };
 
+        // DEBUG: Log what's being sent
+        console.log('Submitting stock data:', stockData);
+        console.log('Selected Branch:', selectedBranch);
+        console.log('Selected Product branchId:', selectedProduct?.branchId);
+
         try {
             setLoading(prev => ({ ...prev, submitting: true }));
-            
+
             let response;
-            
+
             if (isEditMode) {
                 // UPDATE existing stock
-                response = await fetch(`http://localhost:5001/stocks/${stockGroupId}`, {
+                response = await fetch(`http://localhost:5001/stocks/${editData.stockGroupId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(stockData),
@@ -458,17 +436,17 @@ function AddStock({ onClose, onSuccess }) {
             // Reset form
             setFormData({ categoryItem: '', vendor: '', warrantyYears: 0 });
             setSelectedBranch('');
-            setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: 1, warranty: 0 }]);
+            setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: '', warranty: 0 }]);
             setSelectedProduct(null);
             setSerialMode(null);
             setVendorProducts([]);
             setFilteredProducts([]);
 
-            toast.success(isEditMode ? 
-                `Stock updated successfully! ${itemsToSave.length} item(s) updated.` : 
+            toast.success(isEditMode ?
+                `Stock updated successfully! ${itemsToSave.length} item(s) updated.` :
                 `Stock added successfully! ${itemsToSave.length} item(s) saved.`
             );
-            
+
             if (onSuccess) onSuccess();
             if (onClose) onClose();
 
@@ -480,7 +458,7 @@ function AddStock({ onClose, onSuccess }) {
         }
     };
 
-    // 12. CLOSE DROPDOWNS ON OUTSIDE CLICK
+    // CLOSE DROPDOWNS ON OUTSIDE CLICK
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (showCategoryDropdown && categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
@@ -494,14 +472,14 @@ function AddStock({ onClose, onSuccess }) {
         return () => document.removeEventListener('click', handleClickOutside);
     }, [showCategoryDropdown, showVendorDropdown]);
 
-    // 13. GET VENDOR PRODUCTS WHEN VENDOR CHANGES
+    // GET VENDOR PRODUCTS WHEN VENDOR CHANGES
     useEffect(() => {
-        if (formData.vendor) {
+        if (formData.vendor && vendors.length > 0) {
             getVendorProducts(formData.vendor);
         }
-    }, [formData.vendor]);
+    }, [formData.vendor, vendors]);
 
-    // 14. WARRANTY BADGE COLOR
+    // WARRANTY BADGE COLOR
     const getWarrantyColor = (years) => {
         if (years >= 4) return 'bg-green-100 text-green-800 border-green-200';
         if (years >= 3) return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -526,19 +504,15 @@ function AddStock({ onClose, onSuccess }) {
 
     // RENDER
     return (
-        <div className="p-4 md:p-6">
+        <div className=''>
             <div className="mb-6">
                 <h2 className="text-xl font-bold text-gray-800">
                     {isEditMode ? 'Edit Stock' : 'Add New Stock'}
                 </h2>
-                <p className="text-gray-600 text-sm mt-1">
-                    {isEditMode ? 'Edit existing stock items' : 'Add new stock items to inventory'}
-                </p>
-                
                 {isEditMode && (
                     <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg inline-block">
                         <span className="text-sm text-blue-700">
-                            Editing Stock ID: {stockGroupId}
+                            Editing: {formData.categoryItem || 'Stock Item'}
                         </span>
                     </div>
                 )}
@@ -550,13 +524,21 @@ function AddStock({ onClose, onSuccess }) {
                 </div>
             )}
 
-            {/* Show auto-selected branch info */}
-            {selectedBranch && (
+            {/* Show auto-selected branch and unit info */}
+            {(selectedBranch || selectedProduct?.unit) && (
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-green-700 text-sm">
-                        <span className="font-medium">Auto-selected Branch:</span> {selectedBranch}
-                        {selectedProduct?.branchName && ` (${selectedProduct.branchName})`}
-                    </p>
+                    <div className="flex flex-wrap gap-4">
+                        {selectedBranch && (
+                            <p className="text-green-700 text-sm">
+                                <span className="font-medium">Auto-selected Branch ID:</span> {selectedBranch}
+                            </p>
+                        )}
+                        {selectedProduct?.unit && (
+                            <p className="text-blue-700 text-sm">
+                                <span className="font-medium">Unit:</span> {selectedProduct.unit}
+                            </p>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -633,19 +615,13 @@ function AddStock({ onClose, onSuccess }) {
                                 }}
                                 placeholder={formData.vendor ? "Select product" : "Select vendor first"}
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                disabled={loading.categories || !formData.vendor}
+                                disabled={!formData.vendor}
                             />
-                            {loading.categories ? (
-                                <div className="absolute right-3 top-2.5">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                                </div>
-                            ) : (
-                                <div className="absolute right-3 top-2.5">
-                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </div>
-                            )}
+                            <div className="absolute right-3 top-2.5">
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
                         </div>
 
                         {showCategoryDropdown && formData.vendor && (
@@ -654,11 +630,6 @@ function AddStock({ onClose, onSuccess }) {
                                     <p className="text-xs font-medium text-gray-700">
                                         Products from: <span className="text-blue-600">{formData.vendor}</span>
                                         <span className="ml-2 text-green-600">({filteredProducts.length} items)</span>
-                                        {selectedBranch && (
-                                            <span className="ml-2 text-orange-600">
-                                                Branch: {selectedBranch}
-                                            </span>
-                                        )}
                                     </p>
                                 </div>
 
@@ -672,11 +643,18 @@ function AddStock({ onClose, onSuccess }) {
                                             <div className="font-medium text-gray-800">{product.name}</div>
                                             <div className="flex justify-between text-xs text-gray-500 mt-0.5">
                                                 <span className="truncate">{product.fullPath}</span>
-                                                {product.branchId && (
-                                                    <span className="text-blue-600 ml-2">
-                                                        Branch: {product.branchId}
-                                                    </span>
-                                                )}
+                                                <div className="flex gap-2">
+                                                    {product.unit && (
+                                                        <span className="font-medium text-blue-600">
+                                                            Unit: {product.unit}
+                                                        </span>
+                                                    )}
+                                                    {product.branchId && (
+                                                        <span className="font-medium text-green-600">
+                                                            Branch: {product.branchId}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     ))
@@ -688,20 +666,6 @@ function AddStock({ onClose, onSuccess }) {
                             </div>
                         )}
                     </div>
-
-                    {/* Branch Display (Read-only) */}
-                    {selectedBranch && (
-                        <div className="md:col-span-2">
-                            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                                <p className="text-sm text-gray-700">
-                                    <span className="font-medium">Auto-selected Branch:</span> {selectedBranch}
-                                    <span className="ml-2 text-xs text-gray-500">
-                                        (From selected product)
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Quick Add Rows (only for serial mode) */}
                     {serialMode === true && (
@@ -756,7 +720,9 @@ function AddStock({ onClose, onSuccess }) {
                     </div>
                 </div>
 
-                {/* STOCK ITEMS TABLE (same as before) */}
+ 
+
+                {/* STOCK ITEMS TABLE */}
                 <div>
                     <div className="flex justify-between items-center mb-3">
                         <h2 className="text-base md:text-lg font-semibold text-gray-800">Stock Details</h2>
@@ -867,8 +833,15 @@ function AddStock({ onClose, onSuccess }) {
                 <div className="flex flex-col md:flex-row md:justify-between gap-4 md:items-center pt-4 border-t border-gray-200">
                     <div className="text-sm text-gray-600">
                         <span className="font-medium">Mode:</span> {serialMode === true ? 'Serial Numbers' : serialMode === false ? 'Quantity Only' : 'Not Selected'} |
-                        <span className="font-medium ml-2">Rows:</span> {stockItems.length} |
-                        <span className="font-medium ml-2">Branch:</span> {selectedBranch || 'Will auto-select from product'}
+                        <span className="font-medium ml-2">Rows:</span> {stockItems.length}
+                        {selectedProduct?.unit && (
+                            <span className="font-medium ml-2">| Unit:</span> 
+                        )}
+                        <span className="ml-1">{selectedProduct?.unit || ''}</span>
+                        {selectedBranch && (
+                            <span className="font-medium ml-2">| Branch:</span>
+                        )}
+                        <span className="ml-1">{selectedBranch || ''}</span>
                     </div>
                     <div className="flex gap-3">
                         <button

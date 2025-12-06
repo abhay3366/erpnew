@@ -79,6 +79,120 @@
       "selected_items_display": "Category: Main, Product: Main > Fiber Sleeves, Product: Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
       "createdAt": "2025-12-05T14:18:24.915Z",
       "lastUpdated": "2025-12-05T14:18:24.915Z"
+    },
+    {
+      "id": "1765009044626",
+      "vendor_name": "Rorono Zoro",
+      "vendor_address": "Rk high school chhapra chowk rampur hari",
+      "vendor_phone": "0966732247",
+      "email": "rowunyhat@mailinator.com",
+      "gstin_no": "GST1234567890",
+      "status": "Active",
+      "contact_person": "Manish kumar",
+      "signatory": "Elit et occaecat ve",
+      "bank_name": "Blair Sharpe",
+      "account_no": "52525252525",
+      "account_type": "Eos consequatur in a",
+      "micr_code": "Eum nihil velit quas",
+      "rtgs_ifsc_code": "Explicabo Officiis ",
+      "neft_ifsc_code": "Asperiores sequi ut ",
+      "blacklisted": false,
+      "selected_categories": [
+        {
+          "id": 1764935010892,
+          "name": "Main",
+          "slug": "",
+          "parentId": null,
+          "status": true,
+          "children": [],
+          "fullPath": "Main"
+        }
+      ],
+      "selected_products": [
+        {
+          "id": "e1b2",
+          "name": "UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
+          "fullPath": "Main > UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
+          "description": "",
+          "type": "product",
+          "isProduct": true,
+          "originalProduct": {
+            "id": "e1b2",
+            "store": "11ae",
+            "productName": "UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
+            "isSerial": "1",
+            "brand": "ubiqcom",
+            "unit": "num",
+            "createdBy": "manish",
+            "description": "",
+            "category": [
+              1764935010892
+            ],
+            "images": [],
+            "createdAt": "2025-12-05T11:43:57.967Z"
+          }
+        }
+      ],
+      "selected_items_display": "Category: Main, Product: Main > UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
+      "createdAt": "2025-12-06T08:17:24.626Z",
+      "lastUpdated": "2025-12-06T08:17:24.626Z"
+    },
+    {
+      "id": "1765017428272",
+      "vendor_name": "Suraj Singh",
+      "vendor_address": "Rk high school chhapra chowk rampur hari",
+      "vendor_phone": "0966732247",
+      "email": "devuhezuf@mailinator.com",
+      "gstin_no": "GST1234567890",
+      "status": "Active",
+      "contact_person": "Manish kumar",
+      "signatory": "Neque quaerat nihil ",
+      "bank_name": "Shelby Branch",
+      "account_no": "52525252525",
+      "account_type": "Doloremque officiis ",
+      "micr_code": "Pariatur Et et volu",
+      "rtgs_ifsc_code": "Est sunt ea cupidita",
+      "neft_ifsc_code": "Voluptatum autem sap",
+      "blacklisted": false,
+      "selected_categories": [
+        {
+          "id": 1764935010892,
+          "name": "Main",
+          "slug": "",
+          "parentId": null,
+          "status": true,
+          "children": [],
+          "fullPath": "Main"
+        }
+      ],
+      "selected_products": [
+        {
+          "id": "e1b3",
+          "name": "V5 HUAWEI GPON HG8145V5",
+          "fullPath": "Main > V5 HUAWEI GPON HG8145V5",
+          "description": "",
+          "type": "product",
+          "isProduct": true,
+          "originalProduct": {
+            "id": "e1b3",
+            "store": "11ae",
+            "productName": "V5 HUAWEI GPON HG8145V5",
+            "isSerial": "1",
+            "brand": "huawei",
+            "unit": "num",
+            "createdBy": "manish",
+            "description": "",
+            "category": [
+              1764935010892
+            ],
+            "images": [],
+            "createdAt": "2025-12-05T11:43:57.967Z"
+          }
+        }
+      ],
+      "selected_items_display": "Category: Main, Product: Main > V5 HUAWEI GPON HG8145V5",
+      "createdAt": "2025-12-06T10:37:08.272Z",
+      "lastUpdated": "2025-12-06T10:37:08.272Z"
     }
   ],
   "categories": {
@@ -111,7 +225,7 @@
   "products": [
     {
       "id": "e1b0",
-      "store": "11ae",
+      "branch": "11ae",
       "productName": "Fiber Sleeves",
       "isSerial": "0",
       "brand": "fiber",
@@ -125,11 +239,11 @@
       "createdAt": "2025-12-05T11:43:57.967Z"
     },
     {
-      "id": "d057",
-      "store": "0445",
+      "id": "e1b1",
+      "store": "11ae",
       "productName": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
       "isSerial": "1",
-      "brand": "fiber",
+      "brand": "ubiqcom",
       "unit": "num",
       "createdBy": "manish",
       "description": "",
@@ -137,14 +251,14 @@
         1764935010892
       ],
       "images": [],
-      "createdAt": "2025-12-05T11:51:33.934Z"
+      "createdAt": "2025-12-05T11:43:57.967Z"
     },
     {
-      "id": "168f",
-      "store": "0445",
+      "id": "e1b2",
+      "store": "11ae",
       "productName": "UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
       "isSerial": "1",
-      "brand": "bazaar",
+      "brand": "ubiqcom",
       "unit": "num",
       "createdBy": "manish",
       "description": "",
@@ -152,14 +266,14 @@
         1764935010892
       ],
       "images": [],
-      "createdAt": "2025-12-05T11:52:25.159Z"
+      "createdAt": "2025-12-05T11:43:57.967Z"
     },
     {
-      "id": "6cd1",
-      "store": "0445",
+      "id": "e1b3",
+      "store": "11ae",
       "productName": "V5 HUAWEI GPON HG8145V5",
       "isSerial": "1",
-      "brand": "fiber",
+      "brand": "huawei",
       "unit": "num",
       "createdBy": "manish",
       "description": "",
@@ -167,14 +281,14 @@
         1764935010892
       ],
       "images": [],
-      "createdAt": "2025-12-05T11:55:38.518Z"
+      "createdAt": "2025-12-05T11:43:57.967Z"
     },
     {
-      "id": "3e1e",
-      "store": "0445",
+      "id": "e1b4",
+      "store": "11ae",
       "productName": "SS720-28X-LI-24S-AC",
       "isSerial": "1",
-      "brand": "fiber",
+      "brand": "cloud-infotech",
       "unit": "num",
       "createdBy": "manish",
       "description": "",
@@ -182,13 +296,222 @@
         1764935010892
       ],
       "images": [],
-      "createdAt": "2025-12-05T11:56:11.847Z"
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1b5",
+      "store": "11ae",
+      "productName": "Se6730-H24X6C",
+      "isSerial": "1",
+      "brand": "cloud-infotech",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1b6",
+      "store": "11ae",
+      "productName": "Syrotech 8CH DWDM-08D2734-R",
+      "isSerial": "1",
+      "brand": "syrotech",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1b7",
+      "store": "11ae",
+      "productName": "1110 Epon/Gpon Onu Syrotech",
+      "isSerial": "1",
+      "brand": "syrotech",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1b8",
+      "store": "11ae",
+      "productName": "Gpon Onu Syrotech 1000R-onu",
+      "isSerial": "1",
+      "brand": "syrotech",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1b9",
+      "store": "11ae",
+      "productName": "SY-GPON-4020-WDAONT",
+      "isSerial": "1",
+      "brand": "syrotech",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1c0",
+      "store": "11ae",
+      "productName": "TechnXT TnT-2801-GE-XPON",
+      "isSerial": "1",
+      "brand": "technxt",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1c1",
+      "store": "11ae",
+      "productName": "Huawei HG8321R Gpon With 1 Port Teleph",
+      "isSerial": "1",
+      "brand": "huawei",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1c2",
+      "store": "11ae",
+      "productName": "TechnXT TnT-323DAC-R-XPON",
+      "isSerial": "1",
+      "brand": "technxt",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1c3",
+      "store": "11ae",
+      "productName": "TechnXT HGU-324M-XPON",
+      "isSerial": "1",
+      "brand": "technxt",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1c4",
+      "store": "11ae",
+      "productName": "Epon/Gpon TNT 999.DMW",
+      "isSerial": "1",
+      "brand": "technxt",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
+    },
+    {
+      "id": "e1c5",
+      "store": "11ae",
+      "productName": "techNXT QSP28-100G-ER4-1310nm-40km",
+      "isSerial": "1",
+      "brand": "technxt",
+      "unit": "num",
+      "createdBy": "manish",
+      "description": "",
+      "category": [
+        1764935010892
+      ],
+      "images": [],
+      "createdAt": "2025-12-05T11:43:57.967Z"
     }
   ],
   "transfers": [],
   "stocks": [
     {
-      "id": "8d66",
+      "product": {
+        "id": "e1b0",
+        "name": "Fiber Sleeves",
+        "fullPath": "Main > Fiber Sleeves",
+        "branchId": "",
+        "Unit": ""
+      },
+      "category": "Main > Fiber Sleeves",
+      "vendor": "Daniel Avery",
+      "branch": "",
+      "globalWarranty": 4,
+      "serialMode": false,
+      "items": [],
+      "totalItems": 0,
+      "addedAt": "2025-12-06T10:21:03.915Z",
+      "updatedAt": "2025-12-06T10:21:03.915Z",
+      "id": "8d66"
+    },
+    {
+      "product": {
+        "id": "d057",
+        "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+        "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+        "branchId": ""
+      },
+      "category": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+      "vendor": "Daniel Avery",
+      "branch": "",
+      "globalWarranty": 3,
+      "serialMode": true,
+      "items": [
+        {
+          "serialNumber": "5009",
+          "macAddress": "ABC-ABC",
+          "quantity": 1,
+          "warranty": 3
+        }
+      ],
+      "totalItems": 1,
+      "addedAt": "2025-12-06T10:21:29.849Z",
+      "updatedAt": "2025-12-06T10:21:29.849Z",
+      "id": "cefa"
+    },
+    {
+      "id": "4ba7",
       "product": {
         "id": "e1b0",
         "name": "Fiber Sleeves",
@@ -198,19 +521,104 @@
       "category": "Main > Fiber Sleeves",
       "vendor": "Daniel Avery",
       "branch": "",
-      "globalWarranty": 4,
+      "globalWarranty": 0,
       "serialMode": false,
       "items": [
         {
           "serialNumber": "",
           "macAddress": "",
-          "quantity": 20,
-          "warranty": 4
+          "quantity": 90,
+          "warranty": 0
         }
       ],
-      "totalItems": 20,
-      "addedAt": "2025-12-05T14:18:52.046Z",
+      "totalItems": 90,
+      "addedAt": "2025-12-06T10:24:15.784Z",
       "updatedAt": null
+    },
+    {
+      "id": "5c52",
+      "product": {
+        "id": "d057",
+        "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+        "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+        "branchId": ""
+      },
+      "category": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+      "vendor": "Daniel Avery",
+      "branch": "",
+      "globalWarranty": 0,
+      "serialMode": true,
+      "items": [
+        {
+          "serialNumber": "675",
+          "macAddress": "CCBBDD",
+          "quantity": 1,
+          "warranty": 0
+        }
+      ],
+      "totalItems": 1,
+      "addedAt": "2025-12-06T11:55:01.435Z",
+      "updatedAt": null
+    },
+    {
+      "id": "9b21",
+      "product": {
+        "id": "d057",
+        "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+        "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+        "branchId": "",
+        "unit": "num"
+      },
+      "category": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+      "vendor": "Daniel Avery",
+      "branch": "",
+      "globalWarranty": 2,
+      "serialMode": true,
+      "items": [
+        {
+          "serialNumber": "UN-12345",
+          "macAddress": "ACBCDG",
+          "quantity": 1,
+          "warranty": 2
+        }
+      ],
+      "totalItems": 1,
+      "unit": "num",
+      "addedAt": "2025-12-06T12:35:40.613Z",
+      "updatedAt": null
+    },
+    {
+      "product": {
+        "id": "e1b3",
+        "name": "V5 HUAWEI GPON HG8145V5",
+        "fullPath": "Main > V5 HUAWEI GPON HG8145V5",
+        "branchId": "",
+        "unit": "num"
+      },
+      "category": "Main > V5 HUAWEI GPON HG8145V5",
+      "vendor": "Suraj Singh",
+      "branch": "",
+      "globalWarranty": 0,
+      "serialMode": true,
+      "items": [
+        {
+          "serialNumber": "Serial-1234BB",
+          "macAddress": "MAC-ADDRESS",
+          "quantity": 1,
+          "warranty": 0
+        },
+        {
+          "serialNumber": "Serial-1234CC",
+          "macAddress": "HII-BABE",
+          "quantity": 1,
+          "warranty": 0
+        }
+      ],
+      "totalItems": 2,
+      "unit": "num",
+      "addedAt": "2025-12-06T12:45:27.820Z",
+      "updatedAt": "2025-12-06T12:45:27.820Z",
+      "id": "61b6"
     }
   ]
 }
