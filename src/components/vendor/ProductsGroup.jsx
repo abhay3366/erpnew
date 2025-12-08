@@ -67,7 +67,7 @@ function flattenTable(list, parentName = "—") {
 }
 
 // ---------------- COMPONENT ----------------
-export default function AddCategory() {
+export default function ProductsGroup() {
     const [tree, setTree] = useState([]);
     const [name, setName] = useState("");
     const [slug, setSlug] = useState("");
@@ -125,7 +125,7 @@ export default function AddCategory() {
 
                 Swal.fire({
                     title: "Deleted!",
-                    text: "Your category has been deleted.",
+                    text: "Your Product Group has been deleted.",
                     icon: "success"
                 });
             }
@@ -171,6 +171,7 @@ export default function AddCategory() {
         setParentId("");
         setStatus(true);
         setShowModal(false);
+        toast.success("Product Group Created")
     };
 
     const options = flatten(tree);
@@ -196,14 +197,14 @@ export default function AddCategory() {
                     {/* BUTTONS */}
                     <div className="flex justify-between gap-4">
                         <div>
-                            <h2 className="font-bold text-gray-700 mb-4">Category List</h2>
+                            <h2 className="font-bold text-gray-700 mb-4">Product Group List</h2>
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setShowModal(true)}
                                 className="bg-brand-500 shadow-theme-xs hover:bg-brand-600 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition"
                             >
-                                <IoMdAdd /> Add Category
+                                <IoMdAdd /> Add Product Group
                             </button>
 
                             <button
@@ -216,13 +217,13 @@ export default function AddCategory() {
                     </div>
 
                     <span className="text-sm text-red-700 block mt-1">
-                        * If you delete a parent category, all child categories will be deleted automatically.
+                        * If you delete a parent product group, all child categories will be deleted automatically.
                     </span>
 
                     <table className="min-w-full border border-gray-200">
                         <thead className="bg-gray-100">
                             <tr>
-                                <th className="border p-3 text-left">Category</th>
+                                <th className="border p-3 text-left">Product Group</th>
                                 <th className="border p-3 text-left">Slug</th>
                                 <th className="border p-3 text-left">Parent</th>
                                 <th className="border p-3 text-left">Status</th>
@@ -265,7 +266,7 @@ export default function AddCategory() {
             {/* TREE */}
             {showTree && (
                 <div className="bg-white p-6 rounded-lg shadow-md mt-4">
-                    <h3 className="font-semibold text-gray-700 mb-2">Category Tree</h3>
+                    <h3 className="font-semibold text-gray-700 mb-2">Product Group Tree</h3>
                     {renderTree(tree)}
                 </div>
             )}
@@ -284,7 +285,7 @@ export default function AddCategory() {
                         </button>
 
                         <h2 className="text-xl font-bold mb-4">
-                            {editId ? "Edit Category" : "Add Category"}
+                            {editId ? "Edit Product Group" : "Add Product Group"}
                         </h2>
 
                         <form onSubmit={submit} className="space-y-4">
@@ -292,7 +293,7 @@ export default function AddCategory() {
                             {/* Category Name */}
                             <input
                                 className="inputCss"
-                                placeholder="Category Name"
+                                placeholder="Product Group"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                             />
@@ -310,7 +311,7 @@ export default function AddCategory() {
                                 className="w-full"
                                 classNamePrefix="react-select"
                                 options={[
-                                    { value: "", label: "(Root category)" },
+                                    { value: "", label: "(Root Product Group)" },
                                     ...options.map((o) => ({
                                         value: o.id,
                                         label: o.label,
@@ -318,7 +319,7 @@ export default function AddCategory() {
                                 ]}
                                 value={
                                     parentId === ""
-                                        ? { value: "", label: "(Root category)" }
+                                        ? { value: "", label: "(Root Product Group)" }
                                         : options
                                             .map((o) => ({ value: o.id, label: o.label }))
                                             .find((item) => item.value === parentId)

@@ -54,6 +54,112 @@
       ],
       "createdAt": "2025-12-08T11:59:45.702Z",
       "lastUpdated": "2025-12-08T11:59:45.702Z"
+    },
+    {
+      "id": "1765201838995",
+      "vendor_name": "Cloud Infotech Pvt.Ltd",
+      "vendor_address": "Rk high school chhapra chowk rampur hari",
+      "vendor_phone": "0966732247",
+      "email": "itachi123@gmail.com",
+      "gstin_no": "GST1234567890",
+      "contact_person": "Manish kumar",
+      "signatory": "Abhay kant tiwari",
+      "bank_name": "ISB",
+      "account_no": "52525252525",
+      "account_type": "saving ",
+      "micr_code": "MICRCODE",
+      "rtgs_ifsc_code": "SBI987",
+      "neft_ifsc_code": "NEFT Code",
+      "status": "Active",
+      "blacklisted": false,
+      "selected_categories": [
+        {
+          "id": 1764935010892,
+          "name": "Main",
+          "slug": "",
+          "parentId": null,
+          "status": true,
+          "children": [],
+          "fullPath": "Main"
+        }
+      ],
+      "selected_products": [
+        {
+          "id": "41ec",
+          "name": "Lenovo laptop",
+          "fullPath": "Main > Lenovo laptop",
+          "description": "",
+          "type": "product",
+          "originalProduct": {
+            "id": "41ec",
+            "store": "0445",
+            "category": [
+              1764935010892
+            ],
+            "productName": "Lenovo laptop",
+            "slug": "bb",
+            "unit": "pc",
+            "isSerial": "0",
+            "sku": "LL",
+            "image": ""
+          }
+        }
+      ],
+      "createdAt": "2025-12-08T13:50:38.995Z",
+      "lastUpdated": "2025-12-08T13:50:38.995Z"
+    },
+    {
+      "id": "1765201972017",
+      "vendor_name": "Sunny Paaji ",
+      "vendor_address": "Rk high school chhapra chowk rampur hari",
+      "vendor_phone": "0966732247",
+      "email": "itachi123@gmail.com",
+      "gstin_no": "GST1234567890",
+      "contact_person": "Manish kumar",
+      "signatory": "Abhay kant tiwari",
+      "bank_name": "ISB",
+      "account_no": "23456987654",
+      "account_type": "saving ",
+      "micr_code": "MICRCODE",
+      "rtgs_ifsc_code": "SBI987",
+      "neft_ifsc_code": "NEFT Code",
+      "status": "Active",
+      "blacklisted": false,
+      "selected_categories": [
+        {
+          "id": 1764935010892,
+          "name": "Main",
+          "slug": "",
+          "parentId": null,
+          "status": true,
+          "children": [],
+          "fullPath": "Main"
+        }
+      ],
+      "selected_products": [
+        {
+          "id": "41ec",
+          "name": "Lenovo laptop",
+          "fullPath": "Main > Lenovo laptop",
+          "description": "",
+          "type": "product",
+          "originalProduct": {
+            "id": "41ec",
+            "store": "0445",
+            "category": [
+              1764935010892
+            ],
+            "productName": "Lenovo laptop",
+            "slug": "bb",
+            "unit": "pc",
+            "isSerial": "0",
+            "sku": "LL",
+            "image": ""
+          }
+        }
+      ],
+      "createdAt": "2025-12-08T13:52:52.017Z",
+      "lastUpdated": "2025-12-08T13:52:52.017Z"
     }
   ],
   "categories": {
@@ -375,6 +481,19 @@
       "isSerial": "1",
       "sku": "AND",
       "image": ""
+    },
+    {
+      "id": "41ec",
+      "store": "0445",
+      "category": [
+        1764935010892
+      ],
+      "productName": "Lenovo laptop",
+      "slug": "bb",
+      "unit": "pc",
+      "isSerial": "0",
+      "sku": "LL",
+      "image": ""
     }
   ],
   "transfers": [],
@@ -573,6 +692,60 @@
       "addedAt": "2025-12-08T10:43:51.891Z",
       "updatedAt": "2025-12-08T10:43:51.891Z",
       "id": "b432"
+    },
+    {
+      "id": "8a23",
+      "product": {
+        "id": "e1b1",
+        "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+        "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+        "branchId": "",
+        "unit": "num"
+      },
+      "category": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+      "vendor": "Cloud Infotech Pvt.Ltd",
+      "branch": "",
+      "globalWarranty": 1,
+      "serialMode": true,
+      "items": [
+        {
+          "serialNumber": "112233445566778899",
+          "macAddress": "asdfghjkl",
+          "quantity": 1,
+          "warranty": 1
+        }
+      ],
+      "totalItems": 1,
+      "unit": "num",
+      "addedAt": "2025-12-08T13:13:38.069Z",
+      "updatedAt": null
+    },
+    {
+      "id": "e305",
+      "product": {
+        "id": "e1b1",
+        "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+        "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+        "branchId": "",
+        "unit": "num"
+      },
+      "category": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+      "vendor": "Cloud Infotech Pvt.Ltd",
+      "branch": "",
+      "globalWarranty": 4,
+      "serialMode": true,
+      "items": [
+        {
+          "serialNumber": "11ww11ww11ww11www",
+          "macAddress": "11ww11ww11ww11www",
+          "quantity": 1,
+          "warranty": 4
+        }
+      ],
+      "totalItems": 1,
+      "unit": "num",
+      "addedAt": "2025-12-08T13:18:15.169Z",
+      "updatedAt": null
     }
   ]
 }

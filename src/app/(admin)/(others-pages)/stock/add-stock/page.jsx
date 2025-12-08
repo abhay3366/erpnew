@@ -21,6 +21,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
     ]);
 
     const [vendors, setVendors] = useState([]);
+    const [filteredVendors, setFilteredVendors] = useState([]); // ✅ NEW: Filtered vendors
     const [vendorProducts, setVendorProducts] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
 
@@ -45,6 +46,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                 const data = await response.json();
                 const activeVendors = data.filter(v => v.status === 'Active' && !v.blacklisted);
                 setVendors(activeVendors);
+                setFilteredVendors(activeVendors); // ✅ Initially sabhi vendors
 
                 // After vendors are loaded, initialize edit data if needed
                 if (isEditMode && editData) {
@@ -247,11 +249,10 @@ function AddStock({ onClose, onSuccess, editData = null }) {
         setSelectedProduct(null);
         setSerialMode(null);
         setSelectedBranch(''); // Reset branch when vendor changes
-
-        getVendorProducts(vendor.vendor_name);
-
         setShowVendorDropdown(false);
         setShowCategoryDropdown(false);
+        
+        getVendorProducts(vendor.vendor_name);
     };
 
     // FILTER PRODUCTS
@@ -268,13 +269,25 @@ function AddStock({ onClose, onSuccess, editData = null }) {
         setFormData(prev => ({ ...prev, categoryItem: search }));
     };
 
+    // ✅ FIXED: FILTER VENDORS
     const filterVendors = (search) => {
         setFormData(prev => ({ ...prev, vendor: search, categoryItem: '' }));
         setSelectedProduct(null);
         setSerialMode(null);
-        setSelectedBranch(''); // Reset branch
+        setSelectedBranch('');
         setVendorProducts([]);
         setFilteredProducts([]);
+        setShowVendorDropdown(true);
+        
+        // Filter vendors based on search
+        if (!search.trim()) {
+            setFilteredVendors(vendors);
+        } else {
+            const filtered = vendors.filter(vendor =>
+                vendor.vendor_name.toLowerCase().includes(search.toLowerCase())
+            );
+            setFilteredVendors(filtered);
+        }
     };
 
     // ADD/REMOVE ROWS
@@ -334,7 +347,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
         setStockItems(updated);
     };
 
-    // VALIDATE FORM
+    // VALIDATE FORM function mein change:
     const validateForm = () => {
         if (!formData.categoryItem.trim()) {
             setError('Please select product');
@@ -353,11 +366,24 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                 setError('Please enter at least one serial number');
                 return false;
             }
+
+            // Serial mode mein quantity automatically 1 hai, validation ki zaroorat nahi
+            // Lekin check karenge ki quantity 1 hai ya nahi
+            stockItems.forEach(item => {
+                if (item.quantity < 1) {
+                    changeItemValue(item.id, 'quantity', 1);
+                }
+            });
+
         } else if (serialMode === false) {
+            // Sirf quantity check karenge
             if (stockItems[0].quantity <= 0) {
                 setError('Please enter a valid quantity');
                 return false;
             }
+        } else {
+            setError('Please select a product first');
+            return false;
         }
         return true;
     };
@@ -413,25 +439,22 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                 id: selectedProduct.id,
                 name: selectedProduct.name,
                 fullPath: selectedProduct.fullPath,
-                branchId: selectedProduct.branchId || selectedBranch, // Make sure branchId is included
-                unit: selectedProduct.unit || '' // Add unit from vendor
+                branchId: selectedProduct.branchId || selectedBranch,
+                unit: selectedProduct.unit || ''
             } : null,
             category: formData.categoryItem,
             vendor: formData.vendor,
-            branch: selectedBranch, // This should contain the branchId
+            branch: selectedBranch,
             globalWarranty: formData.warrantyYears,
             serialMode: serialMode,
             items: itemsToSave,
             totalItems: itemsToSave.reduce((sum, item) => sum + item.quantity, 0),
-            unit: selectedProduct?.unit || '', // Add unit at root level
+            unit: selectedProduct?.unit || '',
             addedAt: new Date().toISOString(),
             updatedAt: isEditMode ? new Date().toISOString() : null
         };
 
-        // DEBUG: Log what's being sent
         console.log('Submitting stock data:', stockData);
-        console.log('Selected Branch:', selectedBranch);
-        console.log('Selected Product branchId:', selectedProduct?.branchId);
 
         try {
             setLoading(prev => ({ ...prev, submitting: true }));
@@ -439,14 +462,12 @@ function AddStock({ onClose, onSuccess, editData = null }) {
             let response;
 
             if (isEditMode) {
-                // UPDATE existing stock
                 response = await fetch(`http://localhost:5001/stocks/${editData.stockGroupId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(stockData),
                 });
             } else {
-                // CREATE new stock
                 response = await fetch('http://localhost:5001/stocks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -550,20 +571,23 @@ function AddStock({ onClose, onSuccess, editData = null }) {
             <form onSubmit={submitForm} className="space-y-6">
                 {/* VENDOR & PRODUCT SECTION */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    {/* Vendor Dropdown */}
+                    {/* Vendor Dropdown - ✅ FIXED */}
                     <div className="relative">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Vendor *</label>
                         <div className="relative">
                             <input
                                 type="text"
                                 value={formData.vendor}
-                                onChange={(e) => filterVendors(e.target.value)}
+                                onChange={(e) => {
+                                    filterVendors(e.target.value);
+                                    setShowVendorDropdown(true);
+                                }}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setShowVendorDropdown(true);
                                     setShowCategoryDropdown(false);
                                 }}
-                                placeholder="Select vendor"
+                                placeholder="Type to search vendor..."
                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 disabled={loading.vendors}
                             />
@@ -580,20 +604,31 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                             )}
                         </div>
 
-                        {showVendorDropdown && vendors.length > 0 && (
+                        {/* ✅ FIXED: Vendor dropdown with filtered results */}
+                        {showVendorDropdown && (
                             <div ref={vendorDropdownRef} className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                {vendors.map((vendor) => (
-                                    <div
-                                        key={vendor.id}
-                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100"
-                                        onClick={() => handleVendorSelect(vendor)}
-                                    >
-                                        <div className="font-medium text-gray-800">{vendor.vendor_name}</div>
-                                        <div className="text-xs text-gray-500 mt-0.5">
-                                            Products: {vendor.selected_products?.length || 0}
+                                {filteredVendors.length > 0 ? (
+                                    filteredVendors.map((vendor) => (
+                                        <div
+                                            key={vendor.id}
+                                            className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100"
+                                            onClick={() => handleVendorSelect(vendor)}
+                                        >
+                                            <div className="font-medium text-gray-800">{vendor.vendor_name}</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">
+                                                Products: {vendor.selected_products?.length || 0}
+                                            </div>
                                         </div>
+                                    ))
+                                ) : (
+                                    <div className="px-3 py-4 text-center">
+                                        <p className="text-gray-500 text-sm">
+                                            {formData.vendor 
+                                                ? `No vendors found for "${formData.vendor}"`
+                                                : 'No vendors available'}
+                                        </p>
                                     </div>
-                                ))}
+                                )}
                             </div>
                         )}
                     </div>
@@ -751,7 +786,10 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">MAC Address</th>
                                         </>
                                     )}
-                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantity {serialMode === false && '*'}</th>
+                                    {/* Quantity column - sirf serialMode === false par dikhe */}
+                                    {serialMode === false && (
+                                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantity *</th>
+                                    )}
                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Warranty (Years)</th>
                                     {serialMode === true && stockItems.length > 1 && (
                                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -759,74 +797,88 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {stockItems.map((item, index) => (
-                                    <tr key={item.id} className="hover:bg-gray-50">
-                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">{index + 1}</td>
+                                {stockItems.map((item, index) => {
+                                    // Serial mode true hai toh quantity automatically 1 set karenge
+                                    if (serialMode === true) {
+                                        // Agar quantity 0 hai ya undefined hai toh automatically 1 set karenge
+                                        if (item.quantity <= 0) {
+                                            changeItemValue(item.id, 'quantity', 1);
+                                        }
+                                    }
 
-                                        {serialMode === true && (
-                                            <>
+                                    return (
+                                        <tr key={item.id} className="hover:bg-gray-50">
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">{index + 1}</td>
+
+                                            {serialMode === true && (
+                                                <>
+                                                    <td className="px-4 py-3">
+                                                        <input
+                                                            type="text"
+                                                            value={item.serialNumber}
+                                                            onChange={(e) => changeItemValue(item.id, 'serialNumber', e.target.value)}
+                                                            placeholder="Enter Serial Number..."
+                                                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <input
+                                                            type="text"
+                                                            value={item.macAddress}
+                                                            onChange={(e) => changeItemValue(item.id, 'macAddress', e.target.value)}
+                                                            placeholder="Enter macAddress..."
+                                                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono"
+                                                        />
+                                                    </td>
+                                                </>
+                                            )}
+
+                                            {/* Quantity field - sirf serialMode === false par dikhe */}
+                                            {serialMode === false && (
                                                 <td className="px-4 py-3">
                                                     <input
-                                                        type="text"
-                                                        value={item.serialNumber}
-                                                        onChange={(e) => changeItemValue(item.id, 'serialNumber', e.target.value)}
-                                                        placeholder="Enter Serial Number..."
+                                                        type="number"
+                                                        min="1"
+                                                        value={item.quantity}
+                                                        onChange={(e) => changeItemValue(item.id, 'quantity', e.target.value)}
+                                                        placeholder="Enter quantity"
                                                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                                     />
                                                 </td>
-                                                <td className="px-4 py-3">
-                                                    <input
-                                                        type="text"
-                                                        value={item.macAddress}
-                                                        onChange={(e) => changeItemValue(item.id, 'macAddress', e.target.value)}
-                                                        placeholder="Enter macAddress..."
-                                                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono"
-                                                    />
-                                                </td>
-                                            </>
-                                        )}
+                                            )}
 
-                                        <td className="px-4 py-3">
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={item.quantity}
-                                                onChange={(e) => changeItemValue(item.id, 'quantity', e.target.value)}
-                                                placeholder="Enter quantity"
-                                                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                            />
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2">
-                                                <select
-                                                    value={item.warranty}
-                                                    onChange={(e) => changeItemValue(item.id, 'warranty', e.target.value)}
-                                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                >
-                                                    <option value="0">No Warranty</option>
-                                                    <option value="1">1 Year</option>
-                                                    <option value="2">2 Years</option>
-                                                    <option value="3">3 Years</option>
-                                                    <option value="4">4 Years</option>
-                                                </select>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getWarrantyColor(item.warranty)}`}>
-                                                    {item.warranty > 0 ? `${item.warranty}Y` : 'No'}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        {serialMode === true && stockItems.length > 1 && (
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeRow(item.id)}
-                                                    className="px-2 py-1 text-red-600 hover:text-red-900 text-sm border border-red-200 rounded-lg hover:bg-red-50"
-                                                >
-                                                    Remove
-                                                </button>
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        value={item.warranty}
+                                                        onChange={(e) => changeItemValue(item.id, 'warranty', e.target.value)}
+                                                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                    >
+                                                        <option value="0">No Warranty</option>
+                                                        <option value="1">1 Year</option>
+                                                        <option value="2">2 Years</option>
+                                                        <option value="3">3 Years</option>
+                                                        <option value="4">4 Years</option>
+                                                    </select>
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getWarrantyColor(item.warranty)}`}>
+                                                        {item.warranty > 0 ? `${item.warranty}Y` : 'No'}
+                                                    </span>
+                                                </div>
                                             </td>
-                                        )}
-                                    </tr>
-                                ))}
+                                            {serialMode === true && stockItems.length > 1 && (
+                                                <td className="px-4 py-3 whitespace-nowrap">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeRow(item.id)}
+                                                        className="px-2 py-1 text-red-600 hover:text-red-900 text-sm border border-red-200 rounded-lg hover:bg-red-50"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </td>
+                                            )}
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

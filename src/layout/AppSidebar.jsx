@@ -26,8 +26,8 @@ const navItems = [
     name: "Vendors",
     icon: <VendorIcon className=" w-5" />,
     subItems: [
-      { name: "Category", path: "/category", pro: false },
-      { name: "Item", path: "/items", pro: false },
+      { name: "Product Group", path: "/products-group", pro: false },
+      { name: "Product", path: "/products", pro: false },
       { name: "Vendor ", path: "/vendor", pro: false }
     ],
   },
@@ -36,7 +36,8 @@ const navItems = [
     icon: <StockIcon className=" w-5" />,
     subItems: [
        { name: "Stock", path: "/stock" },
-  { name: "Add Stock", path: "/stock/add-stock" },
+       { name: "Print Barcode", path: "/stock/print-barcode" },
+  // { name: "Add Stock", path: "/stock/add-stock" },
   { name: "Broadband Issue", path: "/stock/broadband-issue" },
   { name: "Lease Issue", path: "/stock/lease-issue" },
   { name: "BPL Issue", path: "/stock/bpl-issue" },
@@ -143,7 +144,7 @@ const AppSidebar = () => {
   const renderMenuItems = (items, menuType) => (
     <ul className="flex flex-col gap-4">
       {items.map((nav, index) => (
-        <li key={nav.name}>
+        <li key={nav.name} >
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
@@ -224,7 +225,7 @@ const AppSidebar = () => {
                     : "0px",
               }}
             >
-              <ul className="mt-2 space-y-1 ml-9">
+              <ul className="mt-1 space-y-1 ml-9">
                 {nav.subItems.map((sub) => (
                   <li key={sub.name}>
                     <Link
