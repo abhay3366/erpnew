@@ -37,7 +37,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
     const categoryDropdownRef = useRef(null);
     const vendorDropdownRef = useRef(null);
 
-    // FETCH VENDORS FIRST
+    // FETCH All VENDORS FIRST 
     useEffect(() => {
         const fetchVendors = async () => {
             try {
