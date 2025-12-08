@@ -1,269 +1,137 @@
 {
   "vendors": [
     {
-      "id": "1764944304915",
-      "vendor_name": "Daniel Avery",
-      "vendor_address": "Rk high school chhapra chowk rampur hari",
-      "vendor_phone": "0966732247",
-      "email": "nufax@mailinator.com",
-      "gstin_no": "GST1234567890",
+      "id": "1765189547579",
+      "vendor_name": "Abhay",
+      "vendor_address": "majhgaway",
+      "vendor_phone": "6393216862",
+      "email": "abhaykanttiwari9595@gmail.com",
+      "gstin_no": "654654",
       "status": "Active",
-      "contact_person": "Manish kumar",
-      "signatory": "Id et quia non id eu",
-      "bank_name": "Leonard Battle",
-      "account_no": "52525252525",
-      "account_type": "Sit vitae dolore iru",
-      "micr_code": "Tempore quisquam in",
-      "rtgs_ifsc_code": "Vitae cillum ab temp",
-      "neft_ifsc_code": "Est ipsum quasi dolo",
+      "contact_person": "Abhay Kant tiwari",
+      "signatory": "klsdjfkl",
+      "bank_name": "bank name",
+      "account_no": "56456465",
+      "account_type": "saving",
+      "micr_code": "65446",
+      "rtgs_ifsc_code": "654654",
+      "neft_ifsc_code": "5465456",
       "blacklisted": false,
       "selected_categories": [
         {
-          "id": 1764935010892,
-          "name": "Main",
-          "slug": "",
-          "parentId": null,
+          "id": 1765189396589,
+          "name": "dell",
+          "slug": "/dell",
+          "parentId": 1765189381899,
           "status": true,
           "children": [],
-          "fullPath": "Main"
-        }
-      ],
-      "selected_products": [
-        {
-          "id": "e1b0",
-          "name": "Fiber Sleeves",
-          "fullPath": "Main > Fiber Sleeves",
-          "description": "",
-          "type": "product",
-          "isProduct": true,
-          "originalProduct": {
-            "id": "e1b0",
-            "store": "11ae",
-            "productName": "Fiber Sleeves",
-            "isSerial": "0",
-            "brand": "fiber",
-            "unit": "num",
-            "createdBy": "manish",
-            "description": "",
-            "category": [
-              1764935010892
-            ],
-            "images": [],
-            "createdAt": "2025-12-05T11:43:57.967Z"
-          }
+          "fullPath": "laptop > dell"
         },
         {
-          "id": "d057",
-          "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-          "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-          "description": "",
-          "type": "product",
-          "isProduct": true,
-          "originalProduct": {
-            "id": "d057",
-            "store": "0445",
-            "productName": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-            "isSerial": "1",
-            "brand": "fiber",
-            "unit": "num",
-            "createdBy": "manish",
-            "description": "",
-            "category": [
-              1764935010892
-            ],
-            "images": [],
-            "createdAt": "2025-12-05T11:51:33.934Z"
-          }
-        }
-      ],
-      "selected_items_display": "Category: Main, Product: Main > Fiber Sleeves, Product: Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-      "createdAt": "2025-12-05T14:18:24.915Z",
-      "lastUpdated": "2025-12-05T14:18:24.915Z"
-    },
-    {
-      "id": "1765009044626",
-      "vendor_name": "Rorono Zoro",
-      "vendor_address": "Rk high school chhapra chowk rampur hari",
-      "vendor_phone": "0966732247",
-      "email": "rowunyhat@mailinator.com",
-      "gstin_no": "GST1234567890",
-      "status": "Active",
-      "contact_person": "Manish kumar",
-      "signatory": "Elit et occaecat ve",
-      "bank_name": "Blair Sharpe",
-      "account_no": "52525252525",
-      "account_type": "Eos consequatur in a",
-      "micr_code": "Eum nihil velit quas",
-      "rtgs_ifsc_code": "Explicabo Officiis ",
-      "neft_ifsc_code": "Asperiores sequi ut ",
-      "blacklisted": false,
-      "selected_categories": [
-        {
-          "id": 1764935010892,
-          "name": "Main",
-          "slug": "",
+          "id": 1765189381899,
+          "name": "laptop",
+          "slug": "/laptop",
           "parentId": null,
           "status": true,
-          "children": [],
-          "fullPath": "Main"
-        }
-      ],
-      "selected_products": [
+          "children": [
+            {
+              "id": 1765189396589,
+              "name": "dell",
+              "slug": "/dell",
+              "parentId": 1765189381899,
+              "status": true,
+              "children": []
+            }
+          ],
+          "fullPath": "laptop"
+        },
         {
-          "id": "e1b2",
-          "name": "UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
-          "fullPath": "Main > UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
-          "description": "",
-          "type": "product",
-          "isProduct": true,
-          "originalProduct": {
-            "id": "e1b2",
-            "store": "11ae",
-            "productName": "UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
-            "isSerial": "1",
-            "brand": "ubiqcom",
-            "unit": "num",
-            "createdBy": "manish",
-            "description": "",
-            "category": [
-              1764935010892
-            ],
-            "images": [],
-            "createdAt": "2025-12-05T11:43:57.967Z"
-          }
-        }
-      ],
-      "selected_items_display": "Category: Main, Product: Main > UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
-      "createdAt": "2025-12-06T08:17:24.626Z",
-      "lastUpdated": "2025-12-06T08:17:24.626Z"
-    },
-    {
-      "id": "1765017428272",
-      "vendor_name": "Suraj Singh",
-      "vendor_address": "Rk high school chhapra chowk rampur hari",
-      "vendor_phone": "0966732247",
-      "email": "devuhezuf@mailinator.com",
-      "gstin_no": "GST1234567890",
-      "status": "Active",
-      "contact_person": "Manish kumar",
-      "signatory": "Neque quaerat nihil ",
-      "bank_name": "Shelby Branch",
-      "account_no": "52525252525",
-      "account_type": "Doloremque officiis ",
-      "micr_code": "Pariatur Et et volu",
-      "rtgs_ifsc_code": "Est sunt ea cupidita",
-      "neft_ifsc_code": "Voluptatum autem sap",
-      "blacklisted": false,
-      "selected_categories": [
-        {
-          "id": 1764935010892,
-          "name": "Main",
-          "slug": "",
+          "id": 1765189409155,
+          "name": "Mouse",
+          "slug": "/mouse",
           "parentId": null,
           "status": true,
-          "children": [],
-          "fullPath": "Main"
-        }
-      ],
-      "selected_products": [
+          "children": [
+            {
+              "id": 1765189427955,
+              "name": "dell mouse",
+              "slug": "/dellmouse",
+              "parentId": 1765189409155,
+              "status": true,
+              "children": []
+            }
+          ],
+          "fullPath": "Mouse"
+        },
         {
-          "id": "e1b3",
-          "name": "V5 HUAWEI GPON HG8145V5",
-          "fullPath": "Main > V5 HUAWEI GPON HG8145V5",
-          "description": "",
-          "type": "product",
-          "isProduct": true,
-          "originalProduct": {
-            "id": "e1b3",
-            "store": "11ae",
-            "productName": "V5 HUAWEI GPON HG8145V5",
-            "isSerial": "1",
-            "brand": "huawei",
-            "unit": "num",
-            "createdBy": "manish",
-            "description": "",
-            "category": [
-              1764935010892
-            ],
-            "images": [],
-            "createdAt": "2025-12-05T11:43:57.967Z"
-          }
-        }
-      ],
-      "selected_items_display": "Category: Main, Product: Main > V5 HUAWEI GPON HG8145V5",
-      "createdAt": "2025-12-06T10:37:08.272Z",
-      "lastUpdated": "2025-12-06T10:37:08.272Z"
-    },
-    {
-      "id": "1765028098942",
-      "vendor_name": "Quinn Branch",
-      "vendor_address": "Rk high school chhapra chowk rampur hari",
-      "vendor_phone": "0966732247",
-      "email": "byqoqy@mailinator.com",
-      "gstin_no": "Incididunt sunt comm",
-      "status": "Active",
-      "contact_person": "Manish kumar",
-      "signatory": "Quas sint non illo ",
-      "bank_name": "Janna Sweet",
-      "account_no": "52525252525",
-      "account_type": "Minim veniam ut id",
-      "micr_code": "Unde rerum maiores n",
-      "rtgs_ifsc_code": "Dolore reprehenderit",
-      "neft_ifsc_code": "Eos aute quis error",
-      "blacklisted": false,
-      "selected_categories": [
-        {
-          "id": 1765027924270,
-          "name": "iphone 11",
-          "slug": "",
-          "parentId": 1765027911233,
+          "id": 1765189427955,
+          "name": "dell mouse",
+          "slug": "/dellmouse",
+          "parentId": 1765189409155,
           "status": true,
           "children": [],
-          "fullPath": "Apple > iphone > iphone 11"
+          "fullPath": "Mouse > dell mouse"
         }
       ],
       "selected_products": [
         {
-          "id": "0d08",
-          "name": "Android",
-          "fullPath": "Apple > iphone > iphone 11 > Android",
+          "id": "018b",
+          "name": "dell mouse product",
+          "fullPath": "Mouse > dell mouse > dell mouse product",
           "description": "",
           "type": "product",
           "isProduct": true,
           "originalProduct": {
-            "id": "0d08",
+            "id": "018b",
             "store": "0445",
             "category": [
-              1765027924270
+              1765189427955
             ],
-            "productName": "Android",
-            "slug": "helllo",
-            "unit": "pc",
+            "productName": "dell mouse product",
+            "slug": "/dell",
+            "unit": "liter",
             "isSerial": "1",
-            "sku": "AND",
-            "image": ""
+            "sku": "dellsku",
+            "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAADwCAIAAAChXqV1AAAACXBIWXMAABwgAAAcIAHND5ueAAAFyWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgOS4wLWMwMDAgNzkuMTcxYzI3ZiwgMjAyMi8wOC8xNi0xODowMjo0MyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIiB4bWxuczpwaG90b3Nob3A9Imh0dHA6Ly9ucy5hZG9iZS5jb20vcGhvdG9zaG9wLzEuMC8iIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgeG1wOk1ldGFkYXRhRGF0ZT0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjItMTEtMTBUMjM6MDg6MzQrMDM6MDAiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MTY0YjFhOTEtNDI4MC01YTQzLTg0ZDUtNjdiZTNjZmZlYWQwIiB4bXBNTTpEb2N1bWVudElEPSJhZG9iZTpkb2NpZDpwaG90b3Nob3A6ZjEwZmRiYjQtZDExYi0wZjRmLTg0MDMtNDExNjI2ZGQyOWQ2IiB4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ9InhtcC5kaWQ6MTVkNThlNDctNjUzNS0yODQ0LWJiNWEtYWFlYmEzZjA1MDU4IiBkYzpmb3JtYXQ9ImltYWdlL3BuZyIgcGhvdG9zaG9wOkNvbG9yTW9kZT0iMyI+IDx4bXBNTTpIaXN0b3J5PiA8cmRmOlNlcT4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNyZWF0ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6MTVkNThlNDctNjUzNS0yODQ0LWJiNWEtYWFlYmEzZjA1MDU4IiBzdEV2dDp3aGVuPSIyMDIyLTExLTEwVDIzOjA4OjM0KzAzOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjQuMCAoV2luZG93cykiLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249InNhdmVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjE2NGIxYTkxLTQyODAtNWE0My04NGQ1LTY3YmUzY2ZmZWFkMCIgc3RFdnQ6d2hlbj0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKFdpbmRvd3MpIiBzdEV2dDpjaGFuZ2VkPSIvIi8+IDwvcmRmOlNlcT4gPC94bXBNTTpIaXN0b3J5PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PhGMuhsAAA2lSURBVHic7d1rTJWFH8Dx30FBIRAON7kM5HoA8bJRtkE2WlJtvWBmm8Noc9liqybVvGTUi1b0pmlIrq1WS5lN1mUrKojs4rTUjchMPHC4CAICh3sGSMjt/+LxT06EP/AHjj/4fl49Owee82NzX5/nOc/F1NvbKwCggZOjBwCAqSJYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANRY6ugBoEB9fb3Vau3r6xsdHTWZTPP2ucbHeXh4rF69OjQ0dN4+F3csU29vr6NnwB0tPz//119/dfQUkpycvHXrVkdPAQdjCwuT+fjjj3///Xdj2Ww2O2SG7u5uETl58uTIyEhaWppDZsAdgmBhQo2NjUatIiIitm/f7uvr65AxWltbjx49WldX98svv6xevXrdunUOGQN3Ag66Y0J//PGHiLi6ur700kuOqpWIrFy58rnnnluyZImIlJWVOWoM3AkIFiZkHN/09/d3cnLwvxM3NzdPT08RGRoacuwkcCyChQkZGzWjo6OOHkRExPh20uHphGNxDAsTMhoxSbD6+vq6urqWLVvm7+8/18MYY8znSRW4AxEszMT169c/++yz0tLSwcFBEQkPD09NTbVYLI6eCwscG9iYtp6enuzs7LNnzxq1EpG6urrc3NzffvvNsYNhwSNYmLajR492dnaKyIYNG3bs2LF582ZjT+3IkSOch4w5xS4hpqe3t9dqtYpIUlJSenq68WJ4ePjBgwdHR0dLS0sfeOABR86HBY0tLExPS0uLsfDwww+PvRgVFRUUFCQiV65cccxYWBwIFqbHzc3NWLDb7Te/buwMurq6OmAmLBrsEmJ6goKCXF1d+/v7P/30U19f38DAwKGhofz8/KtXr4rI2rVrp7ieurq6EydONDc3e3l5JSUlJSQkzOXUWCAIFqbHZDI9/vjjn3zySXd3d3Z2dnBw8N9//93T0yMi4eHhUzyzoby8/L333jOWW1paKioqOjo6bt7HBG6LXUJMW2JiYmpqqrHc1NRk1CouLi4zM3Mqv97W1vb+++8by8nJycZVigUFBSUlJXMzLxYOtrAwE4888sj69etLSkrsdrub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jo6Li4uMjBy/z1hfX//222+LSEZGhvFkQ+C2CBZm3+DgYH19fUVFRVVV1fgndHl7exvxslgsnp6ejY2NH3zwQXd3t5OTU05ODqeMYhIEC3Orq6vLyFZjY+Mt93swmUxms3lsR3Lr1q3JycmOmBFqECzMn46OjqqqqoqKiurq6p6enpvf2rx580MPPeSowaAFwYIDdHV11dTUXLly5dq1ax4eHjExMbGxsY4eCgoQLABqcHsZAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGr8B40/1kZHgo3tAAAAAElFTkSuQmCC"
           }
         }
       ],
-      "selected_items_display": "Category: Apple > iphone > iphone 11, Product: Apple > iphone > iphone 11 > Android",
-      "createdAt": "2025-12-06T13:34:58.942Z",
-      "lastUpdated": "2025-12-06T13:34:58.942Z"
+      "selected_items_display": "Category: laptop > dell, Category: laptop, Category: Mouse, Category: Mouse > dell mouse, Product: Mouse > dell mouse > dell mouse product",
+      "createdAt": "2025-12-08T10:25:47.579Z",
+      "lastUpdated": "2025-12-08T10:25:47.584Z"
     }
   ],
   "categories": {
     "list": [
       {
-        "id": 1765030806847,
-        "name": "Laptop",
+        "id": 1765189381899,
+        "name": "laptop",
         "slug": "/laptop",
         "parentId": null,
         "status": true,
         "children": [
           {
-            "id": 1765030822359,
+            "id": 1765189396589,
             "name": "dell",
             "slug": "/dell",
-            "parentId": 1765030806847,
+            "parentId": 1765189381899,
+            "status": true,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": 1765189409155,
+        "name": "Mouse",
+        "slug": "/mouse",
+        "parentId": null,
+        "status": true,
+        "children": [
+          {
+            "id": 1765189427955,
+            "name": "dell mouse",
+            "slug": "/dellmouse",
+            "parentId": 1765189409155,
             "status": true,
             "children": []
           }
@@ -286,189 +154,49 @@
       "status": true
     }
   ],
-  "products": [],
+  "products": [
+    {
+      "id": "018b",
+      "store": "0445",
+      "category": [
+        1765189427955
+      ],
+      "productName": "dell mouse product",
+      "slug": "/dell",
+      "unit": "liter",
+      "isSerial": "1",
+      "sku": "dellsku",
+      "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAADwCAIAAAChXqV1AAAACXBIWXMAABwgAAAcIAHND5ueAAAFyWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgOS4wLWMwMDAgNzkuMTcxYzI3ZiwgMjAyMi8wOC8xNi0xODowMjo0MyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIiB4bWxuczpwaG90b3Nob3A9Imh0dHA6Ly9ucy5hZG9iZS5jb20vcGhvdG9zaG9wLzEuMC8iIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgeG1wOk1ldGFkYXRhRGF0ZT0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjItMTEtMTBUMjM6MDg6MzQrMDM6MDAiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MTY0YjFhOTEtNDI4MC01YTQzLTg0ZDUtNjdiZTNjZmZlYWQwIiB4bXBNTTpEb2N1bWVudElEPSJhZG9iZTpkb2NpZDpwaG90b3Nob3A6ZjEwZmRiYjQtZDExYi0wZjRmLTg0MDMtNDExNjI2ZGQyOWQ2IiB4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ9InhtcC5kaWQ6MTVkNThlNDctNjUzNS0yODQ0LWJiNWEtYWFlYmEzZjA1MDU4IiBkYzpmb3JtYXQ9ImltYWdlL3BuZyIgcGhvdG9zaG9wOkNvbG9yTW9kZT0iMyI+IDx4bXBNTTpIaXN0b3J5PiA8cmRmOlNlcT4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNyZWF0ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6MTVkNThlNDctNjUzNS0yODQ0LWJiNWEtYWFlYmEzZjA1MDU4IiBzdEV2dDp3aGVuPSIyMDIyLTExLTEwVDIzOjA4OjM0KzAzOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjQuMCAoV2luZG93cykiLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249InNhdmVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjE2NGIxYTkxLTQyODAtNWE0My04NGQ1LTY3YmUzY2ZmZWFkMCIgc3RFdnQ6d2hlbj0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKFdpbmRvd3MpIiBzdEV2dDpjaGFuZ2VkPSIvIi8+IDwvcmRmOlNlcT4gPC94bXBNTTpIaXN0b3J5PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PhGMuhsAAA2lSURBVHic7d1rTJWFH8Dx30FBIRAON7kM5HoA8bJRtkE2WlJtvWBmm8Noc9liqybVvGTUi1b0pmlIrq1WS5lN1mUrKojs4rTUjchMPHC4CAICh3sGSMjt/+LxT06EP/AHjj/4fl49Owee82NzX5/nOc/F1NvbKwCggZOjBwCAqSJYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANRY6ugBoEB9fb3Vau3r6xsdHTWZTPP2ucbHeXh4rF69OjQ0dN4+F3csU29vr6NnwB0tPz//119/dfQUkpycvHXrVkdPAQdjCwuT+fjjj3///Xdj2Ww2O2SG7u5uETl58uTIyEhaWppDZsAdgmBhQo2NjUatIiIitm/f7uvr65AxWltbjx49WldX98svv6xevXrdunUOGQN3Ag66Y0J//PGHiLi6ur700kuOqpWIrFy58rnnnluyZImIlJWVOWoM3AkIFiZkHN/09/d3cnLwvxM3NzdPT08RGRoacuwkcCyChQkZGzWjo6OOHkRExPh20uHphGNxDAsTMhoxSbD6+vq6urqWLVvm7+8/18MYY8znSRW4AxEszMT169c/++yz0tLSwcFBEQkPD09NTbVYLI6eCwscG9iYtp6enuzs7LNnzxq1EpG6urrc3NzffvvNsYNhwSNYmLajR492dnaKyIYNG3bs2LF582ZjT+3IkSOch4w5xS4hpqe3t9dqtYpIUlJSenq68WJ4ePjBgwdHR0dLS0sfeOABR86HBY0tLExPS0uLsfDwww+PvRgVFRUUFCQiV65cccxYWBwIFqbHzc3NWLDb7Te/buwMurq6OmAmLBrsEmJ6goKCXF1d+/v7P/30U19f38DAwKGhofz8/KtXr4rI2rVrp7ieurq6EydONDc3e3l5JSUlJSQkzOXUWCAIFqbHZDI9/vjjn3zySXd3d3Z2dnBw8N9//93T0yMi4eHhUzyzoby8/L333jOWW1paKioqOjo6bt7HBG6LXUJMW2JiYmpqqrHc1NRk1CouLi4zM3Mqv97W1vb+++8by8nJycZVigUFBSUlJXMzLxYOtrAwE4888sj69etLSkrsdrub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jo6Li4uMjBy/z1hfX//222+LSEZGhvFkQ+C2CBZm3+DgYH19fUVFRVVV1fgndHl7exvxslgsnp6ejY2NH3zwQXd3t5OTU05ODqeMYhIEC3Orq6vLyFZjY+Mt93swmUxms3lsR3Lr1q3JycmOmBFqECzMn46OjqqqqoqKiurq6p6enpvf2rx580MPPeSowaAFwYIDdHV11dTUXLly5dq1ax4eHjExMbGxsY4eCgoQLABqcHsZAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGr8B40/1kZHgo3tAAAAAElFTkSuQmCC"
+    }
+  ],
   "transfers": [],
   "stocks": [
     {
+      "id": "d1e8",
       "product": {
-        "id": "e1b0",
-        "name": "Fiber Sleeves",
-        "fullPath": "Main > Fiber Sleeves",
+        "id": "018b",
+        "name": "dell mouse product",
+        "fullPath": "Mouse > dell mouse > dell mouse product",
         "branchId": "",
-        "Unit": ""
+        "unit": "liter"
       },
-      "category": "Main > Fiber Sleeves",
-      "vendor": "Daniel Avery",
-      "branch": "",
-      "globalWarranty": 4,
-      "serialMode": false,
-      "items": [],
-      "totalItems": 0,
-      "addedAt": "2025-12-06T10:21:03.915Z",
-      "updatedAt": "2025-12-06T10:21:03.915Z",
-      "id": "8d66"
-    },
-    {
-      "product": {
-        "id": "d057",
-        "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-        "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-        "branchId": ""
-      },
-      "category": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-      "vendor": "Daniel Avery",
-      "branch": "",
-      "globalWarranty": 3,
-      "serialMode": true,
-      "items": [
-        {
-          "serialNumber": "5009",
-          "macAddress": "ABC-ABC",
-          "quantity": 1,
-          "warranty": 3
-        }
-      ],
-      "totalItems": 1,
-      "addedAt": "2025-12-06T10:21:29.849Z",
-      "updatedAt": "2025-12-06T10:21:29.849Z",
-      "id": "cefa"
-    },
-    {
-      "id": "4ba7",
-      "product": {
-        "id": "e1b0",
-        "name": "Fiber Sleeves",
-        "fullPath": "Main > Fiber Sleeves",
-        "branchId": ""
-      },
-      "category": "Main > Fiber Sleeves",
-      "vendor": "Daniel Avery",
-      "branch": "",
-      "globalWarranty": 0,
-      "serialMode": false,
-      "items": [
-        {
-          "serialNumber": "",
-          "macAddress": "",
-          "quantity": 90,
-          "warranty": 0
-        }
-      ],
-      "totalItems": 90,
-      "addedAt": "2025-12-06T10:24:15.784Z",
-      "updatedAt": null
-    },
-    {
-      "id": "5c52",
-      "product": {
-        "id": "d057",
-        "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-        "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-        "branchId": ""
-      },
-      "category": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-      "vendor": "Daniel Avery",
+      "category": "Mouse > dell mouse > dell mouse product",
+      "vendor": "Abhay",
       "branch": "",
       "globalWarranty": 0,
       "serialMode": true,
       "items": [
         {
-          "serialNumber": "675",
-          "macAddress": "CCBBDD",
-          "quantity": 1,
+          "serialNumber": "654465465465465465",
+          "macAddress": "545454545454",
+          "quantity": "",
           "warranty": 0
         }
       ],
-      "totalItems": 1,
-      "addedAt": "2025-12-06T11:55:01.435Z",
+      "totalItems": "0",
+      "unit": "liter",
+      "addedAt": "2025-12-08T10:27:09.309Z",
       "updatedAt": null
-    },
-    {
-      "id": "9b21",
-      "product": {
-        "id": "d057",
-        "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-        "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-        "branchId": "",
-        "unit": "num"
-      },
-      "category": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-      "vendor": "Daniel Avery",
-      "branch": "",
-      "globalWarranty": 2,
-      "serialMode": true,
-      "items": [
-        {
-          "serialNumber": "UN-12345",
-          "macAddress": "ACBCDG",
-          "quantity": 1,
-          "warranty": 2
-        }
-      ],
-      "totalItems": 1,
-      "unit": "num",
-      "addedAt": "2025-12-06T12:35:40.613Z",
-      "updatedAt": null
-    },
-    {
-      "product": {
-        "id": "e1b3",
-        "name": "V5 HUAWEI GPON HG8145V5",
-        "fullPath": "Main > V5 HUAWEI GPON HG8145V5",
-        "branchId": "",
-        "unit": "num"
-      },
-      "category": "Main > V5 HUAWEI GPON HG8145V5",
-      "vendor": "Suraj Singh",
-      "branch": "",
-      "globalWarranty": 0,
-      "serialMode": true,
-      "items": [
-        {
-          "serialNumber": "Serial-1234BB",
-          "macAddress": "MAC-ADDRESS",
-          "quantity": 1,
-          "warranty": 0
-        },
-        {
-          "serialNumber": "Serial-1234CC",
-          "macAddress": "HII-BABE",
-          "quantity": 1,
-          "warranty": 0
-        }
-      ],
-      "totalItems": 2,
-      "unit": "num",
-      "addedAt": "2025-12-06T12:45:27.820Z",
-      "updatedAt": "2025-12-06T12:45:27.820Z",
-      "id": "61b6"
-    },
-    {
-      "product": {
-        "id": "0d08",
-        "name": "Android",
-        "fullPath": "Apple > iphone > iphone 11 > Android",
-        "branchId": "",
-        "unit": "pc"
-      },
-      "category": "Apple > iphone > iphone 11 > Android",
-      "vendor": "Quinn Branch",
-      "branch": "",
-      "globalWarranty": 2,
-      "serialMode": true,
-      "items": [
-        {
-          "serialNumber": "ABC-123-OB",
-          "macAddress": "WI-WI",
-          "quantity": 1,
-          "warranty": 2
-        }
-      ],
-      "totalItems": 1,
-      "unit": "pc",
-      "addedAt": "2025-12-06T13:38:38.602Z",
-      "updatedAt": "2025-12-06T13:38:38.602Z",
-      "id": "b68f"
     }
   ]
 }
