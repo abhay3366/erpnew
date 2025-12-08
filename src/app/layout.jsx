@@ -25,7 +25,15 @@ export default function RootLayout({ children }) {
           </SidebarProvider>
         </ThemeProvider>
 
-        <Toaster position="top-right" className="z-99999 mt-4" reverseOrder={false} />
+        
+          <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            zIndex: 999999, // Always top
+          },
+        }}
+      />
       </body>
     </html>
   );
