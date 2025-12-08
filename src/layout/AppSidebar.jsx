@@ -143,7 +143,7 @@ const AppSidebar = () => {
   const renderMenuItems = (items, menuType) => (
     <ul className="flex flex-col gap-4">
       {items.map((nav, index) => (
-        <li key={nav.name}>
+        <li key={nav.name} >
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
@@ -224,7 +224,7 @@ const AppSidebar = () => {
                     : "0px",
               }}
             >
-              <ul className="mt-2 space-y-1 ml-9">
+              <ul className="mt-1 space-y-1 ml-9">
                 {nav.subItems.map((sub) => (
                   <li key={sub.name}>
                     <Link

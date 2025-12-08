@@ -121,19 +121,19 @@ useEffect(() => {
               <table className="min-w-full divide-y divide-gray-200 mt-7">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.No</th>
-                    <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                    <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IsSerial</th>
-                    <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-                    <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.No</th>
+                    <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                    <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IsSerial</th>
+                    <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                    <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredProducts.map((product, index) => (
                     <tr key={product.id}>
-                      <td className="px-2 py-1 whitespace-nowrap" >{index + 1}</td>
-                      <td className="px-2 py-1 whitespace-nowrap" onClick={() => setPreviewImage(product.image)}>
+                      <td className="px-2 py-0.5 whitespace-nowrap" >{index + 1}</td>
+                      <td className="px-2 py-0.5 whitespace-nowrap" onClick={() => setPreviewImage(product.image)}>
                         <div className="h-12 w-12  relative">
                           <Image
                             src={product.image || "/no-image.png"}
@@ -145,11 +145,11 @@ useEffect(() => {
                         </div>
                       </td>
 
-                      <td className="px-2 py-1 whitespace-nowrap" >{product.productName}</td>
-                      <td className="px-2 py-1 whitespace-nowrap" >{product.isSerial}</td>
+                      <td className="px-2 py-0.5 whitespace-nowrap" >{product.productName}</td>
+                      <td className="px-2 py-0.5 whitespace-nowrap" >{product.isSerial}</td>
 
-                      <td className="px-2 py-1 whitespace-nowrap" >{product.sku}</td>
-                      <td className="px-2 py-1 whitespace-nowrap  flex gap-2  items-center  mt-5" >
+                      <td className="px-2 py-0.5 whitespace-nowrap" >{product.sku}</td>
+                      <td className="px-2 py-0.5 whitespace-nowrap  flex gap-2  items-center  mt-5" >
                         <button
                           onClick={() => handleEdit(product)}
                           className="text-blue-500 hover:text-blue-700"
@@ -188,7 +188,7 @@ useEffect(() => {
             />
 
             <button
-              className="absolute top-2 right-2 text-black bg-white px-2 py-1 rounded"
+              className="absolute top-2 right-2 text-black bg-white px-2 py-0.5 rounded"
               onClick={() => setPreviewImage(null)}
             >
               ✕
