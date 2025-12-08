@@ -1,13 +1,11 @@
 {
   "vendors": [
     {
-      "id": "1764944304915",
-      "vendor_name": "Daniel Avery",
+      "vendor_name": "Cloud Infotech Pvt.Ltd",
       "vendor_address": "Rk high school chhapra chowk rampur hari",
       "vendor_phone": "0966732247",
       "email": "nufax@mailinator.com",
       "gstin_no": "GST1234567890",
-      "status": "Active",
       "contact_person": "Manish kumar",
       "signatory": "Id et quia non id eu",
       "bank_name": "Leonard Battle",
@@ -16,6 +14,7 @@
       "micr_code": "Tempore quisquam in",
       "rtgs_ifsc_code": "Vitae cillum ab temp",
       "neft_ifsc_code": "Est ipsum quasi dolo",
+      "status": "Active",
       "blacklisted": false,
       "selected_categories": [
         {
@@ -76,18 +75,16 @@
           }
         }
       ],
-      "selected_items_display": "Category: Main, Product: Main > Fiber Sleeves, Product: Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
+      "id": "1764944304915",
       "createdAt": "2025-12-05T14:18:24.915Z",
-      "lastUpdated": "2025-12-05T14:18:24.915Z"
+      "lastUpdated": "2025-12-08T06:43:41.808Z"
     },
     {
-      "id": "1765009044626",
-      "vendor_name": "Rorono Zoro",
+      "vendor_name": "TECHNOLOGY NEXT",
       "vendor_address": "Rk high school chhapra chowk rampur hari",
       "vendor_phone": "0966732247",
       "email": "rowunyhat@mailinator.com",
       "gstin_no": "GST1234567890",
-      "status": "Active",
       "contact_person": "Manish kumar",
       "signatory": "Elit et occaecat ve",
       "bank_name": "Blair Sharpe",
@@ -96,6 +93,7 @@
       "micr_code": "Eum nihil velit quas",
       "rtgs_ifsc_code": "Explicabo Officiis ",
       "neft_ifsc_code": "Asperiores sequi ut ",
+      "status": "Active",
       "blacklisted": false,
       "selected_categories": [
         {
@@ -133,18 +131,16 @@
           }
         }
       ],
-      "selected_items_display": "Category: Main, Product: Main > UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
+      "id": "1765009044626",
       "createdAt": "2025-12-06T08:17:24.626Z",
-      "lastUpdated": "2025-12-06T08:17:24.626Z"
+      "lastUpdated": "2025-12-08T07:13:01.142Z"
     },
     {
-      "id": "1765017428272",
-      "vendor_name": "Suraj Singh",
+      "vendor_name": "Go Ip Global Services",
       "vendor_address": "Rk high school chhapra chowk rampur hari",
       "vendor_phone": "0966732247",
       "email": "devuhezuf@mailinator.com",
       "gstin_no": "GST1234567890",
-      "status": "Active",
       "contact_person": "Manish kumar",
       "signatory": "Neque quaerat nihil ",
       "bank_name": "Shelby Branch",
@@ -153,6 +149,7 @@
       "micr_code": "Pariatur Et et volu",
       "rtgs_ifsc_code": "Est sunt ea cupidita",
       "neft_ifsc_code": "Voluptatum autem sap",
+      "status": "Active",
       "blacklisted": false,
       "selected_categories": [
         {
@@ -190,26 +187,25 @@
           }
         }
       ],
-      "selected_items_display": "Category: Main, Product: Main > V5 HUAWEI GPON HG8145V5",
+      "id": "1765017428272",
       "createdAt": "2025-12-06T10:37:08.272Z",
-      "lastUpdated": "2025-12-06T10:37:08.272Z"
+      "lastUpdated": "2025-12-08T07:19:03.609Z"
     },
     {
-      "id": "1765028098942",
-      "vendor_name": "Quinn Branch",
+      "vendor_name": "TERNXT GLOBAL. INDIA PVT LTD",
       "vendor_address": "Rk high school chhapra chowk rampur hari",
       "vendor_phone": "0966732247",
       "email": "byqoqy@mailinator.com",
       "gstin_no": "Incididunt sunt comm",
-      "status": "Active",
       "contact_person": "Manish kumar",
       "signatory": "Quas sint non illo ",
-      "bank_name": "Janna Sweet",
+      "bank_name": "ISB",
       "account_no": "52525252525",
       "account_type": "Minim veniam ut id",
       "micr_code": "Unde rerum maiores n",
       "rtgs_ifsc_code": "Dolore reprehenderit",
       "neft_ifsc_code": "Eos aute quis error",
+      "status": "Active",
       "blacklisted": false,
       "selected_categories": [
         {
@@ -245,9 +241,141 @@
           }
         }
       ],
-      "selected_items_display": "Category: Apple > iphone > iphone 11, Product: Apple > iphone > iphone 11 > Android",
+      "id": "1765028098942",
       "createdAt": "2025-12-06T13:34:58.942Z",
-      "lastUpdated": "2025-12-06T13:34:58.942Z"
+      "lastUpdated": "2025-12-08T07:12:38.578Z"
+    },
+    {
+      "vendor_name": "Cloud Infotech Pvt.Ltd",
+      "vendor_address": "Rk high school chhapra chowk rampur hari",
+      "vendor_phone": "9667322471",
+      "email": "manisha@gmail.com",
+      "gstin_no": "GST1234567890",
+      "contact_person": "Manish kumar",
+      "signatory": "Abhay kant tiwari",
+      "bank_name": "ISB",
+      "account_no": "52525252525",
+      "account_type": "saving ",
+      "micr_code": "MICRCODE",
+      "rtgs_ifsc_code": "SBI987",
+      "neft_ifsc_code": "NEFT Code",
+      "status": "Active",
+      "blacklisted": false,
+      "selected_categories": [
+        {
+          "id": 1764935010892,
+          "name": "Main",
+          "slug": "",
+          "parentId": null,
+          "status": true,
+          "children": [],
+          "fullPath": "Main"
+        }
+      ],
+      "selected_products": [
+        {
+          "id": "e1b6",
+          "name": "Syrotech 8CH DWDM-08D2734-R",
+          "fullPath": "Main > Syrotech 8CH DWDM-08D2734-R",
+          "description": "",
+          "type": "product",
+          "originalProduct": {
+            "id": "e1b6",
+            "store": "11ae",
+            "productName": "Syrotech 8CH DWDM-08D2734-R",
+            "isSerial": "1",
+            "brand": "syrotech",
+            "unit": "num",
+            "createdBy": "manish",
+            "description": "",
+            "category": [
+              1764935010892
+            ],
+            "images": [],
+            "createdAt": "2025-12-05T11:43:57.967Z"
+          }
+        }
+      ],
+      "id": "1765176160195",
+      "createdAt": "2025-12-08T06:42:40.195Z",
+      "lastUpdated": "2025-12-08T07:21:07.379Z"
+    },
+    {
+      "id": "1765178652060",
+      "vendor_name": "Cloud Pvt Ltd",
+      "vendor_address": "Rk high school chhapra chowk rampur hari",
+      "vendor_phone": "9667322471",
+      "email": "manish12@gmail.com",
+      "gstin_no": "GST1234567890",
+      "contact_person": "Manish kumar",
+      "signatory": "Abhishek ",
+      "bank_name": "ISB",
+      "account_no": "52525252525",
+      "account_type": "saving ",
+      "micr_code": "MICRCODE",
+      "rtgs_ifsc_code": "SBI987",
+      "neft_ifsc_code": "NEFT Code",
+      "status": "Active",
+      "blacklisted": false,
+      "selected_categories": [
+        {
+          "id": 1764935010892,
+          "name": "Main",
+          "slug": "",
+          "parentId": null,
+          "status": true,
+          "children": [],
+          "fullPath": "Main"
+        }
+      ],
+      "selected_products": [
+        {
+          "id": "e1c4",
+          "name": "Epon/Gpon TNT 999.DMW",
+          "fullPath": "Main > Epon/Gpon TNT 999.DMW",
+          "description": "",
+          "type": "product",
+          "originalProduct": {
+            "id": "e1c4",
+            "store": "11ae",
+            "productName": "Epon/Gpon TNT 999.DMW",
+            "isSerial": "1",
+            "brand": "technxt",
+            "unit": "num",
+            "createdBy": "manish",
+            "description": "",
+            "category": [
+              1764935010892
+            ],
+            "images": [],
+            "createdAt": "2025-12-05T11:43:57.967Z"
+          }
+        },
+        {
+          "id": "e1c3",
+          "name": "TechnXT HGU-324M-XPON",
+          "fullPath": "Main > TechnXT HGU-324M-XPON",
+          "description": "",
+          "type": "product",
+          "originalProduct": {
+            "id": "e1c3",
+            "store": "11ae",
+            "productName": "TechnXT HGU-324M-XPON",
+            "isSerial": "1",
+            "brand": "technxt",
+            "unit": "num",
+            "createdBy": "manish",
+            "description": "",
+            "category": [
+              1764935010892
+            ],
+            "images": [],
+            "createdAt": "2025-12-05T11:43:57.967Z"
+          }
+        }
+      ],
+      "createdAt": "2025-12-08T07:24:12.060Z",
+      "lastUpdated": "2025-12-08T07:24:12.060Z"
     }
   ],
   "categories": {
@@ -581,27 +709,29 @@
     },
     {
       "product": {
-        "id": "d057",
-        "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-        "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-        "branchId": ""
+        "id": "e1b0",
+        "name": "Fiber Sleeves",
+        "fullPath": "Main > Fiber Sleeves",
+        "branchId": "",
+        "unit": "num"
       },
-      "category": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-      "vendor": "Daniel Avery",
+      "category": "Main > Fiber Sleeves",
+      "vendor": "Cloud Infotech Pvt.Ltd",
       "branch": "",
-      "globalWarranty": 3,
-      "serialMode": true,
+      "globalWarranty": 0,
+      "serialMode": false,
       "items": [
         {
-          "serialNumber": "5009",
-          "macAddress": "ABC-ABC",
-          "quantity": 1,
-          "warranty": 3
+          "serialNumber": "",
+          "macAddress": "",
+          "quantity": "30",
+          "warranty": 2
         }
       ],
-      "totalItems": 1,
-      "addedAt": "2025-12-06T10:21:29.849Z",
-      "updatedAt": "2025-12-06T10:21:29.849Z",
+      "totalItems": "030",
+      "unit": "num",
+      "addedAt": "2025-12-08T08:18:58.238Z",
+      "updatedAt": "2025-12-08T08:18:58.238Z",
       "id": "cefa"
     },
     {
@@ -655,33 +785,6 @@
       "updatedAt": null
     },
     {
-      "id": "9b21",
-      "product": {
-        "id": "d057",
-        "name": "UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-        "fullPath": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-        "branchId": "",
-        "unit": "num"
-      },
-      "category": "Main > UBIQCOM UB-6041-GVW-D 4GE+1POTS+2WIFI 6",
-      "vendor": "Daniel Avery",
-      "branch": "",
-      "globalWarranty": 2,
-      "serialMode": true,
-      "items": [
-        {
-          "serialNumber": "UN-12345",
-          "macAddress": "ACBCDG",
-          "quantity": 1,
-          "warranty": 2
-        }
-      ],
-      "totalItems": 1,
-      "unit": "num",
-      "addedAt": "2025-12-06T12:35:40.613Z",
-      "updatedAt": null
-    },
-    {
       "product": {
         "id": "e1b3",
         "name": "V5 HUAWEI GPON HG8145V5",
@@ -716,30 +819,69 @@
     },
     {
       "product": {
-        "id": "0d08",
-        "name": "Android",
-        "fullPath": "Apple > iphone > iphone 11 > Android",
+        "id": "e1b2",
+        "name": "UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
+        "fullPath": "Main > UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
         "branchId": "",
-        "unit": "pc"
+        "unit": "num"
       },
-      "category": "Apple > iphone > iphone 11 > Android",
-      "vendor": "Quinn Branch",
+      "category": "Main > UBIQCOM UB5021GVWD 2GE+1POTS+2WIFI (Pro)",
+      "vendor": "TECHNOLOGY NEXT",
       "branch": "",
-      "globalWarranty": 2,
+      "globalWarranty": 3,
       "serialMode": true,
       "items": [
         {
-          "serialNumber": "ABC-123-OB",
-          "macAddress": "WI-WI",
-          "quantity": 1,
-          "warranty": 2
+          "serialNumber": "1234567890",
+          "macAddress": "kkkk-oooo-cccc",
+          "quantity": "0",
+          "warranty": 3
         }
       ],
-      "totalItems": 1,
-      "unit": "pc",
-      "addedAt": "2025-12-06T13:38:38.602Z",
-      "updatedAt": "2025-12-06T13:38:38.602Z",
-      "id": "b68f"
+      "totalItems": "00",
+      "unit": "num",
+      "addedAt": "2025-12-08T08:42:46.136Z",
+      "updatedAt": "2025-12-08T08:42:46.136Z",
+      "id": "0198"
+    },
+    {
+      "id": "b432",
+      "product": {
+        "id": "e1c3",
+        "name": "TechnXT HGU-324M-XPON",
+        "fullPath": "Main > TechnXT HGU-324M-XPON",
+        "branchId": "",
+        "unit": "num"
+      },
+      "category": "Main > TechnXT HGU-324M-XPON",
+      "vendor": "Cloud Pvt Ltd",
+      "branch": "",
+      "globalWarranty": 3,
+      "serialMode": true,
+      "items": [
+        {
+          "serialNumber": "11111",
+          "macAddress": "AA-BB-CC",
+          "quantity": "1",
+          "warranty": 3
+        },
+        {
+          "serialNumber": "22222",
+          "macAddress": "AA-BB-CC",
+          "quantity": "1",
+          "warranty": 3
+        },
+        {
+          "serialNumber": "33333",
+          "macAddress": "AA-BB-BB",
+          "quantity": 0,
+          "warranty": 0
+        }
+      ],
+      "totalItems": "0110",
+      "unit": "num",
+      "addedAt": "2025-12-08T08:29:01.350Z",
+      "updatedAt": null
     }
   ]
 }

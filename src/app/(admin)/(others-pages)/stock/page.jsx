@@ -27,8 +27,10 @@ export default function StockItem() {
   // Dialog states
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [serialModalOpen, setSerialModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [editData, setEditData] = useState(null);
+  const [selectedSerials, setSelectedSerials] = useState([]);
 
   // Load data
   useEffect(() => {
@@ -74,6 +76,31 @@ export default function StockItem() {
     return parts[0]?.trim() || 'General';
   };
 
+  // Show serial numbers modal with all details
+  const showSerialNumbers = (item) => {
+    if (item.serialMode === true && item.serialNumbers && item.serialNumbers.length > 0) {
+      // Create detailed serial info with all fields
+      const detailedSerials = item.serialNumbers.map((serial, index) => ({
+        serialNumber: serial,
+        macAddress: item.macAddresses?.[index] || '',
+        index: index + 1,
+        total: item.serialNumbers.length
+      }));
+      setSelectedSerials(detailedSerials);
+      setSerialModalOpen(true);
+    } else {
+      // For non-serial mode or no serials
+      const singleSerial = item.serialNumber ? [{
+        serialNumber: item.serialNumber,
+        macAddress: item.macAddress || '',
+        index: 1,
+        total: 1
+      }] : [];
+      setSelectedSerials(singleSerial);
+      setSerialModalOpen(true);
+    }
+  };
+
   // Simple data transformation
   const transformStockData = (apiData) => {
     if (!apiData || !Array.isArray(apiData)) return [];
@@ -81,9 +108,9 @@ export default function StockItem() {
     let allItems = [];
     apiData.forEach((stockGroup, groupIndex) => {
       if (stockGroup.items && Array.isArray(stockGroup.items)) {
-        stockGroup.items.forEach((item, itemIndex) => {
-          const quantity = item.quantity || 0;
 
+        // Serial mode में होने पर items को group करें
+        if (stockGroup.serialMode === true) {
           // Get product name from category path
           const fullPath = stockGroup.category || '';
           const pathParts = fullPath.split('>');
@@ -95,27 +122,76 @@ export default function StockItem() {
           const groupName = extractGroupName(fullPath);
 
           // Generate simple SKU
-          const sku = `${productName.substring(0, 3).toUpperCase()}-${groupIndex}-${itemIndex}`;
+          const sku = `${productName.substring(0, 3).toUpperCase()}-${groupIndex}`;
 
+          // Count total serial numbers
+          const totalQuantity = stockGroup.items.length;
+
+          // Collect all serial numbers and MAC addresses with correct mapping
+          const serialNumbers = stockGroup.items.map(item => item.serialNumber || '').filter(sn => sn);
+          const macAddresses = stockGroup.items.map(item => item.macAddress || '');
+
+          // Create single item for serial mode
           allItems.push({
-            id: `${stockGroup.id}_${itemIndex}`,
+            id: stockGroup.id,
             productName: productName,
             productGroup: groupName,
-            quantity: quantity,
+            quantity: totalQuantity,
             skuCode: sku,
             createdBy: stockGroup.vendor || 'System',
-            unit: stockGroup.unit || 'Genral',
+            unit: stockGroup.unit || 'General',
             branch: stockGroup.branchId || 'Main Branch',
             addedAt: stockGroup.addedAt || new Date().toISOString(),
             stockGroupId: stockGroup.id,
-            stockItemId: item.id || `${stockGroup.id}_${itemIndex}`,
-            serialNumber: item.serialNumber || '',
-            macAddress: item.macAddress || '',
-            warranty: item.warranty || 0,
+            stockItemId: stockGroup.id,
+            serialNumbers: serialNumbers, // सभी serial numbers का array
+            macAddresses: macAddresses,   // सभी MAC addresses का array
+            warranty: stockGroup.items[0]?.warranty || 0,
             imageUrl: '/images/cards/card-01.jpg',
-            fullPath: fullPath
+            fullPath: fullPath,
+            serialMode: true,
+            totalItems: totalQuantity
           });
-        });
+
+        } else {
+          // Non-serial mode - पुराने logic के according
+          stockGroup.items.forEach((item, itemIndex) => {
+            const quantity = item.quantity || 0;
+
+            // Get product name from category path
+            const fullPath = stockGroup.category || '';
+            const pathParts = fullPath.split('>');
+            const productName = pathParts.length > 0 ?
+              pathParts[pathParts.length - 1].trim() :
+              fullPath.trim();
+
+            // Get group name (second last part of path)
+            const groupName = extractGroupName(fullPath);
+
+            // Generate simple SKU
+            const sku = `${productName.substring(0, 3).toUpperCase()}-${groupIndex}-${itemIndex}`;
+
+            allItems.push({
+              id: `${stockGroup.id}_${itemIndex}`,
+              productName: productName,
+              productGroup: groupName,
+              quantity: quantity,
+              skuCode: sku,
+              createdBy: stockGroup.vendor || 'System',
+              unit: stockGroup.unit || 'General',
+              branch: stockGroup.branchId || 'Main Branch',
+              addedAt: stockGroup.addedAt || new Date().toISOString(),
+              stockGroupId: stockGroup.id,
+              stockItemId: item.id || `${stockGroup.id}_${itemIndex}`,
+              serialNumber: item.serialNumber || '',
+              macAddress: item.macAddress || '',
+              warranty: item.warranty || 0,
+              imageUrl: '/images/cards/card-01.jpg',
+              fullPath: fullPath,
+              serialMode: false
+            });
+          });
+        }
       }
     });
 
@@ -235,13 +311,11 @@ export default function StockItem() {
       if (response.ok) {
         const stockGroup = await response.json();
 
-        // Find the specific item in the stock group
-        const stockItem = stockGroup.items?.find(it =>
-          it.serialNumber === item.serialNumber ||
-          (it.id && it.id === item.stockItemId)
-        ) || stockGroup.items?.[0];
+        // Debug: Log the fetched data
+        console.log('Fetched stock group for editing:', stockGroup);
+        console.log('Total items in stock group:', stockGroup.items?.length);
 
-        // Prepare edit data
+        // Prepare edit data - सभी items भेजें
         const editData = {
           stockGroupId: item.stockGroupId,
           itemId: item.id,
@@ -250,10 +324,15 @@ export default function StockItem() {
           branch: stockGroup.branchId || '',
           globalWarranty: stockGroup.globalWarranty || 0,
           serialMode: stockGroup.serialMode || false,
-          items: stockItem ? [stockItem] : [],
+          items: stockGroup.items || [], // सभी items भेजें
           product: stockGroup.product || null,
+          unit: stockGroup.unit || '',
           addedAt: stockGroup.addedAt
         };
+
+        // Debug: Log edit data
+        console.log('Prepared edit data:', editData);
+        console.log('Items in edit data:', editData.items?.length);
 
         setEditData(editData);
         setEditDialogOpen(true);
@@ -265,7 +344,6 @@ export default function StockItem() {
       setIsLoading(false);
     }
   };
-
   // Close edit dialog and refresh data
   const handleEditClose = () => {
     setEditDialogOpen(false);
@@ -520,7 +598,7 @@ export default function StockItem() {
 
       {/* Edit Stock Dialog */}
       <Dialog open={editDialogOpen} onClose={setEditDialogOpen} className="relative z-99999">
-        <DialogBackdrop transition className="fixed inset-0 bg-gray-900/50 transition-opacity duration-500 ease-in-out data-closed:opacity-0"  />
+        <DialogBackdrop transition className="fixed inset-0 bg-gray-900/50 transition-opacity duration-500 ease-in-out data-closed:opacity-0" />
         <div className="fixed inset-0 overflow-hidden">
           <div className="absolute inset-0 overflow-hidden">
             <div className="fixed inset-y-0 right-0 flex max-w-full">
@@ -559,6 +637,85 @@ export default function StockItem() {
               </DialogPanel>
             </div>
           </div>
+        </div>
+      </Dialog>
+
+      {/* Serial Numbers Modal - UPDATED */}
+      <Dialog open={serialModalOpen} onClose={setSerialModalOpen} className="relative z-50">
+        <DialogBackdrop className="fixed inset-0 bg-gray-900/50" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <DialogPanel className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+            <div className="px-6 py-4 border-b flex justify-between items-center">
+              <div>
+                <DialogTitle className="text-lg font-semibold">
+                  Serial Numbers Details
+                </DialogTitle>
+                <p className="text-sm text-gray-600 mt-1">
+                  Total Items: {selectedSerials.length}
+                </p>
+              </div>
+              <button
+                onClick={() => setSerialModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {selectedSerials.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-200">S.No</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-200">Serial Number</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-200">MAC Address</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border border-gray-200">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedSerials.map((serial, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-900 border border-gray-200">{index + 1}</td>
+                          <td className="px-4 py-3 text-sm font-mono text-gray-900 border border-gray-200">
+                            {serial.serialNumber || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-mono text-gray-900 border border-gray-200">
+                            {serial.macAddress || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-sm border border-gray-200">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              In Stock
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <svg className="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="mt-4 text-gray-500">No serial numbers found</p>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t bg-gray-50">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  Showing <span className="font-medium">{selectedSerials.length}</span> serial numbers
+                </div>
+                <button
+                  onClick={() => setSerialModalOpen(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </DialogPanel>
         </div>
       </Dialog>
 
@@ -609,13 +766,34 @@ export default function StockItem() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="text-sm font-medium text-gray-900">{item.productName}</div>
-                        {item.serialNumber && (
-                          <div className="text-xs text-gray-500 mt-1">SN: {item.serialNumber}</div>
-                        )}
+                        {item.serialMode === true && item.serialNumbers && item.serialNumbers.length > 0 ? (
+                          <div className="text-xs text-gray-500 mt-1">
+                            <span className="font-medium">Serial Numbers:</span> {item.serialNumbers.length} items
+                            <button
+                              onClick={() => showSerialNumbers(item)}
+                              className="ml-2 text-blue-600 hover:text-blue-800 text-xs underline"
+                            >
+                              View All
+                            </button>
+                          </div>
+                        ) : item.serialNumber ? (
+                          <div className="text-xs text-gray-500 mt-1">
+                            SN: {item.serialNumber}
+                            <button
+                              onClick={() => showSerialNumbers(item)}
+                              className="ml-2 text-blue-600 hover:text-blue-800 text-xs underline"
+                            >
+                              View
+                            </button>
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-4 py-4">
                         <div className="text-sm text-gray-600">
                           {item.productGroup}
+                          {item.serialMode === true && (
+                            <div className="text-xs text-blue-600 mt-1">(Serialized)</div>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-4">

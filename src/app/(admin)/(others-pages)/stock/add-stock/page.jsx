@@ -17,7 +17,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
     const [selectedBranch, setSelectedBranch] = useState('');
 
     const [stockItems, setStockItems] = useState([
-        { id: 1, serialNumber: '', macAddress: '', quantity: '', warranty: 0 }
+        { id: 1, serialNumber: '', macAddress: '', quantity: 0, warranty: 0 }
     ]);
 
     const [vendors, setVendors] = useState([]);
@@ -45,7 +45,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                 const data = await response.json();
                 const activeVendors = data.filter(v => v.status === 'Active' && !v.blacklisted);
                 setVendors(activeVendors);
-                
+
                 // After vendors are loaded, initialize edit data if needed
                 if (isEditMode && editData) {
                     initializeEditData(activeVendors);
@@ -65,7 +65,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
     const initializeEditData = (vendorsList) => {
         try {
             setLoading(prev => ({ ...prev, loadingEditData: true }));
-            
+
             // Set form data from editData
             setFormData({
                 categoryItem: editData.category || '',
@@ -85,13 +85,14 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                     id: editData.product.id,
                     name: editData.product.name,
                     fullPath: editData.product.fullPath,
-                    branchId: editData.product.branchId || editData.branch || '', // Fix: Use both sources
+                    branchId: editData.product.branchId || editData.branch || '',
                     unit: editData.unit || editData.product.unit || ''
                 });
             }
 
-            // Set stock items
+            // IMPORTANT: Set stock items - सभी items लोड करें
             if (editData.items && editData.items.length > 0) {
+                // सभी items के लिए rows बनाएं
                 const itemsWithIds = editData.items.map((item, index) => ({
                     id: index + 1,
                     serialNumber: item.serialNumber || '',
@@ -99,7 +100,32 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                     quantity: item.quantity || 1,
                     warranty: item.warranty || 0,
                 }));
+
+                // यदि कोई items नहीं हैं तो default row add करें
+                if (itemsWithIds.length === 0) {
+                    itemsWithIds.push({
+                        id: 1,
+                        serialNumber: '',
+                        macAddress: '',
+                        quantity: 0,
+                        warranty: 0,
+                    });
+                }
+
                 setStockItems(itemsWithIds);
+
+                // Log for debugging
+                console.log('Loaded items for editing:', itemsWithIds);
+                console.log('Total items loaded:', itemsWithIds.length);
+            } else {
+                // If no items, set default
+                setStockItems([{
+                    id: 1,
+                    serialNumber: '',
+                    macAddress: '',
+                    quantity: 0,
+                    warranty: 0,
+                }]);
             }
 
             // If vendor exists, load vendor products
@@ -109,7 +135,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                 if (vendor) {
                     // Load vendor products
                     const products = vendor.selected_products || [];
-                    
+
                     // Extract branch ID from products
                     const formattedProducts = products.map(p => {
                         return {
@@ -177,7 +203,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
             unit: product.unit || product.originalProduct?.unit || '',
             branchId: product.branchId || ''
         };
-        
+
         setSelectedProduct(productData);
         setFormData(prev => ({ ...prev, categoryItem: product.fullPath || product.name }));
 
@@ -199,11 +225,11 @@ function AddStock({ onClose, onSuccess, editData = null }) {
         }
 
         // Reset table
-        setStockItems([{ 
-            id: 1, 
-            serialNumber: '', 
-            macAddress: '', 
-            quantity: '', 
+        setStockItems([{
+            id: 1,
+            serialNumber: '',
+            macAddress: '',
+            quantity: 0,
             warranty: 0
         }]);
 
@@ -255,13 +281,13 @@ function AddStock({ onClose, onSuccess, editData = null }) {
     const addMultipleRows = (count) => {
         const newItems = [];
         const startId = stockItems.length + 1;
-        
+
         for (let i = 0; i < count; i++) {
             newItems.push({
                 id: startId + i,
                 serialNumber: '',
                 macAddress: '',
-                quantity: '',
+                quantity: 0,
                 warranty: 0,
             });
         }
@@ -273,7 +299,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
             id: stockItems.length + 1,
             serialNumber: '',
             macAddress: '',
-            quantity: '',
+            quantity: 0,
             warranty: 0,
         };
         setStockItems([...stockItems, newItem]);
@@ -359,7 +385,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
             itemsToSave = itemsToSave.map(item => ({
                 serialNumber: item.serialNumber.trim(),
                 macAddress: item.macAddress.trim(),
-                quantity: '',
+                quantity: item.quantity,
                 warranty: item.warranty
             }));
 
@@ -433,7 +459,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
             // Reset form
             setFormData({ categoryItem: '', vendor: '', warrantyYears: 0 });
             setSelectedBranch('');
-            setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: '', warranty: 0 }]);
+            setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: 0, warranty: 0 }]);
             setSelectedProduct(null);
             setSerialMode(null);
             setVendorProducts([]);
@@ -812,7 +838,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                         <span className="font-medium">Mode:</span> {serialMode === true ? 'Serial Numbers' : serialMode === false ? 'Quantity Only' : 'Not Selected'} |
                         <span className="font-medium ml-2">Rows:</span> {stockItems.length}
                         {selectedProduct?.unit && (
-                            <span className="font-medium ml-2">| Unit:</span> 
+                            <span className="font-medium ml-2">| Unit:</span>
                         )}
                         <span className="ml-1">{selectedProduct?.unit || ''}</span>
                         {selectedBranch && (
