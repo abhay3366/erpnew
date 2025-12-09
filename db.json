@@ -1,7 +1,37 @@
 {
   "vendors": [
     {
-      "id": "1765201575582",
+      "id": "1765275684376",
+      "vendor_name": "Thane Whitney",
+      "vendor_address": "Azadpur",
+      "vendor_phone": "6393216862",
+      "email": "accevateabhay@gmail.com",
+      "gstin_no": "5555",
+      "contact_person": "Abhay kant tiwari",
+      "signatory": "",
+      "bank_name": "Shad Steele",
+      "account_no": "52525252525",
+      "account_type": "2222",
+      "micr_code": "Do labore hic quae i",
+      "rtgs_ifsc_code": "Qui vel aliquid labo",
+      "neft_ifsc_code": "Cupidatat ut ut ea a",
+      "status": "Active",
+      "blacklisted": false,
+      "selected_categories": [
+        {
+          "id": "1765201488324"
+        }
+      ],
+      "selected_products": [
+        {
+          "id": "0bbe"
+        }
+      ],
+      "createdAt": "2025-12-09T10:21:24.376Z",
+      "lastUpdated": "2025-12-09T10:21:24.376Z"
+    },
+    {
+      "id": "1765286220303",
       "vendor_name": "abhay",
       "vendor_address": "robertsganj",
       "vendor_phone": "6393216862",
@@ -9,67 +39,56 @@
       "gstin_no": "5555",
       "contact_person": "Abhay kant tiwari",
       "signatory": "Abhay kant tiwari",
-      "bank_name": "Kaden Prince",
-      "account_no": "Commodi alias cupidi",
-      "account_type": "Quia delectus ullam",
-      "micr_code": "Est dolores facilis ",
-      "rtgs_ifsc_code": "Nostrud consectetur ",
+      "bank_name": "Yardley Norman",
+      "account_no": "52525252525",
+      "account_type": "Repudiandae qui dolo",
+      "micr_code": "Do labore hic quae i",
+      "rtgs_ifsc_code": "Qui vel aliquid labo",
       "neft_ifsc_code": "Ab velit vel est es",
       "status": "Active",
       "blacklisted": false,
       "selected_categories": [
         {
-          "id": 1765201488324,
-          "name": "laptop",
-          "slug": "",
-          "parentId": null,
-          "status": true,
-          "children": [
-            {
-              "id": 1765201502341,
-              "name": "dell",
-              "slug": "/dell",
-              "parentId": 1765201488324,
-              "status": true,
-              "children": []
-            }
-          ],
-          "fullPath": "laptop"
-        },
-        {
-          "id": 1765201502341,
-          "name": "dell",
-          "slug": "/dell",
-          "parentId": 1765201488324,
-          "status": true,
-          "children": [],
-          "fullPath": "laptop > dell"
+          "id": "1765201502341"
         }
       ],
       "selected_products": [
         {
-          "id": "8905",
-          "name": "dell vistro",
-          "fullPath": "laptop > dell > dell vistro",
-          "description": "",
-          "type": "product",
-          "originalProduct": {
-            "id": "8905",
-            "store": "0445",
-            "category": [
-              1765201502341
-            ],
-            "productName": "dell vistro",
-            "slug": "home",
-            "unit": "meter",
-            "isSerial": "1",
-            "sku": "555",
-            "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAADwCAIAAAChXqV1AAAACXBIWXMAABwgAAAcIAHND5ueAAAFyWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgOS4wLWMwMDAgNzkuMTcxYzI3ZiwgMjAyMi8wOC8xNi0xODowMjo0MyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIiB4bWxuczpwaG90b3Nob3A9Imh0dHA6Ly9ucy5hZG9iZS5jb20vcGhvdG9zaG9wLzEuMC8iIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgeG1wOk1ldGFkYXRhRGF0ZT0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjItMTEtMTBUMjM6MDg6MzQrMDM6MDAiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MTY0YjFhOTEtNDI4MC01YTQzLTg0ZDUtNjdiZTNjZmZlYWQwIiB4bXBNTTpEb2N1bWVudElEPSJhZG9iZTpkb2NpZDpwaG90b3Nob3A6ZjEwZmRiYjQtZDExYi0wZjRmLTg0MDMtNDExNjI2ZGQyOWQ2IiB4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ9InhtcC5kaWQ6MTVkNThlNDctNjUzNS0yODQ0LWJiNWEtYWFlYmEzZjA1MDU4IiBkYzpmb3JtYXQ9ImltYWdlL3BuZyIgcGhvdG9zaG9wOkNvbG9yTW9kZT0iMyI+IDx4bXBNTTpIaXN0b3J5PiA8cmRmOlNlcT4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNyZWF0ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6MTVkNThlNDctNjUzNS0yODQ0LWJiNWEtYWFlYmEzZjA1MDU4IiBzdEV2dDp3aGVuPSIyMDIyLTExLTEwVDIzOjA4OjM0KzAzOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjQuMCAoV2luZG93cykiLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249InNhdmVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjE2NGIxYTkxLTQyODAtNWE0My04NGQ1LTY3YmUzY2ZmZWFkMCIgc3RFdnQ6d2hlbj0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKFdpbmRvd3MpIiBzdEV2dDpjaGFuZ2VkPSIvIi8+IDwvcmRmOlNlcT4gPC94bXBNTTpIaXN0b3J5PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PhGMuhsAAA2lSURBVHic7d1rTJWFH8Dx30FBIRAON7kM5HoA8bJRtkE2WlJtvWBmm8Noc9liqybVvGTUi1b0pmlIrq1WS5lN1mUrKojs4rTUjchMPHC4CAICh3sGSMjt/+LxT06EP/AHjj/4fl49Owee82NzX5/nOc/F1NvbKwCggZOjBwCAqSJYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANRY6ugBoEB9fb3Vau3r6xsdHTWZTPP2ucbHeXh4rF69OjQ0dN4+F3csU29vr6NnwB0tPz//119/dfQUkpycvHXrVkdPAQdjCwuT+fjjj3///Xdj2Ww2O2SG7u5uETl58uTIyEhaWppDZsAdgmBhQo2NjUatIiIitm/f7uvr65AxWltbjx49WldX98svv6xevXrdunUOGQN3Ag66Y0J//PGHiLi6ur700kuOqpWIrFy58rnnnluyZImIlJWVOWoM3AkIFiZkHN/09/d3cnLwvxM3NzdPT08RGRoacuwkcCyChQkZGzWjo6OOHkRExPh20uHphGNxDAsTMhoxSbD6+vq6urqWLVvm7+8/18MYY8znSRW4AxEszMT169c/++yz0tLSwcFBEQkPD09NTbVYLI6eCwscG9iYtp6enuzs7LNnzxq1EpG6urrc3NzffvvNsYNhwSNYmLajR492dnaKyIYNG3bs2LF582ZjT+3IkSOch4w5xS4hpqe3t9dqtYpIUlJSenq68WJ4ePjBgwdHR0dLS0sfeOABR86HBY0tLExPS0uLsfDwww+PvRgVFRUUFCQiV65cccxYWBwIFqbHzc3NWLDb7Te/buwMurq6OmAmLBrsEmJ6goKCXF1d+/v7P/30U19f38DAwKGhofz8/KtXr4rI2rVrp7ieurq6EydONDc3e3l5JSUlJSQkzOXUWCAIFqbHZDI9/vjjn3zySXd3d3Z2dnBw8N9//93T0yMi4eHhUzyzoby8/L333jOWW1paKioqOjo6bt7HBG6LXUJMW2JiYmpqqrHc1NRk1CouLi4zM3Mqv97W1vb+++8by8nJycZVigUFBSUlJXMzLxYOtrAwE4888sj69etLSkrsdrub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jo6Li4uMjBy/z1hfX//222+LSEZGhvFkQ+C2CBZm3+DgYH19fUVFRVVV1fgndHl7exvxslgsnp6ejY2NH3zwQXd3t5OTU05ODqeMYhIEC3Orq6vLyFZjY+Mt93swmUxms3lsR3Lr1q3JycmOmBFqECzMn46OjqqqqoqKiurq6p6enpvf2rx580MPPeSowaAFwYIDdHV11dTUXLly5dq1ax4eHjExMbGxsY4eCgoQLABqcHsZAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGr8B40/1kZHgo3tAAAAAElFTkSuQmCC"
-          }
+          "id": "bf68"
         }
       ],
-      "createdAt": "2025-12-08T13:46:15.582Z",
-      "lastUpdated": "2025-12-08T13:46:15.582Z"
+      "createdAt": "2025-12-09T13:17:00.303Z",
+      "lastUpdated": "2025-12-09T13:17:00.303Z"
+    },
+    {
+      "id": "1765286316145",
+      "vendor_name": "ankit",
+      "vendor_address": "robertsganj",
+      "vendor_phone": "6393216862",
+      "email": "accevateabhay@gmail.com",
+      "gstin_no": "",
+      "contact_person": "Abhay kant tiwari",
+      "signatory": "",
+      "bank_name": "Kaden Prince",
+      "account_no": "252525252525",
+      "account_type": "Repudiandae qui dolo",
+      "micr_code": "Est dolores facilis ",
+      "rtgs_ifsc_code": "",
+      "neft_ifsc_code": "Ab velit vel est es",
+      "status": "Active",
+      "blacklisted": false,
+      "selected_categories": [
+        {
+          "id": "1765201502341"
+        }
+      ],
+      "selected_products": [
+        {
+          "id": "5082"
+        }
+      ],
+      "createdAt": "2025-12-09T13:18:36.145Z",
+      "lastUpdated": "2025-12-09T13:18:36.145Z"
     }
   ],
   "categories": {
@@ -110,51 +129,159 @@
   ],
   "products": [
     {
-      "store": "0445",
+      "id": "bf68",
+      "warehouse": "0445",
       "category": [
         1765201502341
       ],
-      "productName": "dell vistro",
+      "productName": "mouse",
       "slug": "home",
-      "unit": "meter",
+      "unit": "liter",
       "isSerial": "1",
-      "sku": "555",
-      "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZAAAADwCAIAAAChXqV1AAAACXBIWXMAABwgAAAcIAHND5ueAAAFyWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgOS4wLWMwMDAgNzkuMTcxYzI3ZiwgMjAyMi8wOC8xNi0xODowMjo0MyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIiB4bWxuczpwaG90b3Nob3A9Imh0dHA6Ly9ucy5hZG9iZS5jb20vcGhvdG9zaG9wLzEuMC8iIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKFdpbmRvd3MpIiB4bXA6Q3JlYXRlRGF0ZT0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgeG1wOk1ldGFkYXRhRGF0ZT0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgeG1wOk1vZGlmeURhdGU9IjIwMjItMTEtMTBUMjM6MDg6MzQrMDM6MDAiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MTY0YjFhOTEtNDI4MC01YTQzLTg0ZDUtNjdiZTNjZmZlYWQwIiB4bXBNTTpEb2N1bWVudElEPSJhZG9iZTpkb2NpZDpwaG90b3Nob3A6ZjEwZmRiYjQtZDExYi0wZjRmLTg0MDMtNDExNjI2ZGQyOWQ2IiB4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ9InhtcC5kaWQ6MTVkNThlNDctNjUzNS0yODQ0LWJiNWEtYWFlYmEzZjA1MDU4IiBkYzpmb3JtYXQ9ImltYWdlL3BuZyIgcGhvdG9zaG9wOkNvbG9yTW9kZT0iMyI+IDx4bXBNTTpIaXN0b3J5PiA8cmRmOlNlcT4gPHJkZjpsaSBzdEV2dDphY3Rpb249ImNyZWF0ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6MTVkNThlNDctNjUzNS0yODQ0LWJiNWEtYWFlYmEzZjA1MDU4IiBzdEV2dDp3aGVuPSIyMDIyLTExLTEwVDIzOjA4OjM0KzAzOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgMjQuMCAoV2luZG93cykiLz4gPHJkZjpsaSBzdEV2dDphY3Rpb249InNhdmVkIiBzdEV2dDppbnN0YW5jZUlEPSJ4bXAuaWlkOjE2NGIxYTkxLTQyODAtNWE0My04NGQ1LTY3YmUzY2ZmZWFkMCIgc3RFdnQ6d2hlbj0iMjAyMi0xMS0xMFQyMzowODozNCswMzowMCIgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWRvYmUgUGhvdG9zaG9wIDI0LjAgKFdpbmRvd3MpIiBzdEV2dDpjaGFuZ2VkPSIvIi8+IDwvcmRmOlNlcT4gPC94bXBNTTpIaXN0b3J5PiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PhGMuhsAAA2lSURBVHic7d1rTJWFH8Dx30FBIRAON7kM5HoA8bJRtkE2WlJtvWBmm8Noc9liqybVvGTUi1b0pmlIrq1WS5lN1mUrKojs4rTUjchMPHC4CAICh3sGSMjt/+LxT06EP/AHjj/4fl49Owee82NzX5/nOc/F1NvbKwCggZOjBwCAqSJYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANQgWADUIFgA1CBYANRY6ugBoEB9fb3Vau3r6xsdHTWZTPP2ucbHeXh4rF69OjQ0dN4+F3csU29vr6NnwB0tPz//119/dfQUkpycvHXrVkdPAQdjCwuT+fjjj3///Xdj2Ww2O2SG7u5uETl58uTIyEhaWppDZsAdgmBhQo2NjUatIiIitm/f7uvr65AxWltbjx49WldX98svv6xevXrdunUOGQN3Ag66Y0J//PGHiLi6ur700kuOqpWIrFy58rnnnluyZImIlJWVOWoM3AkIFiZkHN/09/d3cnLwvxM3NzdPT08RGRoacuwkcCyChQkZGzWjo6OOHkRExPh20uHphGNxDAsTMhoxSbD6+vq6urqWLVvm7+8/18MYY8znSRW4AxEszMT169c/++yz0tLSwcFBEQkPD09NTbVYLI6eCwscG9iYtp6enuzs7LNnzxq1EpG6urrc3NzffvvNsYNhwSNYmLajR492dnaKyIYNG3bs2LF582ZjT+3IkSOch4w5xS4hpqe3t9dqtYpIUlJSenq68WJ4ePjBgwdHR0dLS0sfeOABR86HBY0tLExPS0uLsfDwww+PvRgVFRUUFCQiV65cccxYWBwIFqbHzc3NWLDb7Te/buwMurq6OmAmLBrsEmJ6goKCXF1d+/v7P/30U19f38DAwKGhofz8/KtXr4rI2rVrp7ieurq6EydONDc3e3l5JSUlJSQkzOXUWCAIFqbHZDI9/vjjn3zySXd3d3Z2dnBw8N9//93T0yMi4eHhUzyzoby8/L333jOWW1paKioqOjo6bt7HBG6LXUJMW2JiYmpqqrHc1NRk1CouLi4zM3Mqv97W1vb+++8by8nJycZVigUFBSUlJXMzLxYOtrAwE4888sj69etLSkrsdrub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jo6Li4uMjBy/z1hfX//222+LSEZGhvFkQ+C2CBZm3+DgYH19fUVFRVVV1fgndHl7exvxslgsnp6ejY2NH3zwQXd3t5OTU05ODqeMYhIEC3Orq6vLyFZjY+Mt93swmUxms3lsR3Lr1q3JycmOmBFqECzMn46OjqqqqoqKiurq6p6enpvf2rx580MPPeSowaAFwYIDdHV11dTUXLly5dq1ax4eHjExMbGxsY4eCgoQLABqcHsZAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGoQLABqECwAahAsAGr8B40/1kZHgo3tAAAAAElFTkSuQmCC",
-      "id": "8905"
+      "sku": "wer",
+      "image": ""
+    },
+    {
+      "warehouse": "11ae",
+      "category": [
+        1765201502341
+      ],
+      "productName": "Keyboard",
+      "slug": "home",
+      "unit": "liter",
+      "isSerial": "0",
+      "sku": "wer",
+      "image": "",
+      "id": "5082"
     }
   ],
+  "stocks": [
+    {
+      "id": "8bc7",
+      "product": {
+        "id": "bf68",
+        "name": "mouse",
+        "brand": "N/A",
+        "unit": "liter",
+        "isSerial": "1",
+        "branch": ""
+      },
+      "category": "mouse",
+      "vendor": "abhay",
+      "branch": "",
+      "globalWarranty": 0,
+      "isSerial": "1",
+      "items": [
+        {
+          "serialNumber": "tyrty",
+          "macAddress": "dfgdsf",
+          "quantity": 1,
+          "warranty": 0
+        }
+      ],
+      "totalItems": 1,
+      "unit": "liter",
+      "addedAt": "2025-12-09T13:18:58.598Z",
+      "updatedAt": "2025-12-09T13:18:58.598Z"
+    },
+    {
+      "id": "7eb0",
+      "product": {
+        "id": "5082",
+        "name": "Keyboard",
+        "brand": "N/A",
+        "unit": "liter",
+        "isSerial": "0",
+        "branch": ""
+      },
+      "category": "Keyboard",
+      "vendor": "ankit",
+      "branch": "",
+      "globalWarranty": 0,
+      "isSerial": "0",
+      "items": [
+        {
+          "serialNumber": "",
+          "macAddress": "",
+          "quantity": 150,
+          "warranty": 0
+        }
+      ],
+      "totalItems": 150,
+      "unit": "liter",
+      "addedAt": "2025-12-09T13:19:15.836Z",
+      "updatedAt": "2025-12-09T13:19:15.836Z"
+    }
+  ],
+  "branch_stock": [],
   "transfers": [
     {
-      "id": "46d5",
-      "productId": "8905",
-      "productName": "dell vistro",
-      "fromBranchId": "0445",
-      "fromBranchName": "Azadpur",
-      "toBranchId": "11ae",
-      "toBranchName": "Yotta",
-      "rows": [
-        {
-          "serial": "",
-          "quantity": "20"
-        }
+      "id": "27e8",
+      "serialNumber": [],
+      "quantity": "50",
+      "product": "74c1",
+      "fromBranch": "11ae",
+      "toBranch": "11ae"
+    },
+    {
+      "id": "51e1",
+      "quantity": "1",
+      "product": "0bbe",
+      "fromBranch": "0445",
+      "toBranch": "11ae",
+      "serialNumber": [
+        "4656"
       ]
     },
     {
-      "id": "b90b",
-      "serialNumber": "",
-      "quantity": "20",
-      "product": "8905",
+      "id": "444a",
+      "quantity": "1",
+      "product": "0bbe",
+      "fromBranch": "0445",
+      "toBranch": "11ae",
+      "serialNumber": [
+        "4656",
+        "456"
+      ]
+    },
+    {
+      "id": "9189",
+      "quantity": "1",
+      "product": "74c1",
+      "fromBranch": "0445",
+      "toBranch": "11ae",
+      "serialNumber": [
+        "4656",
+        "456"
+      ]
+    },
+    {
+      "id": "0610",
+      "quantity": "12",
+      "product": "4549",
       "fromBranch": "0445",
       "toBranch": "11ae"
     },
     {
-      "id": "7f6b",
-      "serialNumber": "",
-      "quantity": "20",
-      "product": "8905",
+      "id": "0cda",
+      "quantity": "1",
+      "product": "4549",
+      "fromBranch": "11ae",
+      "toBranch": "0445"
+    },
+    {
+      "id": "2dba",
+      "quantity": "1",
+      "product": "5082",
       "fromBranch": "0445",
       "toBranch": "11ae"
+    },
+    {
+      "id": "edab",
+      "quantity": "1",
+      "product": "5082",
+      "fromBranch": "11ae",
+      "toBranch": "0445"
     }
-  ],
-  "stocks": []
+  ]
 }

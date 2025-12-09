@@ -19,7 +19,7 @@ export default function AddItem({ fetchProducts, setOpen, editProduct,setEditPro
     formState: { errors },
   } = useForm({
     defaultValues: {
-      store: "",
+      warehouse: "",
       category: [],
       productName: "",
       slug: "",
@@ -120,7 +120,7 @@ export default function AddItem({ fetchProducts, setOpen, editProduct,setEditPro
   useEffect(() => {
   if (editProduct) {
     reset({
-      store: editProduct.store || "",
+      warehouse: editProduct.warehouse || "",
       category: editProduct.category || [],
       productName: editProduct.productName || "",
       slug: editProduct.slug || "",
@@ -190,8 +190,8 @@ export default function AddItem({ fetchProducts, setOpen, editProduct,setEditPro
           <InputSelect
             label="Warehouse"
             options={branches.map((b) => ({ value: b.id, label: b.branchName }))}
-            {...register("store", { required: true })}
-            error={errors.store}
+            {...register("warehouse", { required: true })}
+            error={errors.warehouse}
             
           />
 
