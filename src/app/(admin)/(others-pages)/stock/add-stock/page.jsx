@@ -89,9 +89,9 @@ const ProductDropdown = ({
                 <span className="truncate">
                   Brand: {product.brand || 'N/A'} | Unit: {product.unit || 'N/A'}
                 </span>
-                {product.branch && (
+                {product.warehouse && (
                   <span className="font-medium text-green-600 ml-2">
-                    Branch ID: {product.branch}
+                    Warehouse ID: {product.warehouse}
                   </span>
                 )}
               </div>
@@ -237,7 +237,7 @@ const StockItemRow = ({
           <td className="px-4 py-3">
             <input
               type="text"
-              value={item.serialNumber}
+              value={item.serialNumber || ''}
               onChange={(e) => onChange(item.id, 'serialNumber', e.target.value)}
               placeholder="Enter Serial Number..."
               className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -246,7 +246,7 @@ const StockItemRow = ({
           <td className="px-4 py-3">
             <input
               type="text"
-              value={item.macAddress}
+              value={item.macAddress || ''}
               onChange={(e) => onChange(item.id, 'macAddress', e.target.value)}
               placeholder="Enter MAC Address..."
               className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono"
@@ -260,7 +260,7 @@ const StockItemRow = ({
           <input
             type="number"
             min="1"
-            value={item.quantity}
+            value={item.quantity || 0}
             onChange={(e) => onChange(item.id, 'quantity', parseInt(e.target.value) || 1)}
             className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
@@ -270,7 +270,7 @@ const StockItemRow = ({
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
           <select
-            value={item.warranty}
+            value={item.warranty || 0}
             onChange={(e) => onChange(item.id, 'warranty', parseInt(e.target.value) || 0)}
             className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
@@ -280,7 +280,7 @@ const StockItemRow = ({
             <option value="3">3 Years</option>
             <option value="4">4 Years</option>
           </select>
-          <WarrantyBadge years={item.warranty} />
+          <WarrantyBadge years={item.warranty || 0} />
         </div>
       </td>
 
@@ -307,9 +307,12 @@ function AddStock({ onClose, onSuccess, editData = null }) {
   // Main form state
   const [formData, setFormData] = useState({
     categoryItem: '',
-    vendor: '',
+    vendor: '', // vendor name (UI में दिखेगा)
     warrantyYears: 0,
   });
+
+  // Store vendor ID separately (UI में नहीं दिखेगा)
+  const [selectedVendorId, setSelectedVendorId] = useState('');
 
   // Product and selection state
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -396,24 +399,73 @@ function AddStock({ onClose, onSuccess, editData = null }) {
         warrantyYears: editData.globalWarranty || 0,
       });
 
+      // Set vendor ID from edit data if available
+      if (editData.vendorId) {
+        setSelectedVendorId(editData.vendorId);
+      } else {
+        // Find vendor ID from vendors array
+        const vendor = vendors.find(v => v.vendor_name === editData.vendor);
+        if (vendor) {
+          setSelectedVendorId(vendor.id);
+        }
+      }
+
       // Set serial mode
-      setIsSerial(editData.isSerial || false);
+      const serialValue = editData.product?.isSerial || editData.isSerial;
+      console.log('Original isSerial value:', serialValue, 'Type:', typeof serialValue);
+      
+      let serialMode = false;
+      if (serialValue === "1" || serialValue === 1 || serialValue === true || serialValue === "true") {
+        serialMode = true;
+      }
+      
+      console.log('Setting serial mode to:', serialMode);
+      setIsSerial(serialMode);
 
       // Set stock items
       if (editData.items && editData.items.length > 0) {
+        console.log('Loading edit items:', editData.items);
         const itemsWithIds = editData.items.map((item, index) => ({
           id: index + 1,
           serialNumber: item.serialNumber || '',
           macAddress: item.macAddress || '',
-          quantity: item.quantity || 1,
+          quantity: item.quantity || (serialMode ? 1 : 0),
           warranty: item.warranty || 0,
         }));
+        console.log('Setting stock items:', itemsWithIds);
         setStockItems(itemsWithIds);
+      } else {
+        console.log('No items found in edit data');
+        setStockItems([{
+          id: 1,
+          serialNumber: '',
+          macAddress: '',
+          quantity: serialMode ? 1 : 0,
+          warranty: 0,
+        }]);
       }
 
-      // Load vendor products for the selected vendor
+      // Set selected product
+      if (editData.product) {
+        console.log('Setting selected product directly from editData:', editData.product);
+        
+        const productFromEdit = {
+          id: editData.product.id,
+          productName: editData.product.name || editData.product.productName || '',
+          brand: editData.product.brand || 'N/A',
+          unit: editData.product.unit || 'N/A',
+          isSerial: editData.product.isSerial || "0",
+          warehouse: editData.product.warehouse || editData.warehouse || '',
+          fullPath: editData.product.name || ''
+        };
+        
+        setSelectedProduct(productFromEdit);
+        setVendorProducts([productFromEdit]);
+      }
+
+      // Load vendor products for dropdown
       if (editData.vendor) {
-        loadVendorProducts(editData.vendor, true);
+        loadVendorProductsForDropdown(editData.vendor);
       }
 
     } catch (error) {
@@ -424,11 +476,10 @@ function AddStock({ onClose, onSuccess, editData = null }) {
     }
   };
 
-  // ==================== LOAD VENDOR PRODUCTS ====================
-  const loadVendorProducts = (vendorName, isEditMode = false) => {
-    console.log('Loading products for vendor:', vendorName);
+  // ==================== LOAD VENDOR PRODUCTS FOR DROPDOWN ====================
+  const loadVendorProductsForDropdown = (vendorName) => {
+    console.log('Loading vendor products for dropdown:', vendorName);
     
-    // Find the vendor
     const vendor = vendors.find(v => v.vendor_name === vendorName);
     if (!vendor) {
       console.log('Vendor not found:', vendorName);
@@ -436,10 +487,6 @@ function AddStock({ onClose, onSuccess, editData = null }) {
       return;
     }
 
-    console.log('Found vendor:', vendor.vendor_name);
-    console.log('Vendor selected products:', vendor.selected_products);
-
-    // Get vendor's product IDs
     const vendorProductIds = (vendor.selected_products || [])
       .map(item => {
         if (typeof item === 'object' && item.id) {
@@ -449,68 +496,46 @@ function AddStock({ onClose, onSuccess, editData = null }) {
       })
       .filter(id => id);
 
-    console.log('Vendor product IDs:', vendorProductIds);
-
-    // Match vendor's product IDs with all products
     const matchedProducts = allProducts.filter(product => 
       vendorProductIds.includes(product.id)
     );
 
-    console.log('Matched products:', matchedProducts);
-
-    // Format products for display
     const formattedProducts = matchedProducts.map(product => ({
       id: product.id,
       productName: product.productName || 'Unnamed Product',
       brand: product.brand || 'N/A',
       unit: product.unit || 'N/A',
       isSerial: product.isSerial || "0",
-      branch: product.store || '', // Product's branch ID
+      warehouse: product.warehouse || '',
       description: product.description || '',
       category: product.category || [],
       fullPath: product.productName
     }));
 
-    console.log('Formatted products for display:', formattedProducts);
+    console.log('Formatted vendor products for dropdown:', formattedProducts);
     setVendorProducts(formattedProducts);
-
-    // If in edit mode, try to find and select the product
-    if (isEditMode && editData?.product) {
-      const editProductId = editData.product.id;
-      const matchedProduct = formattedProducts.find(p => p.id === editProductId);
-      
-      if (matchedProduct) {
-        console.log('Matched product for edit:', matchedProduct);
-        handleProductSelect(matchedProduct);
-      } else {
-        console.log('Could not find matching product for edit');
-      }
-    }
-
-    // If no products found, show message
-    if (formattedProducts.length === 0) {
-      toast.info(`No products found for vendor: ${vendorName}`);
-    }
   };
 
   // ==================== EVENT HANDLERS ====================
   const handleVendorSelect = (vendor) => {
-    console.log('Vendor selected:', vendor.vendor_name);
+    console.log('Vendor selected:', vendor);
     
+    // Store vendor name for display
     setFormData({
       categoryItem: '',
       vendor: vendor.vendor_name,
       warrantyYears: 0
     });
     
+    // Store vendor ID for database (UI में नहीं दिखेगा)
+    setSelectedVendorId(vendor.id);
+    
     setSelectedProduct(null);
     setIsSerial(null);
     setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: 0, warranty: 0 }]);
     
-    // Load products for this vendor
-    loadVendorProducts(vendor.vendor_name);
+    loadVendorProductsForDropdown(vendor.vendor_name);
     
-    // Focus on product input
     setTimeout(() => {
       if (productInputRef.current) {
         productInputRef.current.focus();
@@ -527,7 +552,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
       brand: product.brand,
       unit: product.unit,
       isSerial: product.isSerial,
-      branch: product.branch, // Store product's branch ID
+      warehouse: product.warehouse,
       fullPath: product.productName
     });
 
@@ -536,17 +561,16 @@ function AddStock({ onClose, onSuccess, editData = null }) {
       categoryItem: product.productName 
     }));
 
-    // Determine if product needs serial numbers
     const needsSerial = product.isSerial === "1" || product.isSerial === "true" || product.isSerial === true;
+    console.log('Setting isSerial to:', needsSerial);
     setIsSerial(needsSerial);
 
-    // Reset stock items table based on mode
     if (needsSerial) {
       setStockItems([{
         id: 1,
         serialNumber: '',
         macAddress: '',
-        quantity: 1, // Default to 1 for serial mode
+        quantity: 1,
         warranty: 0
       }]);
     } else {
@@ -619,25 +643,26 @@ function AddStock({ onClose, onSuccess, editData = null }) {
 
   // ==================== FORM VALIDATION ====================
   const validateForm = () => {
-    // Check vendor
     if (!formData.vendor.trim()) {
       setError('Please select a vendor');
       return false;
     }
 
-    // Check product
+    if (!selectedVendorId) {
+      setError('Vendor ID not found. Please select vendor again.');
+      return false;
+    }
+
     if (!formData.categoryItem.trim() || !selectedProduct) {
       setError('Please select a product');
       return false;
     }
 
-    // Check serial mode
     if (isSerial === null) {
       setError('Please select a product first');
       return false;
     }
 
-    // Check serial numbers for serial mode
     if (isSerial === true) {
       const hasValidSerial = stockItems.some(item => 
         item.serialNumber && item.serialNumber.trim() !== ''
@@ -648,7 +673,6 @@ function AddStock({ onClose, onSuccess, editData = null }) {
         return false;
       }
 
-      // Ensure all serial items have quantity 1
       stockItems.forEach(item => {
         if (item.quantity < 1) {
           changeItemValue(item.id, 'quantity', 1);
@@ -656,7 +680,6 @@ function AddStock({ onClose, onSuccess, editData = null }) {
       });
     }
     
-    // Check quantity for non-serial mode
     else if (isSerial === false) {
       if (stockItems[0].quantity <= 0) {
         setError('Please enter a valid quantity');
@@ -709,22 +732,21 @@ function AddStock({ onClose, onSuccess, editData = null }) {
       }
     }
 
-    // Prepare stock data - FIXED: Store branch ID and fix isSerial
+    // Prepare stock data with VENDOR ID
     const stockData = {
       product: {
         id: selectedProduct.id,
         name: selectedProduct.productName,
         brand: selectedProduct.brand,
         unit: selectedProduct.unit,
-        isSerial: selectedProduct.isSerial, // Keep original isSerial value
-        branch: selectedProduct.branch // Product's branch ID
+        isSerial: selectedProduct.isSerial,
+        warehouse: selectedProduct.warehouse
       },
       category: formData.categoryItem,
-      vendor: formData.vendor,
-      // FIXED: Store product's branch ID
-      branch: selectedProduct.branch || '',
+      vendor: formData.vendor, // Vendor name (for display)
+      vendorId: selectedVendorId, // Vendor ID (for database reference)
+      warehouse: selectedProduct.warehouse || '',
       globalWarranty: formData.warrantyYears,
-      // FIXED: Convert boolean to "1" or "0"
       isSerial: isSerial ? "1" : "0",
       items: itemsToSave,
       totalItems: itemsToSave.reduce((sum, item) => sum + item.quantity, 0),
@@ -733,15 +755,14 @@ function AddStock({ onClose, onSuccess, editData = null }) {
       updatedAt: new Date().toISOString()
     };
 
-    console.log('Submitting stock data:', JSON.stringify(stockData, null, 2));
-    console.log('Branch ID to be saved:', selectedProduct.branch);
-    console.log('isSerial value (converted):', isSerial ? "1" : "0");
+    console.log('Submitting stock data:', stockData);
+    console.log('Vendor ID:', selectedVendorId);
 
     try {
       setLoading(prev => ({ ...prev, submitting: true }));
 
       const url = isEditMode 
-        ? `http://localhost:5001/stocks/${editData.stockGroupId}`
+        ? `http://localhost:5001/stocks/${editData.id}`
         : 'http://localhost:5001/stocks';
 
       const method = isEditMode ? 'PUT' : 'POST';
@@ -784,6 +805,7 @@ function AddStock({ onClose, onSuccess, editData = null }) {
 
   const resetForm = () => {
     setFormData({ categoryItem: '', vendor: '', warrantyYears: 0 });
+    setSelectedVendorId('');
     setStockItems([{ id: 1, serialNumber: '', macAddress: '', quantity: 0, warranty: 0 }]);
     setSelectedProduct(null);
     setIsSerial(null);
@@ -839,11 +861,15 @@ function AddStock({ onClose, onSuccess, editData = null }) {
             </label>
             <VendorDropdown
               value={formData.vendor}
-              onChange={(value) => setFormData(prev => ({ 
-                ...prev, 
-                vendor: value,
-                categoryItem: '' 
-              }))}
+              onChange={(value) => {
+                setFormData(prev => ({ 
+                  ...prev, 
+                  vendor: value,
+                  categoryItem: '' 
+                }));
+                // Clear vendor ID when user types manually
+                setSelectedVendorId('');
+              }}
               onSelect={handleVendorSelect}
               vendors={vendors}
               disabled={loading.vendors}
@@ -851,7 +877,12 @@ function AddStock({ onClose, onSuccess, editData = null }) {
             />
             {formData.vendor && (
               <p className="mt-1 text-xs text-gray-500">
-                Selected: {formData.vendor} | Products: {vendorProducts.length}
+                Selected: {formData.vendor}
+                {selectedVendorId && (
+                  <span className="ml-2 text-green-600">
+                    ✓ (ID: {selectedVendorId.substring(0, 8)}...)
+                  </span>
+                )}
               </p>
             )}
           </div>
@@ -882,10 +913,6 @@ function AddStock({ onClose, onSuccess, editData = null }) {
               <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
                 <div className="text-sm text-gray-700">
                   <span className="font-medium">Selected:</span> {selectedProduct.productName}
-                  {selectedProduct.brand && <span className="ml-2">| Brand: {selectedProduct.brand}</span>}
-                  {selectedProduct.unit && <span className="ml-2">| Unit: {selectedProduct.unit}</span>}
-                  {selectedProduct.branch && <span className="ml-2">| Branch ID: {selectedProduct.branch}</span>}
-                  <span className="ml-2">| Serial Mode: {isSerial ? 'Yes (1)' : 'No (0)'}</span>
                 </div>
               </div>
             )}
@@ -944,18 +971,12 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                 No Warranty
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Apply same warranty to all items (optional) - Each item can have individual warranty
-            </p>
           </div>
         </div>
 
         {/* Stock Items Table */}
         <div>
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-base md:text-lg font-semibold text-gray-800">
-              Stock Details
-            </h2>
+          <div className="flex justify-end items-center mb-3">
             {isSerial === true && (
               <button
                 type="button"
@@ -1028,10 +1049,10 @@ function AddStock({ onClose, onSuccess, editData = null }) {
                 <span className="ml-1">{selectedProduct.unit}</span>
               </>
             )}
-            {selectedProduct?.branch && (
+            {selectedProduct?.warehouse && (
               <>
-                <span className="font-medium ml-2">| Branch ID:</span>
-                <span className="ml-1">{selectedProduct.branch}</span>
+                <span className="font-medium ml-2">| Warehouse ID:</span>
+                <span className="ml-1">{selectedProduct.warehouse}</span>
               </>
             )}
           </div>
