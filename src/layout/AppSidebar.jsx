@@ -22,12 +22,19 @@ const navItems = [
     subItems: [{ name: "Ecommerce", path: "/", pro: false }],
   },
 
-   {
-    name: "Vendors",
+  {
+    name: "Products",
     icon: <VendorIcon className=" w-5" />,
     subItems: [
       { name: "Product Group", path: "/products-group", pro: false },
       { name: "Product", path: "/products", pro: false },
+    ],
+  },
+
+   {
+    name: "Vendors",
+    icon: <VendorIcon className=" w-5" />,
+    subItems: [
       { name: "Vendor ", path: "/vendor", pro: false }
     ],
   },
