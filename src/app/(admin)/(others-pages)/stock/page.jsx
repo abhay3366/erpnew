@@ -7,6 +7,7 @@ import { MdClose, MdEdit, MdDelete } from "react-icons/md";
 
 import { useEffect, useState } from "react";
 import StockForm from "../../../../components/stock/StockForm";
+import DataFetcher from "../../../../components/DataFetcher";
 
 
 // import VendorForm from "../../../../../components/vendor/VendorForm";
@@ -25,7 +26,7 @@ const StockPage = () => {
   // Fetch vendor from backend
   const fetchStocks = async () => {
     try {
-      const res = await fetch("http://localhost:5001/stocks"); // replace with your API
+      const res = await fetch("http://localhost:5001/stocks"); 
       const data = await res.json();
       setStocks(data);
     } catch (error) {
@@ -140,7 +141,7 @@ const StockPage = () => {
                 return (
                   <tr key={stock.id} className={rowClass}>
                     <td className="px-2 py-0.5 whitespace-nowrap">{index + 1}</td>
-                    <td className="px-2 py-0.5 whitespace-nowrap">{stock.productId}{stock.items && stock.items.length > 0 && (
+                    <td className="px-2 py-0.5 whitespace-nowrap"><DataFetcher type="product" id={stock.productId} />  {stock.items && stock.items.length > 0 && (
                       <button
                         onClick={() => showSerials(stock.items)}
                         className="text-blue-500 px-1 text-xs font-bold rounded hover:bg-blue-100"
@@ -149,7 +150,7 @@ const StockPage = () => {
                       </button>
                     )}</td>
                     <td className="px-2 py-0.5 whitespace-nowrap">{stock.quantity}</td>
-                    <td className="px-2 py-0.5 whitespace-nowrap">{stock.vendorId}</td>
+                    <td className="px-2 py-0.5 whitespace-nowrap"> <DataFetcher type="vendor" id={stock.vendorId} /></td>
 
                     <td className="px-2 py-0.5 whitespace-nowrap flex gap-2 items-center mt-5">
                       {/* <button

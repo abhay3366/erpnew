@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { MdDelete } from "react-icons/md";
+import DataFetcher from "../DataFetcher";
+
 export default function TransfersList() {
   const [transfers, setTransfers] = useState([]);
 
@@ -22,61 +24,55 @@ export default function TransfersList() {
     });
 
     fetchTransfers();
-   toast.success("Delete transfer list successfully")
+    toast.success("Deleted transfer successfully");
   };
-  var sr=1;
+
+  let sr = 1;
+
   return (
     <div className="p-4">
-     
+      
 
-      <table className="w-full border">
-        <thead className="bg-gray-100">
-          <tr>
-             <th className="border p-2">Sr.No</th>
-            <th className="border p-2">Product</th>
-            <th className="border p-2">From</th>
-            <th className="border p-2">To</th>
-            <th className="border p-2">Quantity</th>
-            <th className="border p-2">Action</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {transfers.map((t) => (
-            <tr key={t.id}>
-              <td className="p-2">{sr++}</td>
-              <td className="border p-2">
-                {t.productName} ({t.productId})
-              </td>
-
-              <td className="border p-2">
-                {t.fromBranchName} ({t.fromBranchId})
-              </td>
-
-              <td className="border p-2">
-                {t.toBranchName} ({t.toBranchId})
-              </td>
-
-              <td className="border p-2">
-                {t.rows.map((r, i) => (
-                  <div key={i}>
-                    {r.serial} - {r.quantity}
-                  </div>
-                ))}
-              </td>
-
-              <td className="border p-2 text-center">
-                <button
-                  onClick={() => handleDelete(t.id)}
-                  className=" text-red-600 px-3 py-1"
-                >
-                  <MdDelete />
-                </button>
-              </td>
+      <div className="overflow-x-auto">
+        <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border-b p-3 text-left text-sm font-medium text-gray-700">Sr. No</th>
+              <th className="border-b p-3 text-left text-sm font-medium text-gray-700">Product</th>
+              <th className="border-b p-3 text-left text-sm font-medium text-gray-700">From</th>
+              <th className="border-b p-3 text-left text-sm font-medium text-gray-700">To</th>
+              <th className="border-b p-3 text-left text-sm font-medium text-gray-700">Quantity</th>
+              <th className="border-b p-3 text-center text-sm font-medium text-gray-700">Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody className="bg-white divide-y divide-gray-200">
+            {transfers.map((t) => (
+              <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                <td className="p-3 text-sm text-gray-600">{sr++}</td>
+                <td className="p-3 text-sm text-gray-600">
+                  <DataFetcher type="product" id={t.productId} />
+                </td>
+                <td className="p-3 text-sm text-gray-600">
+                  <DataFetcher type="fromWarehouse" id={t.fromWarehouse} />
+                </td>
+                <td className="p-3 text-sm text-gray-600">
+                  <DataFetcher type="toWarehouse" id={t.toWarehouse} />
+                </td>
+                <td className="p-3 text-sm text-gray-600">{t.quantity}</td>
+                <td className="p-3 text-center">
+                  <button
+                    onClick={() => handleDelete(t.id)}
+                    className="inline-flex items-center px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition"
+                  >
+                    <MdDelete className="w-5 h-5" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

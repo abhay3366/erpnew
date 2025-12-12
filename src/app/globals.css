@@ -774,7 +774,9 @@ span.flatpickr-weekday,
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out forwards;
 }
-
+label{
+  color: #344054 !important;
+}
 
 
 

@@ -70,7 +70,7 @@ function flattenTable(list, parentName = "—") {
 export default function ProductsGroup() {
     const [tree, setTree] = useState([]);
     const [name, setName] = useState("");
-    const [slug, setSlug] = useState("");
+    const [slug, setSlug] = useState("slug");
     const [parentId, setParentId] = useState("");
     const [status, setStatus] = useState(true); // Active by default
     const [editId, setEditId] = useState(null);
@@ -300,6 +300,7 @@ export default function ProductsGroup() {
 
                             {/* Slug */}
                             <input
+                                hidden
                                 className="inputCss"
                                 placeholder="Slug"
                                 value={slug}

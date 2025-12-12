@@ -8,6 +8,7 @@ import { MdClose } from "react-icons/md";
 import Select from "react-select";
 import RandomSerialList from "../../../../../components/Transfer/RandomSerialList";
 import ManualSerialSelection from "../../../../../components/Transfer/ManualSerialSelection";
+import TransfersList from "../../../../../components/Transfer/TransfersList";
 
 const TransferredItems = () => {
   const { register, handleSubmit, watch, control, formState: { errors }, reset } = useForm();
@@ -21,12 +22,10 @@ const TransferredItems = () => {
   console.log("🚀 ~ TransferredItems ~ stockData:", stockData)
   const [selected, setSelected] = useState("random");
   const [productWithSerial, setProductWithSerial] = useState([]);
-  console.log("🚀 ~ TransferredItems ~ productWithSerial:", productWithSerial)
   const [randomSerialSelectedProduct, setRandomSerialSelectedProduct] = useState([]);
   const [manualSerialSelectedProduct, setManualSerialSelectedProduct] = useState([]);
-  console.log("🚀 ~ TransferredItems ~ manualSerialSelectedProduct:", manualSerialSelectedProduct)
   const [chooseProduct, setChooseProduct] = useState(null)
-  const [noSerialData,setNoSerialData]=useState({})
+  const [noSerialData, setNoSerialData] = useState({})
 
 
   // Fetch products
@@ -56,7 +55,6 @@ const TransferredItems = () => {
     try {
       const res = await fetch('http://localhost:5001/stocks');
       const data = await res.json();
-      console.log("🚀 ~ fetchStock ~ data:", data)
       setStockData(data);
     } catch (error) {
       console.log(error);
@@ -64,46 +62,63 @@ const TransferredItems = () => {
   };
 
   // fetch stock based on id
- const id = watch("productId");
-  useEffect(()=>{
-   const isSerialData= stockData.filter((el)=>el.productId==id);
-   console.log("🚀 ~ adfsd ~ isSerialData:", isSerialData)
-
+  const id = watch("productId");
+  useEffect(() => {
+    const isSerialData = stockData.filter((el) => el.productId == id);
     setNoSerialData(isSerialData)
-   
-  },[id])
+
+  }, [id])
+  const inputQuantity = watch("quantity");
+
+// useEffect(() => {
+//   if (noSerialData.length > 0 && inputQuantity !== undefined) {
+    
+//     const timer = setTimeout(() => {
+//       const afterTransfer = noSerialData[0].quantity - inputQuantity;
+
+//       setNoSerialData(prev =>
+//         prev.map((item, i) =>
+//           i === 0 ? { ...item, quantity: afterTransfer } : item
+//         )
+//       );
+
+//        // Database Update API Call
+//        updateStockInDB(noSerialData[0].id, afterTransfer);
+      
+//     }, 500); // delay (ms)
+
+//     return () => clearTimeout(timer);  // cleanup
+//   }
+// }, [inputQuantity]);
 
 
-  console.log("🚀 ~ noSerialData ~ id:", noSerialData)
+console.log("SDf",noSerialData)
+
+
   const fetchStockBasedOnId = async () => {
-
   };
 
 
-
-
-  // Form submit
   // Form submit
   const onSubmit = async (data) => {
-
-   // Non-serial item → quantity user dalta hai → DON'T override
-  if (selectedProduct?.isSerial === "0") {
-    data.serial = [];
-    data.serials = [];
-  }
-
-  // Serial Product
-  else {
-    if (selected === "manual") {
-      data.quantity = manualSerialSelectedProduct.length;
-      data.serial = manualSerialSelectedProduct.map(s => s.serial);
-      data.serials = manualSerialSelectedProduct;
-    } else {
-      data.quantity = randomSerialSelectedProduct.length;
-      data.serial = randomSerialSelectedProduct.map(s => s.serial);
-      data.serials = randomSerialSelectedProduct;
+    // Non-serial item → quantity user dalta hai → DON'T override
+    if (selectedProduct?.isSerial === "0") {
+      data.serial = [];
+      data.serials = [];
     }
-  }
+
+    // Serial Product
+    else {
+      if (selected === "manual") {
+        data.quantity = manualSerialSelectedProduct.length;
+        data.serial = manualSerialSelectedProduct.map(s => s.serial);
+        data.serials = manualSerialSelectedProduct;
+      } else {
+        data.quantity = randomSerialSelectedProduct.length;
+        data.serial = randomSerialSelectedProduct.map(s => s.serial);
+        data.serials = randomSerialSelectedProduct;
+      }
+    }
 
     try {
       const res = await fetch("http://localhost:5001/transfers", {
@@ -129,6 +144,42 @@ const TransferredItems = () => {
       } else {
         toast.error(result.message || "Something went wrong");
       }
+
+
+      // Find stock entry
+const productStock = stockData.find(s => s.productId == selectedProduct.value);
+
+if (productStock) {
+  // Calculate new quantity
+  const newStock = productStock.quantity - data.quantity;
+
+  // Prepare updated object keeping all fields
+  const updatedStock = {
+    ...productStock,   // keep productId, vendorId, etc.
+    quantity: newStock // only update quantity
+  };
+
+  // Update DB
+  await fetch(`http://localhost:5001/stocks/${productStock.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updatedStock),
+  });
+
+  // Update local state
+  setStockData(prev =>
+    prev.map(item =>
+      item.id === productStock.id ? { ...item, quantity: newStock } : item
+    )
+  );
+}
+
+
+
+
+
+
+
     } catch (error) {
       console.log(error);
       toast.error("Network error or server error");
@@ -139,13 +190,12 @@ const TransferredItems = () => {
     fetchProduct();
     fetchWarehouses();
     fetchStock();
-
   }, []);
-  console.log("🚀 ~ TransferredItems ~ warehouses:", warehouses)
+
   useEffect(() => {
     checkIsSerialAndFindMacSerial();
   }, [selectedProduct, stockData]);
-  console.log("🚀 ~ checkIsSerialAndFindMacSerial ~ stockData:", stockData)
+
   const checkIsSerialAndFindMacSerial = () => {
     const filterData = stockData.filter(el => (el.productId == selectedProduct?.value || null));
 
@@ -156,11 +206,6 @@ const TransferredItems = () => {
       setProductWithSerial(isSerialYesProduct);
     }
   };
-
-  // --------------------------watch product---------------------------------
-  //---------------------------------------------------------------------------
-
-
 
 
   // ---------watch formhouse and to house ------------------------------------------
@@ -176,93 +221,63 @@ const TransferredItems = () => {
   }, [fromWarehouse, toWarehouse]);
 
 
-  //------------------------------------------------------------------------------
-  //-------------------------------------------------------------------------------
-
-
   // ----------watch serialqauantit----------------------------------------------------
   //--------------------------------------------------------------------------------
-  console.log("🚀 ~ TransferredItems ~ selectedProduct:", selectedProduct?.isSerial || "")
+
 
   // When quantity changes — apply rules for BOTH serial & non-serial products
-const qty = watch("quantity");
+  const qty = watch("quantity");
 
-// Fetch stock when product changes
-useEffect(() => {
-  if (!selectedProduct?.value) return;
-  fetchStockBasedOnId();
-}, [selectedProduct]);
-    
+  // Fetch stock when product changes
+  useEffect(() => {
+    if (!selectedProduct?.value) return;
+    fetchStockBasedOnId();
+  }, [selectedProduct]);
 
-useEffect(() => {
-  if (!qty || qty <= 0) return;
 
-  let total = 0;
+  useEffect(() => {
+    if (!qty || qty <= 0) return;
 
-  // SERIAL PRODUCT
-  if (selectedProduct?.isSerial === "1") {
-    total = productWithSerial?.length || 0;
+    let total = 0;
 
-    if (qty > total) {
-      toast.error("Insufficient Stock!");
+    // SERIAL PRODUCT
+    if (selectedProduct?.isSerial === "1") {
+      total = productWithSerial?.length || 0;
+
+      if (qty > total) {
+        toast.error("Insufficient Stock!");
+        setRandomSerialSelectedProduct([]);
+        return;
+      }
+
+      const shuffled = [...productWithSerial].sort(() => 0.5 - Math.random());
+      const selectedItems = shuffled.slice(0, qty).map(s => ({
+        serial: s.serial,
+        mac: s.mac,
+        warranty: s.warranty,
+      }));
+
+      setRandomSerialSelectedProduct(selectedItems);
+    }
+
+    // NON-SERIAL PRODUCT
+    else if (selectedProduct?.isSerial === "0") {
+
+      total = noSerialData[0]?.quantity || 0;
+
+
+      if (qty > total) {
+        toast.error("Insufficient Stock!");
+        return;
+      }
+
+      // Non-serial items me random serial nahi hota
       setRandomSerialSelectedProduct([]);
-      return;
     }
 
-    const shuffled = [...productWithSerial].sort(() => 0.5 - Math.random());
-    const selectedItems = shuffled.slice(0, qty).map(s => ({
-      serial: s.serial,
-      mac: s.mac,
-      warranty: s.warranty,
-    }));
-
-    setRandomSerialSelectedProduct(selectedItems);
-  }
-
-  // NON-SERIAL PRODUCT
-  else if (selectedProduct?.isSerial === "0") {
-          
-    total = noSerialData[0]?.quantity || 0;
-    console.log("🚀 ~ total ~ total:", total)
-
-    if (qty > total) {
-      toast.error("Insufficient Stock!");
-      return;
-    }
-
-    // Non-serial items me random serial nahi hota
-    setRandomSerialSelectedProduct([]);
-  }
-
-}, [qty, productWithSerial, selectedProduct]);
+  }, [qty, productWithSerial, selectedProduct]);
 
 
-
-  // const qty = watch("quantity");
-  // useEffect(() => {
-  //   if (!qty) return;
-
-  //   const total = productWithSerial?.length || 0;
-  //   console.log("🚀 ~ TransferredItems ~ productWithSerial:", productWithSerial)
-
-  //   if (qty > total) {
-  //     toast.error("Insufficient Stock!");
-  //     return;
-  //   }
-
-  //   const shuffled = [...(productWithSerial || [])].sort(() => 0.5 - Math.random());
-  //   const selectedSerials = shuffled.slice(0, qty).map(s => ({
-  //     serial: s.serial,
-  //     mac: s.mac,
-  //     warranty: s.warranty
-  //   }));
-
-  //   setRandomSerialSelectedProduct(selectedSerials);
-  // }, [qty, productWithSerial]);
-
-
-  //---------------------------------------------------------------------------------------
-  //-------------------------------------------------------------------------------------
 
   // --------watch serial------------------------------------------------------------------
   //-----------------------------------------------------------------------------------
@@ -292,6 +307,9 @@ useEffect(() => {
           </div>
         </div>
       </div>
+
+      {/* transfer lise */}
+      <TransfersList/>
 
       {/* Modal */}
       {isModalOpen && (
