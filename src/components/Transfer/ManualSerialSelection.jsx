@@ -1,29 +1,33 @@
-
-"use client"
+"use client";
 import { useState } from "react";
 import Modal from "../Modal";
 
-
-const ManualSerialSelection = ({ mannualSerialSelectedProduct }) => {
-  console.log("🚀 ~ ManualSerialSelection ~ mannualSerialSelectedProduct:", mannualSerialSelectedProduct)
+const ManualSerialSelection = ({ mannualSerialSelectedProduct = [] }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const visibleItems = mannualSerialSelectedProduct?.slice(0, 2);
-    console.log("🚀 ~ RandomSerialList ~ mannualSerialSelectedProduct:", mannualSerialSelectedProduct)
-    
+  // Show first 2 items only
+  const visibleItems = mannualSerialSelectedProduct.slice(0, 2);
+
   return (
     <div>
-      <div className="p-1 mt-2 bg-amber-100 rounded-lg flex gap-1">
-        {visibleItems?.map((el) => (
-          <div key={el.serialNumber} className="mb-2 p-0.5 border border-gray-300 rounded-md flex gap-2">
-            <span className="text-xs"><strong>S No:</strong> {el.serialNumber}</span>
-            <span className="text-xs"><strong>MAC Add:</strong> {el.macAddress}</span>
+      {/* Small Preview */}
+      <div className="p-2 mt-2 bg-amber-100 rounded-lg flex flex-wrap gap-2">
+        {visibleItems.map((item, index) => (
+          <div
+            key={index}
+            className="p-2 border border-gray-300 rounded-md text-xs flex flex-col"
+          >
+            <span><strong>S No:</strong> {item.serial}</span>
+            <span><strong>MAC:</strong> {item.mac}</span>
+            <span><strong>Warranty:</strong> {item.warranty}</span>
           </div>
         ))}
 
-        {mannualSerialSelectedProduct?.length > 1 && (
+        {/* More Button */}
+        {mannualSerialSelectedProduct.length > 1 && (
           <button
-            className="ml-2 text-blue-600 font-medium underline"
+            type="button"
+            className="text-blue-600 underline font-medium text-sm"
             onClick={() => setIsModalOpen(true)}
           >
             More...
@@ -31,22 +35,34 @@ const ManualSerialSelection = ({ mannualSerialSelectedProduct }) => {
         )}
       </div>
 
+      {/* Full Modal List */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="All Serial Data"
       >
         <div className="flex flex-col gap-2">
-          {mannualSerialSelectedProduct?.map((el) => (
+          {mannualSerialSelectedProduct.map((item, index) => (
             <div
-              key={el.serialNumber}
-              className="p-2 border border-gray-300 rounded-md flex gap-2"
+              key={index}
+              className="p-2 border border-gray-300 rounded-md text-sm"
             >
-              <span><strong>S No:</strong> {el.serialNumber}</span>
-              <span><strong>MAC Add:</strong> {el.macAddress}</span>
-              <span><strong>Warranty:</strong> {el.warranty}</span>
+              <p><strong>S No:</strong> {item.serial}</p>
+              <p><strong>MAC:</strong> {item.mac}</p>
+              <p><strong>Warranty:</strong> {item.warranty}</p>
             </div>
           ))}
+        </div>
+
+        {/* Close Modal Button */}
+        <div className="flex justify-end mt-4">
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+          >
+            Close
+          </button>
         </div>
       </Modal>
     </div>

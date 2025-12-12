@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useForm } from "react-hook-form"; // 🔹 Added
+import { useForm } from "react-hook-form";
 import { FaPlus } from "react-icons/fa";
 import AddModalCat from "./AddModalCat";
 import toast from "react-hot-toast";
 
-export default function AddItem({ fetchProducts, setOpen, editProduct,setEditProduct }) {
-  const [branches, setBranches] = useState([]);
+export default function AddItem({ fetchProducts, setOpen, editProduct, setEditProduct }) {
+  const [warehouses, setWarehouses] = useState([]);
   const [categories, setCategories] = useState([]);
 
   const {
@@ -19,8 +19,8 @@ export default function AddItem({ fetchProducts, setOpen, editProduct,setEditPro
     formState: { errors },
   } = useForm({
     defaultValues: {
-      warehouse: "",
-      category: [],
+      warehouseId: "",
+      productGroup: [],
       productName: "",
       slug: "",
       unit: "",
@@ -30,9 +30,8 @@ export default function AddItem({ fetchProducts, setOpen, editProduct,setEditPro
     },
   });
 
-  const formData = watch(); // 🔹 Watching form values live
-
-  const [showCategoryModal, setshowCategoryModal] = useState(false);
+  const formData = watch();
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const categoryRef = useRef(null);
   const [preview, setPreview] = useState("");
@@ -68,34 +67,37 @@ export default function AddItem({ fetchProducts, setOpen, editProduct,setEditPro
     setPreview(base64);
   };
 
+  // URL Input
   const handleUrlChange = (e) => {
     const url = e.target.value;
     setValue("image", url);
     setPreview(url);
   };
 
+  // Toggle category selection
   const toggleCategory = (id) => {
-    const current = watch("category");
+    const current = watch("productGroup");
     const updated = current.includes(id)
       ? current.filter((x) => x !== id)
       : [...current, id];
-
-    setValue("category", updated);
+    setValue("productGroup", updated);
   };
 
-  // Fetch Data
+  // Fetch warehouses
   useEffect(() => {
-    fetch("http://localhost:5001/branches")
+    fetch("http://localhost:5001/warehouses")
       .then((res) => res.json())
-      .then((data) => setBranches(data || []));
+      .then((data) => setWarehouses(data || []));
   }, []);
 
+  // Fetch categories
   useEffect(() => {
     fetch("http://localhost:5001/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data.list || data || []));
   }, []);
 
+  // Close category dropdown when clicking outside
   useEffect(() => {
     const outside = (e) => {
       if (categoryRef.current && !categoryRef.current.contains(e.target)) {
@@ -106,55 +108,53 @@ export default function AddItem({ fetchProducts, setOpen, editProduct,setEditPro
     return () => document.removeEventListener("mousedown", outside);
   }, []);
 
+  // Flatten categories for display
   const flatten = (arr) =>
     arr.flatMap((c) => [c, ...(c.children ? flatten(c.children) : [])]);
 
   const getCategoryNames = () =>
     flatten(categories)
-      .filter((c) => watch("category").includes(c.id))
+      .filter((c) => watch("productGroup").includes(c.id))
       .map((c) => c.name)
       .join(", ");
 
-
-
+  // Edit product effect
   useEffect(() => {
-  if (editProduct) {
-    reset({
-      warehouse: editProduct.warehouse || "",
-      category: editProduct.category || [],
-      productName: editProduct.productName || "",
-      slug: editProduct.slug || "",
-      unit: editProduct.unit || "",
-      isSerial: editProduct.isSerial || "",
-      sku: editProduct.sku || "",
-      image: editProduct.image || ""
-    });
+    if (editProduct) {
+      reset({
+        warehouseId: editProduct.warehouseId || "",
+        productGroup: editProduct.productGroup || [],
+        productName: editProduct.productName || "",
+        slug: editProduct.slug || "",
+        unit: editProduct.unit || "",
+        isSerial: editProduct.isSerial || "",
+        sku: editProduct.sku || "",
+        image: editProduct.image || ""
+      });
 
-    if (editProduct.image) {
-      setPreview(editProduct.image); // Image show in preview also
+      if (editProduct.image) {
+        setPreview(editProduct.image);
+      }
     }
-  }
-}, [editProduct, reset]);
-  // Submit Handler — unchanged behavior 🔥
+  }, [editProduct, reset]);
+
+  // Submit handler
   const onSubmit = async (data) => {
     try {
-      console.log("🚀 ~ onSubmit ~ editProduct:", editProduct)
       if (editProduct) {
         const res = await fetch(`http://localhost:5001/products/${editProduct.id}`, {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data)
-        })
+        });
         if (!res.ok) {
-          toast.error("Error saving product");
+          toast.error("Error updating product");
           return;
         }
         await fetchProducts();
-        toast.success("Product Update saved!");
+        toast.success("Product updated!");
         reset();
-        setEditProduct(!editProduct)
+        setEditProduct(null);
         setPreview("");
         setOpen(false);
       } else {
@@ -173,26 +173,22 @@ export default function AddItem({ fetchProducts, setOpen, editProduct,setEditPro
         setPreview("");
         setOpen(false);
       }
-
-
-     
     } catch (error) {
-      console.log(error)
+      console.log(error);
+      toast.error("Something went wrong");
     }
-
   };
 
   return (
     <>
-      <form className="max-w-6xl mx-auto bg-white" onSubmit={handleSubmit(onSubmit)}>
+      <form className="max-w-6xl mx-auto bg-white p-6" onSubmit={handleSubmit(onSubmit)}>
         {/* Row 1 */}
         <div className="grid grid-cols-3 gap-6">
           <InputSelect
-            label="Warehouse"
-            options={branches.map((b) => ({ value: b.id, label: b.branchName }))}
-            {...register("warehouse", { required: true })}
-            error={errors.warehouse}
-            
+            label="Select Warehouse"
+            options={warehouses.map((b) => ({ value: b.id, label: b.fromWarehouse }))}
+            {...register("warehouseId", { required: true })}
+            error={errors.warehouseId}
           />
 
           <Input label="Product Name" {...register("productName", { required: true })} error={errors.productName} />
@@ -200,34 +196,48 @@ export default function AddItem({ fetchProducts, setOpen, editProduct,setEditPro
           <Input label="SKU" {...register("sku", { required: true })} error={errors.sku} />
         </div>
 
-        {/* Category */}
-        <div className="mt-4" ref={categoryRef}>
-          <label className="text-gray-700 text-sm">Product Group</label>
-          <div
-            className="h-12 mt-2 flex items-center justify-between border border-gray-300 bg-gray-50 rounded-lg px-3 cursor-pointer"
-            onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-          >
-            <span className="truncate text-sm">
-              {watch("category").length ? getCategoryNames() : "Select Product Group"}
-            </span>
+        {/* Product Group */}
+      {/* Product Group */}
+<div className="mt-4" ref={categoryRef}>
+  <label className="text-gray-700 text-sm">Product Group</label>
+  <div
+    className="h-12 mt-2 flex items-center justify-between border border-gray-300 bg-gray-50 rounded-lg px-3 cursor-pointer"
+    onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+  >
+    <span className="truncate text-sm">
+      {watch("productGroup").length ? getCategoryNames() : "Select Product Group"}
+    </span>
 
-            <FaPlus
-              className="hover:bg-gray-200 p-1 rounded"
-              onClick={(e) => {
-                e.stopPropagation();
-                setshowCategoryModal(true);
-              }}
-            />
-          </div>
+    <FaPlus
+      className="hover:bg-gray-200 p-1 rounded"
+      onClick={(e) => {
+        e.stopPropagation();
+        setShowCategoryModal(true);
+      }}
+    />
+  </div>
 
-          {categoryDropdownOpen && (
-            <div className="absolute bg-white border mt-1 rounded-lg w-full shadow z-50 max-h-64 p-2 overflow-auto">
-              {categories.map((cat) => (
-                <CatItem key={cat.id} item={cat} level={0} selected={watch("category")} toggle={toggleCategory} />
-              ))}
-            </div>
-          )}
-        </div>
+  {categoryDropdownOpen && (
+    <div className="absolute bg-white border mt-1 rounded-lg w-full shadow z-50 max-h-64 p-2 overflow-auto">
+      {categories.map((cat) => (
+        <CatItem
+          key={cat.id}
+          item={cat}
+          level={0}
+          selected={watch("productGroup")}
+          toggle={(id) => {
+            const current = watch("productGroup");
+            const updated = current.includes(id)
+              ? current.filter((x) => x !== id)
+              : [...current, id];
+            setValue("productGroup", updated);
+          }}
+        />
+      ))}
+    </div>
+  )}
+</div>
+
 
         {/* Row 2 */}
         <div className="grid grid-cols-3 gap-6 mt-4">
@@ -286,7 +296,7 @@ export default function AddItem({ fetchProducts, setOpen, editProduct,setEditPro
       {showCategoryModal && (
         <AddModalCat
           isOpen={showCategoryModal}
-          onClose={() => setshowCategoryModal(false)}
+          onClose={() => setShowCategoryModal(false)}
           onCategoryAdded={async () => {
             const res = await fetch("http://localhost:5001/categories");
             const data = await res.json();

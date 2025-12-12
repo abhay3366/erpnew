@@ -14,14 +14,15 @@ const RandomSerialList = ({ randomSerialSelectedProduct }) => {
     <div>
       <div className="p-1 mt-2 bg-amber-100 rounded-lg flex gap-1">
         {visibleItems?.map((el) => (
-          <div key={el.serialNumber} className="mb-2 p-0.5 border border-gray-300 rounded-md flex gap-2">
-            <span className="text-xs"><strong>S No:</strong> {el.serialNumber}</span>
-            <span className="text-xs"><strong>MAC Add:</strong> {el.macAddress}</span>
+          <div key={el.serial} className="mb-2 p-0.5 border border-gray-300 rounded-md flex gap-2">
+            <span className="text-xs"><strong>S No:</strong> {el.serial}</span>
+            <span className="text-xs"><strong>MAC Add:</strong> {el.mac}</span>
           </div>
         ))}
 
         {randomSerialSelectedProduct?.length > 1 && (
           <button
+              type="button"
             className="ml-2 text-blue-600 font-medium underline"
             onClick={() => setIsModalOpen(true)}
           >
@@ -38,11 +39,11 @@ const RandomSerialList = ({ randomSerialSelectedProduct }) => {
         <div className="flex flex-col gap-2">
           {randomSerialSelectedProduct?.map((el) => (
             <div
-              key={el.serialNumber}
+              key={el.serial}
               className="p-2 border border-gray-300 rounded-md flex gap-2"
             >
-              <span><strong>S No:</strong> {el.serialNumber}</span>
-              <span><strong>MAC Add:</strong> {el.macAddress}</span>
+              <span><strong>S No:</strong> {el.serial}</span>
+              <span><strong>MAC Add:</strong> {el.mac}</span>
               <span><strong>Warranty:</strong> {el.warranty}</span>
             </div>
           ))}

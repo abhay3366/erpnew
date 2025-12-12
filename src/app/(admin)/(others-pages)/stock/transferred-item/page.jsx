@@ -10,17 +10,24 @@ import RandomSerialList from "../../../../../components/Transfer/RandomSerialLis
 import ManualSerialSelection from "../../../../../components/Transfer/ManualSerialSelection";
 
 const TransferredItems = () => {
-  const { register, handleSubmit, watch, control, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, control, formState: { errors }, reset } = useForm();
   const [isModalOpen, setModalOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
+
   const [selectedProduct, setSelectedProduct] = useState(null);
+
   const [stockData, setStockData] = useState([]);
+  console.log("🚀 ~ TransferredItems ~ stockData:", stockData)
   const [selected, setSelected] = useState("random");
   const [productWithSerial, setProductWithSerial] = useState([]);
+  console.log("🚀 ~ TransferredItems ~ productWithSerial:", productWithSerial)
   const [randomSerialSelectedProduct, setRandomSerialSelectedProduct] = useState([]);
   const [manualSerialSelectedProduct, setManualSerialSelectedProduct] = useState([]);
-  const [chooseProduct,setChooseProduct]=useState(null)
+  console.log("🚀 ~ TransferredItems ~ manualSerialSelectedProduct:", manualSerialSelectedProduct)
+  const [chooseProduct, setChooseProduct] = useState(null)
+  const [noSerialData,setNoSerialData]=useState({})
+
 
   // Fetch products
   const fetchProduct = async () => {
@@ -36,7 +43,7 @@ const TransferredItems = () => {
   // Fetch warehouses
   const fetchWarehouses = async () => {
     try {
-      const res = await fetch('http://localhost:5001/branches'); // assuming API still returns warehouses
+      const res = await fetch('http://localhost:5001/warehouses'); // assuming API still returns warehouses
       const data = await res.json();
       setWarehouses(data);
     } catch (error) {
@@ -49,6 +56,7 @@ const TransferredItems = () => {
     try {
       const res = await fetch('http://localhost:5001/stocks');
       const data = await res.json();
+      console.log("🚀 ~ fetchStock ~ data:", data)
       setStockData(data);
     } catch (error) {
       console.log(error);
@@ -56,37 +64,66 @@ const TransferredItems = () => {
   };
 
   // fetch stock based on id
-  //  const id = watch("product");
-  //   console.log("🚀 ~ TransferredItems ~ id:", id)
-  //   const fetchStockBasedOnId = async () => {
- 
-  //   console.log("🚀 ~ fetchStockBasedOnId ~ id:", id)
-  //   console.log(`http://localhost:5001/stocks/${id}`)
-  //   try {
-  //     const res = await fetch(`http://localhost:5001/stocks/${id}`);
-  //     const data = await res.json();
-  //     console.log("🚀 ~ fetchStockBasedOnId ~ data:", data)
-  //     setStockData(data);
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
+ const id = watch("productId");
+  useEffect(()=>{
+   const isSerialData= stockData.filter((el)=>el.productId==id);
+   console.log("🚀 ~ adfsd ~ isSerialData:", isSerialData)
 
-  // useEffect(()=>{
-  //   fetchStockBasedOnId();
-  // },[id])
+    setNoSerialData(isSerialData)
+   
+  },[id])
+
+
+  console.log("🚀 ~ noSerialData ~ id:", noSerialData)
+  const fetchStockBasedOnId = async () => {
+
+  };
+
+
 
 
   // Form submit
+  // Form submit
   const onSubmit = async (data) => {
+
+   // Non-serial item → quantity user dalta hai → DON'T override
+  if (selectedProduct?.isSerial === "0") {
+    data.serial = [];
+    data.serials = [];
+  }
+
+  // Serial Product
+  else {
+    if (selected === "manual") {
+      data.quantity = manualSerialSelectedProduct.length;
+      data.serial = manualSerialSelectedProduct.map(s => s.serial);
+      data.serials = manualSerialSelectedProduct;
+    } else {
+      data.quantity = randomSerialSelectedProduct.length;
+      data.serial = randomSerialSelectedProduct.map(s => s.serial);
+      data.serials = randomSerialSelectedProduct;
+    }
+  }
+
     try {
       const res = await fetch("http://localhost:5001/transfers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+
       const result = await res.json();
+
       if (res.ok) {
+
+        // 🔥 FORM RESET
+        reset();
+        setSelectedProduct(null);
+        setProductWithSerial([]);
+        setRandomSerialSelectedProduct([]);
+        setManualSerialSelectedProduct([]);
+        fetchStockBasedOnId()
+
         setModalOpen(false);
         toast.success("Transfer Product Successfully");
       } else {
@@ -102,15 +139,16 @@ const TransferredItems = () => {
     fetchProduct();
     fetchWarehouses();
     fetchStock();
-   
-  }, []);
 
+  }, []);
+  console.log("🚀 ~ TransferredItems ~ warehouses:", warehouses)
   useEffect(() => {
     checkIsSerialAndFindMacSerial();
   }, [selectedProduct, stockData]);
-
+  console.log("🚀 ~ checkIsSerialAndFindMacSerial ~ stockData:", stockData)
   const checkIsSerialAndFindMacSerial = () => {
-    const filterData = stockData.filter(el => (el.product.id == selectedProduct?.value || null));
+    const filterData = stockData.filter(el => (el.productId == selectedProduct?.value || null));
+
     if (filterData[0]?.isSerial == "0") {
       // Non-serial product
     } else {
@@ -122,10 +160,10 @@ const TransferredItems = () => {
   // --------------------------watch product---------------------------------
   //---------------------------------------------------------------------------
 
- 
 
 
- // ---------watch formhouse and to house ------------------------------------------
+
+  // ---------watch formhouse and to house ------------------------------------------
 
   const fromWarehouse = useWatch({ control, name: "fromWarehouse" });
   const toWarehouse = useWatch({ control, name: "toWarehouse" });
@@ -138,43 +176,106 @@ const TransferredItems = () => {
   }, [fromWarehouse, toWarehouse]);
 
 
-//------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------
+  //------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------------
 
 
-// ----------watch serialqauantit----------------------------------------------------
-//--------------------------------------------------------------------------------
-  const qty = watch("serialquantity");
-  useEffect(() => {
-    if (!qty) return;
-    if (qty > productWithSerial.length || null) {
-      toast.error("Insufficient balance!");
+  // ----------watch serialqauantit----------------------------------------------------
+  //--------------------------------------------------------------------------------
+  console.log("🚀 ~ TransferredItems ~ selectedProduct:", selectedProduct?.isSerial || "")
+
+  // When quantity changes — apply rules for BOTH serial & non-serial products
+const qty = watch("quantity");
+
+// Fetch stock when product changes
+useEffect(() => {
+  if (!selectedProduct?.value) return;
+  fetchStockBasedOnId();
+}, [selectedProduct]);
+    
+
+useEffect(() => {
+  if (!qty || qty <= 0) return;
+
+  let total = 0;
+
+  // SERIAL PRODUCT
+  if (selectedProduct?.isSerial === "1") {
+    total = productWithSerial?.length || 0;
+
+    if (qty > total) {
+      toast.error("Insufficient Stock!");
+      setRandomSerialSelectedProduct([]);
       return;
     }
+
     const shuffled = [...productWithSerial].sort(() => 0.5 - Math.random());
-    const selectedSerials = shuffled.slice(0, qty).map(s => ({
-      serialNumber: s.serialNumber,
-      macAddress: s.macAddress,
-      warranty: s.warranty
+    const selectedItems = shuffled.slice(0, qty).map(s => ({
+      serial: s.serial,
+      mac: s.mac,
+      warranty: s.warranty,
     }));
-    setRandomSerialSelectedProduct(selectedSerials);
-  }, [qty]);
 
-//---------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------
+    setRandomSerialSelectedProduct(selectedItems);
+  }
 
-// --------watch serial------------------------------------------------------------------
-//-----------------------------------------------------------------------------------
+  // NON-SERIAL PRODUCT
+  else if (selectedProduct?.isSerial === "0") {
+          
+    total = noSerialData[0]?.quantity || 0;
+    console.log("🚀 ~ total ~ total:", total)
 
-  const serialNumbers = watch("serialNumber");
+    if (qty > total) {
+      toast.error("Insufficient Stock!");
+      return;
+    }
+
+    // Non-serial items me random serial nahi hota
+    setRandomSerialSelectedProduct([]);
+  }
+
+}, [qty, productWithSerial, selectedProduct]);
+
+
+
+  // const qty = watch("quantity");
+  // useEffect(() => {
+  //   if (!qty) return;
+
+  //   const total = productWithSerial?.length || 0;
+  //   console.log("🚀 ~ TransferredItems ~ productWithSerial:", productWithSerial)
+
+  //   if (qty > total) {
+  //     toast.error("Insufficient Stock!");
+  //     return;
+  //   }
+
+  //   const shuffled = [...(productWithSerial || [])].sort(() => 0.5 - Math.random());
+  //   const selectedSerials = shuffled.slice(0, qty).map(s => ({
+  //     serial: s.serial,
+  //     mac: s.mac,
+  //     warranty: s.warranty
+  //   }));
+
+  //   setRandomSerialSelectedProduct(selectedSerials);
+  // }, [qty, productWithSerial]);
+
+
+  //---------------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------------------
+
+  // --------watch serial------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------
+
+  const serials = watch("serial");
   useEffect(() => {
     const selectedProducts = productWithSerial?.filter(p =>
-      serialNumbers?.includes(p.serialNumber)
+      serials?.includes(p.serial)
     );
     setManualSerialSelectedProduct(selectedProducts);
-  }, [serialNumbers]);
+  }, [serials]);
 
-//-----------------------------------------------------------------------------------------------
+  //-----------------------------------------------------------------------------------------------
 
   return (
     <div>
@@ -206,7 +307,7 @@ const TransferredItems = () => {
                 <div>
                   <label className="font-medium text-sm mb-2 block">Select Item</label>
                   <Controller
-                    name="product"
+                    name="productId"
                     control={control}
                     rules={{ required: true }}
                     render={({ field }) => (
@@ -223,7 +324,7 @@ const TransferredItems = () => {
                         onChange={(option) => {
                           field.onChange(option.value);
                           setSelectedProduct(option);
-                         
+
                         }}
                       />
                     )}
@@ -241,9 +342,9 @@ const TransferredItems = () => {
                     render={({ field }) => (
                       <Select
                         {...field}
-                        options={warehouses.map(w => ({ value: w.id, label: w.wareHouse }))}
+                        options={warehouses.map(w => ({ value: w.id, label: w.fromWarehouse }))}
                         value={warehouses
-                          .map(w => ({ value: w.id, label: w.wareHouse }))
+                          .map(w => ({ value: w.id, label: w.fromWarehouse }))
                           .find(o => o.value === field.value) || null}
                         onChange={(option) => field.onChange(option.value)}
                       />
@@ -262,9 +363,9 @@ const TransferredItems = () => {
                     render={({ field }) => (
                       <Select
                         {...field}
-                        options={warehouses.map(w => ({ value: w.id, label: w.wareHouse }))}
+                        options={warehouses.map(w => ({ value: w.id, label: w.fromWarehouse }))}
                         value={warehouses
-                          .map(w => ({ value: w.id, label: w.wareHouse }))
+                          .map(w => ({ value: w.id, label: w.fromWarehouse }))
                           .find(o => o.value === field.value) || null}
                         onChange={(option) => field.onChange(option.value)}
                       />
@@ -330,7 +431,7 @@ const TransferredItems = () => {
                             <label className="font-medium text-sm mb-2 block">Quantity</label>
                             <input
                               type="number"
-                              {...register("serialquantity", { required: true })}
+                              {...register("quantity", { required: true })}
                               className="border border-gray-300 rounded-xl p-2 w-full"
                             />
                           </div>
@@ -346,7 +447,7 @@ const TransferredItems = () => {
                             <div>
                               <label className="font-medium text-sm mb-2 block">Serial Number</label>
                               <Controller
-                                name="serialNumber"
+                                name="serial"
                                 control={control}
                                 rules={{ required: true }}
                                 render={({ field }) => (
@@ -354,16 +455,16 @@ const TransferredItems = () => {
                                     {...field}
                                     isMulti
                                     options={productWithSerial?.map(b => ({
-                                      value: b.serialNumber,
-                                      label: `${b.serialNumber} | MAC: ${b.macAddress} | Warranty: ${b.warranty}`,
-                                      macAddress: b.macAddress,
+                                      value: b.serial,
+                                      label: `${b.serial} | MAC: ${b.mac} | Warranty: ${b.warranty}`,
+                                      mac: b.mac,
                                       warranty: b.warranty
                                     }))}
                                     value={productWithSerial
                                       ?.map(b => ({
-                                        value: b.serialNumber,
-                                        label: `${b.serialNumber} | MAC: ${b.macAddress} | Warranty: ${b.warranty}`,
-                                        macAddress: b.macAddress,
+                                        value: b.serial,
+                                        label: `${b.serial} | MAC: ${b.mac} | Warranty: ${b.warranty}`,
+                                        mac: b.mac,
                                         warranty: b.warranty
                                       }))
                                       .filter(o => field.value?.includes(o.value))}
@@ -371,8 +472,10 @@ const TransferredItems = () => {
                                   />
                                 )}
                               />
-                              {errors.serialNumber && <p className="text-red-500 text-sm mt-1">Serial Number is required</p>}
+
+                              {errors.serial && <p className="text-red-500 text-sm mt-1">Serial Number is required</p>}
                             </div>
+
                           </div>
                           <ManualSerialSelection mannualSerialSelectedProduct={manualSerialSelectedProduct} />
                         </div>
