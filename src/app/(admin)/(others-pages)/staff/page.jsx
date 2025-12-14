@@ -1,74 +1,60 @@
 "use client"
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import { IoMdAdd } from "react-icons/io";
-import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from "@headlessui/react";
 import { MdClose, MdEdit, MdDelete } from "react-icons/md";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import AddStaff from "../../../../components/staff/AddStaff";
-import GridView from "../../../../components/vendor/GridView";
+import StaffTable from "../../../../components/staff/StaffTable";
+import { FaCloudDownloadAlt } from "react-icons/fa";
+import CsvUploader from "../../../../components/staff/CsvUploader";
 const StaffPage = () => {
     const [open, setOpen] = useState(false)
-    const [products, setProducts] = useState([]);
-    const [editProduct, setEditProduct] = useState(false);
-    const [gridView, setGridView] = useState(false)
-    const [previewImage, setPreviewImage] = useState(null);
+    const [staff, setStaff] = useState([]);
+    // console.log("🚀 ~ StaffPage ~ staff:", staff)
+    const [editStaff, setEditStaff] = useState(false);
     const [query, setQuery] = useState("");
-    const [filteredProducts, setFilteredProducts] = useState(products);
-    // Fetch products from backend
-    const fetchProducts = async () => {
+    const [filteredStaff, setFilteredStaff] = useState([]);
+
+    const fetchStaff = async () => {
         try {
-            const res = await fetch("http://localhost:5001/products"); // replace with your API
+            const res = await fetch("http://localhost:5001/staff");
             const data = await res.json();
-            setProducts(data);
+            setStaff(data);
+            setFilteredStaff(data);
         } catch (error) {
-            console.error("Error fetching products:", error);
+            console.error("Error fetching staff:", error);
         }
     };
+
     useEffect(() => {
-        fetchProducts();
+        fetchStaff();
     }, []);
-    // Delete a product
-    const handleDelete = async (id) => {
-        if (!confirm("Are you sure you want to delete this product?")) return;
-        try {
-            await fetch(`http://localhost:5001/products/${id}`, { method: "DELETE" });
-            setProducts(products.filter((p) => p.id !== id));
-        } catch (error) {
-            console.error("Error deleting product:", error);
-        }
-    };
-    // Open edit modal
-    const handleEdit = (product) => {
-        setEditProduct(product);
-        setOpen(true);
-    };
-    // Close modal
-    const handleCloseModal = () => {
-        setEditProduct(null);
-        setOpen(false);
-        fetchProducts();
-    };
     useEffect(() => {
-        // Reset filtered products if the original products list changes
-        setFilteredProducts(products);
-    }, [products]);
+
+        setFilteredStaff(staff);
+    }, [staff]);
     const handleSearch = (item) => {
         if (!item) {
-            // If input is empty, show all products
-            setFilteredProducts(products);
+
+            setFilteredStaff(staff);
             return;
         }
-        const results = products.filter((el) =>
-            el.productName.toLowerCase().includes(item.toLowerCase())
+        const results = staff.filter((el) =>
+            el.name.toLowerCase().includes(item.toLowerCase())
         );
-        setFilteredProducts(results);
+        setFilteredStaff(results);
     };
     const handleChange = (e) => {
         const value = e.target.value;
         setQuery(value);
         handleSearch(value);
     };
+    useEffect(() => {
+        if (!open) {
+            setEditStaff(null)
+        }
+    }, [open])
     return (
         <div>
             <PageBreadcrumb className="menu-item-text" pageTitle="Staff Members" />
@@ -84,79 +70,35 @@ const StaffPage = () => {
                         >
                             <IoMdAdd />Add New Staff Member
                         </button>
-                    </div>
-                </div>
-                <div>
-                    {/* PRODUCT TABLE */}
-                    <table className="min-w-full divide-y divide-gray-200 mt-7">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.No</th>
-                                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IsSerial</th>
-                                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-                                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredProducts.map((product, index) => (
-                                <tr key={product.id}>
-                                    <td className="px-2 py-0.5 whitespace-nowrap" >{index + 1}</td>
-                                    <td className="px-2 py-0.5 whitespace-nowrap" onClick={() => setPreviewImage(product.image)}>
-                                        <div className="h-12 w-12  relative">
-                                            <Image
-                                                src={product.image || "/no-image.png"}
-                                                alt={product.productName}
-                                                fill
-                                                className="rounded w-7 h-2 border-2 cursor-pointer"
-                                            />
-                                        </div>
-                                    </td>
-                                    <td className="px-2 py-0.5 whitespace-nowrap" >{product.productName}</td>
-                                    <td className="px-2 py-0.5 whitespace-nowrap" >{product.isSerial}</td>
-                                    <td className="px-2 py-0.5 whitespace-nowrap" >{product.sku}</td>
-                                    <td className="px-2 py-0.5 whitespace-nowrap  flex gap-2  items-center  mt-5" >
-                                        <button
-                                            onClick={() => handleEdit(product)}
-                                            className="text-blue-500 hover:text-blue-700"
-                                        >
-                                            <MdEdit size={20} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(product.id)}
-                                            className="text-red-500 hover:text-red-700"
-                                        >
-                                            <MdDelete size={20} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {/* preview image */}
-            {previewImage && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
-                    onClick={() => setPreviewImage(null)}
-                >
-                    <div className="relative p-2 bg-white rounded shadow-lg">
-                        <img
-                            src={previewImage}
-                            alt="Preview"
-                            className="max-w-[90vw] max-h-[90vh] rounded"
-                        />
                         <button
-                            className="absolute top-2 right-2 text-black bg-white px-2 py-0.5 rounded"
-                            onClick={() => setPreviewImage(null)}
+                            className="bg-brand-500 shadow-theme-xs hover:bg-brand-600 inline-flex items-center justify-center gap-2 rounded-lg px-4  text-sm font-medium text-white transition"
                         >
-                            ✕
+                            <CsvUploader
+                                onUpload={async (data) => {
+                                    try {
+                                        const requests = data.map((row) =>
+                                            fetch("http://localhost:5001/staff", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify(row),
+                                            })
+                                        );
+                                        await Promise.all(requests);
+                                        alert("Staff members imported successfully!");
+                                    } catch (err) {
+                                        console.error(err);
+                                    }
+                                }}
+                            />
+
                         </button>
                     </div>
                 </div>
-            )}
+                {/* staff table */}
+                <StaffTable setFilteredStaff={setFilteredStaff}
+                    filteredStaff={filteredStaff} setStaff={setStaff}
+                    open={open} setOpen={setOpen} setEditStaff={setEditStaff} editStaff={editStaff} staff={staff} />
+            </div>
             {/* form dialoge */}
             <div>
                 <Dialog open={open} onClose={setOpen} className="relative z-[99999]">
@@ -173,10 +115,10 @@ const StaffPage = () => {
                                 >
                                     <div className="relative flex h-full flex-col overflow-y-auto bg-white py-6 shadow-xl after:absolute after:inset-y-0 after:left-0 after:w-px after:bg-white/10">
                                         <div className="px-4 sm:px-6 border-b pb-5">
-                                            <DialogTitle className="text-base font-semibold text-gray-800 flex items-center"><button className="p-2" onClick={() => setOpen(false)}><MdClose size={20} /></button> {editProduct ? "Edit Staff" : ' Add New Staff Member'} </DialogTitle>
+                                            <DialogTitle className="text-base font-semibold text-gray-800 flex items-center"><button className="p-2" onClick={() => setOpen(false)}><MdClose size={20} /></button> {editStaff ? "Edit Staff" : ' Add New Staff Member'} </DialogTitle>
                                         </div>
                                         <div className="relative mt-6 flex-1 px-4 sm:px-6">
-                                            <AddStaff setOpen={setOpen} />
+                                            <AddStaff setOpen={setOpen} setFilteredStaff={setFilteredStaff} setStaff={setStaff} staff={staff} />
                                         </div>
                                     </div>
                                 </DialogPanel>

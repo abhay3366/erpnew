@@ -6,7 +6,10 @@ import { FaPlus } from "react-icons/fa";
 import AddModalCat from "./AddModalCat";
 import toast from "react-hot-toast";
 
-export default function AddItem({ fetchProducts, setOpen, editProduct, setEditProduct }) {
+export default function AddItem({ fetchProducts, setOpen,open, editProduct, setEditProduct }) {
+  console.log("🚀 ~ AddItem ~ open:", open)
+  console.log("🚀 ~ AddItem ~ setOpen:", setOpen)
+  console.log("🚀 ~ AddItem ~ editProduct:", editProduct)
   const [warehouses, setWarehouses] = useState([]);
   const [categories, setCategories] = useState([]);
 
@@ -29,14 +32,13 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
       image: ""
     },
   });
-
+  
   const formData = watch();
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const categoryRef = useRef(null);
   const [preview, setPreview] = useState("");
 
-  // Convert file to base64
   const fileToBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -45,7 +47,6 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
       reader.onerror = (err) => reject(err);
     });
 
-  // Paste Image
   const pasteHandler = async (e) => {
     const items = e.clipboardData.items;
     for (let item of items) {
@@ -58,7 +59,6 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
     }
   };
 
-  // File Input
   const handleFileChange = async (e) => {
     const img = e.target.files[0];
     if (!img) return;
@@ -67,14 +67,12 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
     setPreview(base64);
   };
 
-  // URL Input
   const handleUrlChange = (e) => {
     const url = e.target.value;
     setValue("image", url);
     setPreview(url);
   };
 
-  // Toggle category selection
   const toggleCategory = (id) => {
     const current = watch("productGroup");
     const updated = current.includes(id)
@@ -83,21 +81,18 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
     setValue("productGroup", updated);
   };
 
-  // Fetch warehouses
   useEffect(() => {
     fetch("http://localhost:5001/warehouses")
       .then((res) => res.json())
       .then((data) => setWarehouses(data || []));
   }, []);
 
-  // Fetch categories
   useEffect(() => {
     fetch("http://localhost:5001/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data.list || data || []));
   }, []);
 
-  // Close category dropdown when clicking outside
   useEffect(() => {
     const outside = (e) => {
       if (categoryRef.current && !categoryRef.current.contains(e.target)) {
@@ -108,7 +103,6 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
     return () => document.removeEventListener("mousedown", outside);
   }, []);
 
-  // Flatten categories for display
   const flatten = (arr) =>
     arr.flatMap((c) => [c, ...(c.children ? flatten(c.children) : [])]);
 
@@ -118,16 +112,18 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
       .map((c) => c.name)
       .join(", ");
 
-  // Edit product effect
+  /* =========================
+     EDIT PRODUCT FIX
+     ========================= */
   useEffect(() => {
     if (editProduct) {
       reset({
-        warehouseId: editProduct.warehouseId || "",
+        warehouseId: String(editProduct.warehouseId || ""), // ✅ warehouse fix
         productGroup: editProduct.productGroup || [],
         productName: editProduct.productName || "",
         slug: editProduct.slug || "",
         unit: editProduct.unit || "",
-        isSerial: editProduct.isSerial || "",
+        isSerial: String(editProduct.isSerial || ""),
         sku: editProduct.sku || "",
         image: editProduct.image || ""
       });
@@ -138,7 +134,6 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
     }
   }, [editProduct, reset]);
 
-  // Submit handler
   const onSubmit = async (data) => {
     try {
       if (editProduct) {
@@ -147,10 +142,8 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data)
         });
-        if (!res.ok) {
-          toast.error("Error updating product");
-          return;
-        }
+        if (!res.ok) return toast.error("Error updating product");
+
         await fetchProducts();
         toast.success("Product updated!");
         reset();
@@ -163,83 +156,79 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         });
-        if (!res.ok) {
-          toast.error("Error saving product");
-          return;
-        }
+        if (!res.ok) return toast.error("Error saving product");
+
         await fetchProducts();
         toast.success("Product saved!");
         reset();
         setPreview("");
         setOpen(false);
       }
-    } catch (error) {
-      console.log(error);
+    } catch {
       toast.error("Something went wrong");
     }
   };
 
+  useEffect(()=>{
+    if(!open){
+    
+      setEditProduct(null)
+    }
+  },[open])
   return (
     <>
       <form className="max-w-6xl mx-auto bg-white p-6" onSubmit={handleSubmit(onSubmit)}>
-        {/* Row 1 */}
+
         <div className="grid grid-cols-3 gap-6">
           <InputSelect
             label="Select Warehouse"
-            options={warehouses.map((b) => ({ value: b.id, label: b.fromWarehouse }))}
+            options={warehouses.map((b) => ({
+              value: String(b.id),
+              label: b.fromWarehouse
+            }))}
             {...register("warehouseId", { required: true })}
+            value={formData.warehouseId} // ✅ important for edit prefill
             error={errors.warehouseId}
           />
 
           <Input label="Product Name" {...register("productName", { required: true })} error={errors.productName} />
-
           <Input label="SKU" {...register("sku", { required: true })} error={errors.sku} />
         </div>
 
-        {/* Product Group */}
-      {/* Product Group */}
-<div className="mt-4" ref={categoryRef}>
-  <label className="text-gray-700 text-sm">Product Group</label>
-  <div
-    className="h-12 mt-2 flex items-center justify-between border border-gray-300 bg-gray-50 rounded-lg px-3 cursor-pointer"
-    onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-  >
-    <span className="truncate text-sm">
-      {watch("productGroup").length ? getCategoryNames() : "Select Product Group"}
-    </span>
+        <div className="mt-4" ref={categoryRef}>
+          <label className="text-gray-700 text-sm">Product Group</label>
+          <div
+            className="h-12 mt-2 flex items-center justify-between border border-gray-300 bg-gray-50 rounded-lg px-3 cursor-pointer"
+            onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+          >
+            <span className="truncate text-sm">
+              {watch("productGroup").length ? getCategoryNames() : "Select Product Group"}
+            </span>
 
-    <FaPlus
-      className="hover:bg-gray-200 p-1 rounded"
-      onClick={(e) => {
-        e.stopPropagation();
-        setShowCategoryModal(true);
-      }}
-    />
-  </div>
+            <FaPlus
+              className="hover:bg-gray-200 p-1 rounded"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCategoryModal(true);
+              }}
+            />
+          </div>
 
-  {categoryDropdownOpen && (
-    <div className="absolute bg-white border mt-1 rounded-lg w-full shadow z-50 max-h-64 p-2 overflow-auto">
-      {categories.map((cat) => (
-        <CatItem
-          key={cat.id}
-          item={cat}
-          level={0}
-          selected={watch("productGroup")}
-          toggle={(id) => {
-            const current = watch("productGroup");
-            const updated = current.includes(id)
-              ? current.filter((x) => x !== id)
-              : [...current, id];
-            setValue("productGroup", updated);
-          }}
-        />
-      ))}
-    </div>
-  )}
-</div>
+          {categoryDropdownOpen && (
+            <div className="absolute bg-white border mt-1 rounded-lg w-5xl shadow z-50 max-h-64 p-2 overflow-auto">
+              {categories.map((cat) => (
+                <CatItem
+                  key={cat.id}
+                  item={cat}
+                  level={0}
+                  selected={watch("productGroup")}
+                  toggle={toggleCategory}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
-
-        {/* Row 2 */}
         <div className="grid grid-cols-3 gap-6 mt-4">
           <InputSelect
             label="Is Serial"
@@ -248,6 +237,7 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
               { value: "0", label: "No" },
             ]}
             {...register("isSerial", { required: true })}
+            value={formData.isSerial}
             error={errors.isSerial}
           />
 
@@ -259,15 +249,16 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
               { value: "pc", label: "Piece" },
             ]}
             {...register("unit", { required: true })}
+            value={formData.unit}
             error={errors.unit}
           />
 
           <Input label="Slug" {...register("slug", { required: true })} error={errors.slug} />
         </div>
 
-        {/* Image */}
         <div className="p-4 border rounded-lg mt-6 bg-gray-50">
           <label className="font-medium text-gray-700">Product Image</label>
+
           <div onPaste={pasteHandler} className="w-40 h-40 mt-3 bg-white border rounded-lg flex items-center justify-center cursor-pointer">
             {preview ? (
               <img src={preview} className="w-full h-full object-cover rounded-lg" />
@@ -287,7 +278,6 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
           />
         </div>
 
-        {/* Submit */}
         <button type="submit" className="mt-6 bg-indigo-600 text-white h-12 rounded-lg w-full font-medium hover:bg-indigo-700">
           {editProduct ? "Update Product" : "Add Product"}
         </button>
@@ -312,12 +302,13 @@ export default function AddItem({ fetchProducts, setOpen, editProduct, setEditPr
 const InputSelect = ({ label, options, error, ...rest }) => (
   <div>
     <label className="text-gray-700 text-sm">{label}</label>
-    <select className="h-12 mt-2 border border-gray-300 rounded-lg p-2 w-full bg-gray-50" {...rest}>
+    <select
+      className="h-12 mt-2 border border-gray-300 rounded-lg p-2 w-full bg-gray-50"
+      {...rest}
+    >
       <option value="">Select {label}</option>
       {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
+        <option key={o.value} value={o.value}>{o.label}</option>
       ))}
     </select>
     {error && <p className="text-red-500 text-xs">Required</p>}
@@ -333,7 +324,7 @@ const Input = ({ label, error, ...rest }) => (
 );
 
 const CatItem = ({ item, level, selected, toggle }) => {
-  const [open, setOpen] = useState(true);
+  const [open1, setOpen1] = useState(true);
   const isChecked = selected.includes(item.id);
 
   return (
@@ -347,21 +338,28 @@ const CatItem = ({ item, level, selected, toggle }) => {
           <input type="checkbox" checked={isChecked} readOnly />
           <span className="text-sm">{item.name}</span>
         </div>
+
         {item.children?.length > 0 && (
           <span
             onClick={(e) => {
               e.stopPropagation();
-              setOpen(!open);
+              setOpen1(!open1);
             }}
           >
-            {open ? "▾" : "▸"}
+            {open1 ? "▾" : "▸"}
           </span>
         )}
       </div>
 
-      {open &&
+      {open1 &&
         item.children?.map((child) => (
-          <CatItem key={child.id} item={child} level={level + 1} selected={selected} toggle={toggle} />
+          <CatItem
+            key={child.id}
+            item={child}
+            level={level + 1}
+            selected={selected}
+            toggle={toggle}
+          />
         ))}
     </div>
   );

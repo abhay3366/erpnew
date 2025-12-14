@@ -7,7 +7,7 @@ import { FiUpload, FiEyeOff } from "react-icons/fi";
 import { IoMdEye } from "react-icons/io";
 import toast from "react-hot-toast";
 
-export default function AddStaff({setOpen}) {
+export default function AddStaff({ setOpen, setFilteredStaff, setStaff, staff }) {
   const [showPass, setShowPass] = useState(false);
   const [previewImg, setPreviewImg] = useState(null);
 
@@ -15,20 +15,27 @@ export default function AddStaff({setOpen}) {
 
   // ⭐ SUBMIT DATA TO JSON SERVER
   const onSubmit = async (data) => {
+    // console.log("🚀 ~ onSubmit ~ data:", data)
+    const payload={...data,role: data.role.value, status: data.status.value}
+    // console.log("🚀 ~ onSubmit ~ payload:", payload)
     try {
+
       const res = await fetch("http://localhost:5001/staff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
-      
-        toast.success("Staff Added Successfully!")
+        const savedStaff = await res.json();
+
+        setStaff([...staff, savedStaff]);   // 🔥 UI update instantly
+        toast.success("Staff Added Successfully!");
         reset();
         setPreviewImg(null);
-        setOpen(false)
-      } else {
+        setOpen(false);
+      }
+      else {
         alert("Failed to Add Staff");
       }
     } catch (error) {

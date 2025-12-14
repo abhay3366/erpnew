@@ -9,8 +9,6 @@ import { useEffect, useState } from "react";
 import StockForm from "../../../../components/stock/StockForm";
 import DataFetcher from "../../../../components/DataFetcher";
 
-
-// import VendorForm from "../../../../../components/vendor/VendorForm";
 const StockPage = () => {
   const [open, setOpen] = useState(false)
   const [stocks, setStocks] = useState([]);

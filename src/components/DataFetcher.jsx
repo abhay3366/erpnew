@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 const DataFetcher = ({ type, id }) => {
   const [item, setItem] = useState(null);
  
+ 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -35,6 +36,7 @@ const DataFetcher = ({ type, id }) => {
         const res = await fetch(apiUrl);
         if (!res.ok) throw new Error("Failed to fetch data");
         const data = await res.json();
+       
 
         const foundItem = data.find((i) => i.id === id) || null;
         setItem(foundItem);
@@ -51,7 +53,7 @@ const DataFetcher = ({ type, id }) => {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
   if (!item) return <div>{type} not found</div>;
-
+ console.log("🚀 ~ DataFetcher ~ item:", item)
   // Show name depending on type
   const name =
   type === "product" ? item.productName :

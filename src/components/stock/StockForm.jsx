@@ -7,7 +7,7 @@ export default function StockForm() {
   const [vendors, setVendors] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  console.log("🚀 ~ StockForm ~ selectedProduct:", selectedProduct)
+  // console.log("🚀 ~ StockForm ~ selectedProduct:", selectedProduct)
 
   const warrantyButtons = ["1 Year", "2 Years", "3 Years", "4 Years", "No Warranty"];
 
@@ -58,69 +58,260 @@ export default function StockForm() {
 
   const removeRow = (index) => setRows((prev) => prev.filter((_, i) => i !== index));
 
-  // Validation
-  const validate = () => {
-    const newErrors = {};
-    if (!selectedVendor) newErrors.vendor = "Vendor is required";
-    if (!selectedProduct) newErrors.product = "Product is required";
 
-    if (selectedProduct?.isSerial == 1) {
-      rows.forEach((r, i) => {
-        if (!r.serial.trim()) newErrors[`serial_${i}`] = `Serial number required for row ${i + 1}`;
-        if (!r.mac.trim()) newErrors[`mac_${i}`] = `MAC address required for row ${i + 1}`;
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   if (!validate()) return;
+
+  //   let dataToSave = {};
+
+  //   if (selectedProduct?.isSerial == 1) {
+  //     dataToSave = {
+  //       productId: selectedProduct.value,
+  //       vendorId: selectedVendor.id,
+  //       items: rows.map((r) => ({ serial: r.serial, mac: r.mac, warranty: r.warranty })),
+  //       quantity: rows.length,
+  //     };
+  //   } else {
+  //     dataToSave = {
+  //       productId: selectedProduct.value,
+  //       vendorId: selectedVendor.id,
+  //       quantity: quantity,
+  //     };
+  //   }
+
+  //   try {
+  //     const res = await fetch("http://localhost:5001/stocks", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify(dataToSave),
+  //     });
+
+  //     if (!res.ok) throw new Error("Failed to save stock");
+
+  //     alert("Stock saved successfully!");
+
+  //     // Reset form
+  //     setSelectedVendor(null);
+  //     setSelectedProduct(null);
+  //     setRows([{ id: 1, warranty: "No Warranty", serial: "", mac: "" }]);
+  //     setQuantity(1);
+  //     setAppliedWarranty(null);
+  //     setErrors({});
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("Error saving stock: " + err.message);
+  //   }
+  // };
+
+//   const handleSubmit = async (e) => {
+//   e.preventDefault();
+
+
+//   // -------------------------
+//   // STOCK MANAGEMENT LOGIC
+//   // -------------------------
+//   console.log("🚀 ~ handleSubmit ~ selectedProduct:", selectedProduct)
+//   console.log("🚀 ~ handleSubmit ~ selectedVendor:", selectedVendor)
+//   if (!selectedVendor || !selectedProduct) {
+//     alert("Vendor or Product not selected");
+//     return;
+//   }
+
+//   if (selectedVendor.status !== "active") {
+//     alert("Vendor inactive, cannot update stock");
+//     return;
+//   }
+
+//   const vendorItem = selectedVendor.products.find((p) => p.id === selectedProduct.value);
+//   console.log("🚀 ~ handleSubmit ~ vendorItem:", vendorItem)
+
+//   // Prepare stock payload
+//   let dataToSave = {};
+
+//   if (selectedProduct.isSerial === 1) {
+//     if (vendorItem) {
+//       // Update existing stock
+//       const newQuantity = vendorItem.quantity + rows.length;
+//       console.log("🚀 ~ handleSubmit ~ newQuantity:", newQuantity)
+//       console.log("🚀 ~ handleSubmit ~ newQuantity:", newQuantity)
+//       if (newQuantity < 0) {
+//         alert("Stock cannot be negative");
+//         return;
+//       }
+//       dataToSave = {
+//         productId: selectedProduct.value,
+//         vendorId: selectedVendor.id,
+//         items: rows.map((r) => ({ serial: r.serial, mac: r.mac, warranty: r.warranty })),
+//         quantity: newQuantity,
+//       };
+//     } else {
+//       // Add new vendor item
+//       dataToSave = {
+//         productId: selectedProduct.value,
+//         vendorId: selectedVendor.id,
+//         items: rows.map((r) => ({ serial: r.serial, mac: r.mac, warranty: r.warranty })),
+//         quantity: rows.length,
+//       };
+//     }
+//   } else {
+//     // Non-serial products
+//     const qtyToAdd = quantity;
+//     if (vendorItem) {
+//       const newQuantity = vendorItem.quantity + qtyToAdd;
+//       console.log("newQuantitiy",newQuantity)
+//       if (newQuantity < 0) {
+//         alert("Stock cannot be negative");
+//         return;
+//       }
+//       dataToSave = {
+//         productId: selectedProduct.value,
+//         vendorId: selectedVendor.id,
+//         quantity: newQuantity,
+//       };
+//     } else {
+//       dataToSave = {
+//         productId: selectedProduct.value,
+//         vendorId: selectedVendor.id,
+//         quantity: qtyToAdd,
+//       };
+//     }
+//   }
+
+//   // -------------------------
+//   // SEND TO API
+//   // -------------------------
+//   try {
+//     const res = await fetch("http://localhost:5001/stocks", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(dataToSave),
+//     });
+
+//     if (!res.ok) throw new Error("Failed to save stock");
+
+//     alert("Stock saved successfully!");
+
+//     // Reset form
+//     setSelectedVendor(null);
+//     setSelectedProduct(null);
+//     setRows([{ id: 1, warranty: "No Warranty", serial: "", mac: "" }]);
+//     setQuantity(1);
+//     setAppliedWarranty(null);
+//     setErrors({});
+//   } catch (err) {
+//     console.error(err);
+//     alert("Error saving stock: " + err.message);
+//   }
+// };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!selectedVendor || !selectedProduct) {
+    alert("Vendor or Product not selected");
+    return;
+  }
+
+  if (selectedVendor.status !== "active") {
+    alert("Vendor inactive, cannot update stock");
+    return;
+  }
+
+  // -------------------------
+  // FETCH CURRENT STOCK
+  // -------------------------
+  let vendorItem = null;
+  try {
+    const res = await fetch(
+      `http://localhost:5001/stocks?vendorId=${selectedVendor.id}&productId=${selectedProduct.value}`
+    );
+    const data = await res.json();
+    vendorItem = data[0] || null;
+  } catch (err) {
+    alert("Failed to fetch current stock");
+    return;
+  }
+
+  // -------------------------
+  // PREPARE DATA
+  // -------------------------
+  let dataToSave;
+
+  // ===== SERIAL PRODUCT =====
+ if (Number(selectedProduct.isSerial) === 1) {
+  const oldItems = vendorItem?.items || [];
+  const newItems = rows.map((r) => ({
+    serial: r.serial,
+    mac: r.mac,
+    warranty: r.warranty,
+  }));
+
+  dataToSave = {
+    productId: selectedProduct.value,
+    vendorId: selectedVendor.id,
+    items: [...oldItems, ...newItems],
+    quantity: oldItems.length + newItems.length,
+  };
+}
+
+
+  // ===== NON-SERIAL PRODUCT =====
+  else {
+    const currentQty = vendorItem?.quantity || 0;
+    const newQuantity = currentQty + quantity;
+
+    if (newQuantity < 0) {
+      alert("Stock cannot be negative");
+      return;
+    }
+
+    dataToSave = {
+      productId: selectedProduct.value,
+      vendorId: selectedVendor.id,
+      quantity: newQuantity,
+    };
+  }
+
+  // -------------------------
+  // SAVE TO JSON SERVER
+  // -------------------------
+  try {
+    let res;
+
+    if (vendorItem) {
+      // UPDATE
+      res = await fetch(`http://localhost:5001/stocks/${vendorItem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSave), // ✅ FIXED
       });
     } else {
-      if (!quantity || quantity < 1) newErrors.quantity = "Quantity must be at least 1";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    let dataToSave = {};
-
-    if (selectedProduct?.isSerial == 1) {
-      dataToSave = {
-        productId: selectedProduct.value,
-        vendorId: selectedVendor.id,
-        items: rows.map((r) => ({ serial: r.serial, mac: r.mac, warranty: r.warranty })),
-        quantity: rows.length,
-      };
-    } else {
-      dataToSave = {
-        productId: selectedProduct.value,
-        vendorId: selectedVendor.id,
-        quantity: quantity,
-      };
-    }
-
-    try {
-      const res = await fetch("http://localhost:5001/stocks", {
+      // CREATE
+      res = await fetch("http://localhost:5001/stocks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataToSave),
+        body: JSON.stringify(dataToSave), // ✅ FIXED
       });
-
-      if (!res.ok) throw new Error("Failed to save stock");
-
-      alert("Stock saved successfully!");
-
-      // Reset form
-      setSelectedVendor(null);
-      setSelectedProduct(null);
-      setRows([{ id: 1, warranty: "No Warranty", serial: "", mac: "" }]);
-      setQuantity(1);
-      setAppliedWarranty(null);
-      setErrors({});
-    } catch (err) {
-      console.error(err);
-      alert("Error saving stock: " + err.message);
     }
-  };
+
+    if (!res.ok) throw new Error();
+
+    alert("Stock saved successfully!");
+
+    // RESET FORM
+    setSelectedVendor(null);
+    setSelectedProduct(null);
+    setRows([{ id: 1, warranty: "No Warranty", serial: "", mac: "" }]);
+    setQuantity(1);
+    setAppliedWarranty(null);
+    setErrors({});
+  } catch (err) {
+    alert("Error saving stock");
+  }
+};
+
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -150,6 +341,7 @@ export default function StockForm() {
                 value: p.id,
                 label: p.name,
                 isSerial: p.isSerial || 0, // default 0 if not provided
+                quantity:p.quantity
               }))}
               placeholder={selectedVendor ? "Select Product..." : "Select vendor first"}
             />

@@ -26,11 +26,12 @@ const navItems = [
     name: "User Profile",
     path: "/profile",
   },
-    {
-    icon: <GridIcon />,
-    name: "Staff Members",
-     path: "/staff",
-  },
+
+  //   {
+  //   icon: <GridIcon />,
+  //   name: "Staff Members",
+  //    path: "/staff",
+  // },
 
     {
     icon: <GridIcon />,
@@ -87,11 +88,11 @@ const navItems = [
     icon: <TableIcon />,
     subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
   },
-   {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
-  },
+  //  {
+  //   icon: <UserCircleIcon />,
+  //   name: "User Profile",
+  //   path: "/profile",
+  // },
 
 
 
