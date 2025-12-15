@@ -44,7 +44,7 @@ const ProductTable = ({ filteredProducts, gridView, open, setOpen, setProducts, 
                                         <td className="px-2 py-0.5 whitespace-nowrap" onClick={() => setPreviewImage(product.image)}>
                                             <div className="h-12 w-12  relative">
                                                 <Image
-                                                    src={product.image || "/no-image.png"}
+                                                    src={product.image || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS1_iQ30EjjN0vouiSI344Az06ECPqB9fMNJA&s"}
                                                     alt={product.productName}
                                                     fill
                                                     className="rounded w-7 h-2 border-2 cursor-pointer"

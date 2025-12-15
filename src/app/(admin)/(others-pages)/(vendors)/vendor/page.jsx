@@ -34,7 +34,7 @@ const VendorPage = () => {
 
   useEffect(() => {
     fetchVendors();
-  }, []);
+  }, [vendors]);
 
   // Delete a vendor
   const handleDelete = async (id) => {
