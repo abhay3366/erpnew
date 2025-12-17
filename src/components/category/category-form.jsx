@@ -5,22 +5,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import { categoryNameExists } from "@/lib/storage"
 
 export function CategoryForm({ open, onOpenChange, onSubmit, initialData, parentCategory, allCategories = [] }) {
   const [name, setName] = useState("")
-  const [allowItemEntry, setAllowItemEntry] = useState(false)
   const [error, setError] = useState("")
 
   useEffect(() => {
     if (initialData) {
       setName(initialData.name)
-      setAllowItemEntry(initialData.allowItemEntry || false)
     } else {
       setName("")
-      setAllowItemEntry(false)
     }
     setError("")
   }, [initialData, open])
@@ -29,22 +26,24 @@ export function CategoryForm({ open, onOpenChange, onSubmit, initialData, parent
     e.preventDefault()
     if (!name.trim()) return
 
+    if (categoryNameExists(allCategories, name, initialData?._id)) {
+      setError("A category with this name already exists (names are case-insensitive)")
+      return
+    }
 
     onSubmit({
       name: name.trim(),
-      allowItemEntry,
     })
     setName("")
-    setAllowItemEntry(false)
     setError("")
     onOpenChange(false)
   }
 
   const title = initialData
-    ? "Edit Product Category"
+    ? `Edit Category "${initialData.name}"`
     : parentCategory
       ? `Add Sub-category to "${parentCategory.name}"`
-      : "Add Product Category"
+      : "Create New Category"
 
   const parentHasItemEntry = parentCategory?.allowItemEntry
 
@@ -59,7 +58,7 @@ export function CategoryForm({ open, onOpenChange, onSubmit, initialData, parent
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Cannot add sub-category because "{parentCategory.name}" has "Allow Last Product Category" enabled.
+              Cannot add sub-category because "{parentCategory.name}" is already a product category.
             </AlertDescription>
           </Alert>
         ) : (
@@ -83,22 +82,11 @@ export function CategoryForm({ open, onOpenChange, onSubmit, initialData, parent
                   }}
                   placeholder="Enter category name"
                   autoFocus
+                  required
                 />
-              </div>
-
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <Label htmlFor="allowItemEntry">Allow Last Product Category</Label>
-                  <p className="text-sm text-muted-foreground">Mark as final category (no sub-categories allowed)</p>
-                </div>
-                <Switch
-                  id="allowItemEntry"
-                  checked={allowItemEntry}
-                  onCheckedChange={(v) => {
-                    setAllowItemEntry(v)
-                    setError("")
-                  }}
-                />
+                <p className="text-sm text-muted-foreground">
+                  Note: Category will be marked as "Last Category" automatically when you click "Add Item"
+                </p>
               </div>
             </div>
             <DialogFooter>
