@@ -104,7 +104,7 @@ export default function ProductsPage() {
           if (!cat) return null
           
           return {
-            _id: cat._id || cat.id || String(Date.now()),
+            id: cat.id || cat.id || String(Date.now()),
             name: cat.name || "",
             allowItemEntry: Boolean(cat.allowItemEntry),
             productName: cat.productName || "",
@@ -128,9 +128,9 @@ export default function ProductsPage() {
     if (!cats || !Array.isArray(cats)) return null
     
     for (const cat of cats) {
-      console.log("Checking category:", cat._id, "against:", id)
+      console.log("Checking category:", cat.id, "against:", id)
       
-      if (String(cat._id) === String(id) || String(cat.id) === String(id)) {
+      if (String(cat.id) === String(id) || String(cat.id) === String(id)) {
         console.log("Category found:", cat)
         return cat
       }
@@ -151,7 +151,7 @@ export default function ProductsPage() {
       // Update category to be a product category
       const updateCategoryInTree = (cats, targetId) => {
         return cats.map((cat) => {
-          if (cat._id === targetId || cat.id === targetId) {
+          if (cat.id === targetId || cat.id === targetId) {
             return {
               ...cat,
               allowItemEntry: true,
@@ -168,7 +168,7 @@ export default function ProductsPage() {
         })
       }
 
-      const updatedCategories = updateCategoryInTree(categories, category._id || category.id)
+      const updatedCategories = updateCategoryInTree(categories, category.id || category.id)
       
       // Save to server
       const response = await fetch('http://localhost:5001/categories', {
@@ -184,7 +184,7 @@ export default function ProductsPage() {
         setCategories(updatedCategories)
         
         // Update selected category in state
-        const updatedCategory = findCategoryById(updatedCategories, category._id || category.id)
+        const updatedCategory = findCategoryById(updatedCategories, category.id || category.id)
         if (updatedCategory) {
           setSelectedCategory(updatedCategory)
         }
@@ -237,7 +237,7 @@ export default function ProductsPage() {
     setSelectedCategory(category)
     setFormData(prev => ({
       ...prev,
-      categoryId: String(category._id || category.id)
+      categoryId: String(category.id || category.id)
     }))
     setCategorySearch(category.path || category.name)
     setShowCategoryDropdown(false)
@@ -478,7 +478,7 @@ export default function ProductsPage() {
                         ) : (
                           filteredCategories.map((cat) => (
                             <div
-                              key={cat._id || cat.id}
+                              key={cat.id || cat.id}
                               className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
                               onClick={() => handleCategorySelect(cat)}
                             >

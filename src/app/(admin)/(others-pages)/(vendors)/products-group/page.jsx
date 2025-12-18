@@ -47,10 +47,10 @@ export default function CategoriesPage() {
         if (!Array.isArray(items)) return []
 
         return items.map(item => {
-          if (!item) return { _id: Date.now().toString(), name: "Unknown", children: [] }
+          if (!item) return { id: Date.now().toString(), name: "Unknown", children: [] }
 
           return {
-            _id: item._id || Date.now().toString(),
+            id: item.id || Date.now().toString(),
             name: item.name || "",
             allowItemEntry: Boolean(item.allowItemEntry),
             productName: item.productName || "",
@@ -73,10 +73,10 @@ export default function CategoriesPage() {
       const deepNormalize = (data) => {
         if (Array.isArray(data)) {
           return data.map(item => {
-            if (!item) return { _id: Date.now().toString(), name: "Unknown", children: [] }
+            if (!item) return { id: Date.now().toString(), name: "Unknown", children: [] }
 
             return {
-              _id: item._id || Date.now().toString(),
+              id: item.id || Date.now().toString(),
               name: item.name || "",
               allowItemEntry: Boolean(item.allowItemEntry),
               productName: item.productName || "",
@@ -117,7 +117,7 @@ export default function CategoriesPage() {
 
     let current = categories
     for (const pathItem of currentPath) {
-      const found = current.find((c) => c._id === pathItem._id)
+      const found = current.find((c) => c.id === pathItem.id)
       if (found) {
         current = Array.isArray(found.children) ? found.children : []
       } else {
@@ -129,7 +129,7 @@ export default function CategoriesPage() {
 
   const getCurrentParent = () => {
     if (currentPath.length === 0) return null
-    return findCategoryById(categories, currentPath[currentPath.length - 1]._id)
+    return findCategoryById(categories, currentPath[currentPath.length - 1].id)
   }
 
   const getParentPathString = () => {
@@ -142,7 +142,7 @@ export default function CategoriesPage() {
     if (!cats || !Array.isArray(cats)) return null
 
     for (const cat of cats) {
-      if (String(cat._id) === String(id)) {
+      if (String(cat.id) === String(id)) {
         return cat
       }
       if (cat.children && Array.isArray(cat.children)) {
@@ -193,7 +193,7 @@ export default function CategoriesPage() {
 
   const handleCreate = async ({ name, productName }) => {
     const newCategory = {
-      _id: Date.now().toString(),
+      id: Date.now().toString(),
       name: name.trim(),
       allowItemEntry: false, // Always false when creating
       productName: productName || "",
@@ -209,7 +209,7 @@ export default function CategoriesPage() {
       return cats.map((cat) => {
         if (!cat) return cat
 
-        if (cat._id === targetId) {
+        if (cat.id === targetId) {
           // Check if parent is already a product category
           if (cat.allowItemEntry) {
             alert(`Cannot add sub-category because "${cat.name}" is already a product category.`)
@@ -236,9 +236,9 @@ export default function CategoriesPage() {
     let updatedCategories = []
 
     if (currentParent) {
-      updatedCategories = addCategoryToTree(categories, currentParent._id, newCategory)
+      updatedCategories = addCategoryToTree(categories, currentParent.id, newCategory)
     } else if (parentCategory) {
-      updatedCategories = addCategoryToTree(categories, parentCategory._id, newCategory)
+      updatedCategories = addCategoryToTree(categories, parentCategory.id, newCategory)
     } else {
       // Add as root category
       updatedCategories = [...categories, newCategory]
@@ -260,7 +260,7 @@ export default function CategoriesPage() {
 
     const updateCategory = (cats) => {
       return cats.map((cat) => {
-        if (cat._id === editingCategory._id) {
+        if (cat.id === editingCategory.id) {
           return {
             ...cat,
             name,
@@ -289,7 +289,7 @@ export default function CategoriesPage() {
 
     const deleteCategory = (cats) => {
       return cats
-        .filter((cat) => cat._id !== category._id)
+        .filter((cat) => cat.id !== category.id)
         .map((cat) => ({
           ...cat,
           children: cat.children && Array.isArray(cat.children) ? deleteCategory(cat.children) : [],
@@ -308,7 +308,7 @@ export default function CategoriesPage() {
 
   const handleNavigate = (category) => {
     // ALWAYS navigate within categories - never go to products page
-    setCurrentPath([...currentPath, { _id: category._id, name: category.name }])
+    setCurrentPath([...currentPath, { id: category.id, name: category.name }])
   }
 
   const handleAddProductDirectly = () => {
@@ -319,14 +319,14 @@ export default function CategoriesPage() {
       // If already a product category
       if (currentParent.allowItemEntry) {
         // Go to products page WITHOUT marking (already marked)
-        router.push(`/products?categoryId=${currentParent._id}&categoryName=${encodeURIComponent(currentParent.name)}`)
+        router.push(`/products?categoryId=${currentParent.id}&categoryName=${encodeURIComponent(currentParent.name)}`)
         return
       }
 
       // Check if current level has NO categories (empty)
       if (currentCats.length === 0) {
         // Go to products page WITHOUT automatic marking
-        router.push(`/products?categoryId=${currentParent._id}&categoryName=${encodeURIComponent(currentParent.name)}&markAsLastOnFirstProduct=true`)
+        router.push(`/products?categoryId=${currentParent.id}&categoryName=${encodeURIComponent(currentParent.name)}&markAsLastOnFirstProduct=true`)
         return
       }
 
@@ -341,7 +341,7 @@ export default function CategoriesPage() {
         }
         
         // Go to products page WITHOUT automatic marking
-        router.push(`/products?categoryId=${singleCategory._id}&categoryName=${encodeURIComponent(singleCategory.name)}&markAsLastOnFirstProduct=true`)
+        router.push(`/products?categoryId=${singleCategory.id}&categoryName=${encodeURIComponent(singleCategory.name)}&markAsLastOnFirstProduct=true`)
         return
       }
 
@@ -360,10 +360,10 @@ export default function CategoriesPage() {
     // Check if category is already a product category
     if (category.allowItemEntry) {
       // Just go to products page
-      router.push(`/products?categoryId=${category._id}&categoryName=${encodeURIComponent(category.name)}`)
+      router.push(`/products?categoryId=${category.id}&categoryName=${encodeURIComponent(category.name)}`)
     } else {
       // Go to products page WITHOUT automatic marking
-      router.push(`/products?categoryId=${category._id}&categoryName=${encodeURIComponent(category.name)}&markAsLastOnFirstProduct=true`)
+      router.push(`/products?categoryId=${category.id}&categoryName=${encodeURIComponent(category.name)}&markAsLastOnFirstProduct=true`)
     }
   }
 
@@ -382,18 +382,18 @@ export default function CategoriesPage() {
   const handleSearchSelect = (category) => {
     const buildPath = (cats, targetId, path = []) => {
       for (const cat of cats) {
-        if (cat._id === targetId) {
-          return [...path, { _id: cat._id, name: cat.name }]
+        if (cat.id === targetId) {
+          return [...path, { id: cat.id, name: cat.name }]
         }
         if (cat.children && Array.isArray(cat.children)) {
-          const result = buildPath(cat.children, targetId, [...path, { _id: cat._id, name: cat.name }])
+          const result = buildPath(cat.children, targetId, [...path, { id: cat.id, name: cat.name }])
           if (result) return result
         }
       }
       return null
     }
 
-    const newPath = buildPath(categories, category._id, [])
+    const newPath = buildPath(categories, category.id, [])
     if (newPath) {
       setCurrentPath(newPath)
     }
@@ -465,7 +465,7 @@ export default function CategoriesPage() {
               Home
             </button>
             {currentPath.map((item, index) => (
-              <div key={item._id} className="flex items-center gap-2">
+              <div key={item.id} className="flex items-center gap-2">
                 <span className="text-muted-foreground">/</span>
                 <button
                   onClick={() => handleBreadcrumbClick(index)}

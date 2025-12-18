@@ -43,7 +43,7 @@ function TreeNode({ category, level = 0, onSelect }) {
       {category.children?.length > 0 && (
         <div className="ml-8 mt-2 space-y-2 relative">
           {category.children.map((child) => (
-            <TreeNode key={child._id} category={child} level={level + 1} onSelect={onSelect} />
+            <TreeNode key={child.id} category={child} level={level + 1} onSelect={onSelect} />
           ))}
         </div>
       )}
@@ -76,7 +76,7 @@ export function CategoryTreeModal({ open, onOpenChange, categories, onSelect, cu
               <p className="text-muted-foreground text-center py-8">No categories yet</p>
             ) : (
               categories.map((category) => (
-                <TreeNode key={category._id} category={category} level={0} onSelect={handleSelect} />
+                <TreeNode key={category.id} category={category} level={0} onSelect={handleSelect} />
               ))
             )}
           </div>

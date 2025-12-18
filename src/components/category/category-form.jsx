@@ -26,7 +26,7 @@ export function CategoryForm({ open, onOpenChange, onSubmit, initialData, parent
     e.preventDefault()
     if (!name.trim()) return
 
-    if (categoryNameExists(allCategories, name, initialData?._id)) {
+    if (categoryNameExists(allCategories, name, initialData?.id)) {
       setError("A category with this name already exists (names are case-insensitive)")
       return
     }

@@ -22,11 +22,11 @@ export function CategoryTree({ categories, onEdit, onDelete, onAddChild, level =
   return (
     <div className={cn("space-y-1", level > 0 && "ml-6 border-l border-border pl-4")}>
       {categories.map((category) => (
-        <div key={category._id}>
+        <div key={category.id}>
           <div className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-accent/50 group">
             {category.children?.length > 0 ? (
-              <button onClick={() => toggleExpand(category._id)} className="p-1 hover:bg-accent rounded">
-                {expanded[category._id] ? (
+              <button onClick={() => toggleExpand(category.id)} className="p-1 hover:bg-accent rounded">
+                {expanded[category.id] ? (
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 ) : (
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -63,7 +63,7 @@ export function CategoryTree({ categories, onEdit, onDelete, onAddChild, level =
               </Button>
             </div>
           </div>
-          {expanded[category._id] && category.children?.length > 0 && (
+          {expanded[category.id] && category.children?.length > 0 && (
             <CategoryTree
               categories={category.children}
               onEdit={onEdit}

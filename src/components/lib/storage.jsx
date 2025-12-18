@@ -264,8 +264,8 @@ export function getCategoryPath(categories, categoryId) {
     for (const cat of cats) {
       const newPath = [...path, cat.name]
 
-      // Check both _id and id
-      if (String(cat._id) === String(targetId) || String(cat.id) === String(targetId)) {
+      // Check both id and id
+      if (String(cat.id) === String(targetId) || String(cat.id) === String(targetId)) {
         return newPath
       }
 
@@ -288,7 +288,7 @@ export function categoryNameExists(categories, name, excludeId = null) {
 
   const checkInCategories = (cats) => {
     for (const cat of cats) {
-      if ((cat._id !== excludeId && cat.id !== excludeId) &&
+      if ((cat.id !== excludeId && cat.id !== excludeId) &&
         cat.name.toLowerCase().trim() === normalizedName) {
         return true
       }
@@ -307,7 +307,7 @@ export function findCategoryById(categories, categoryId) {
   if (!categories || !Array.isArray(categories) || !categoryId) return null
 
   for (const cat of categories) {
-    if (cat._id === categoryId || cat.id === categoryId) return cat
+    if (cat.id === categoryId || cat.id === categoryId) return cat
     if (cat.children && cat.children.length) {
       const found = findCategoryById(cat.children, categoryId)
       if (found) return found
