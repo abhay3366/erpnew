@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getProducts, getCategories, deleteProduct } from "@/components/lib/storage"
+import { useRouter } from "next/navigation"
+
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([])
@@ -17,7 +19,7 @@ export default function ProductsPage() {
   const [filterCategory, setFilterCategory] = useState("all")
   const [filterUnit, setFilterUnit] = useState("all")
   const [filterUniqueId, setFilterUniqueId] = useState("all")
-
+  const router = useRouter()
   // Load data from JSON Server
   useEffect(() => {
     loadData()
@@ -166,7 +168,7 @@ export default function ProductsPage() {
 
   // Add new product button handler
   const handleAddProduct = () => {
-    console.log("Add new product")
+    router.push("/products")
     // Navigate to add product page
   }
 

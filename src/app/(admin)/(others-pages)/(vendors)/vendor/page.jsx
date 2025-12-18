@@ -19,6 +19,37 @@ const VendorPage = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [query, setQuery] = useState("");
   const [filteredVendors, setfilteredVendors] = useState(vendors);
+  const [statusFilter, setStatusFilter] = useState("all");
+
+
+  const handleStatusFilter = (status) => {
+    setStatusFilter(status);
+
+    if (status === "all") {
+      setfilteredVendors(vendors);
+      return;
+    }
+
+    const results = vendors.filter(v => v.status === status);
+    setfilteredVendors(results);
+  };
+
+  useEffect(() => {
+    let data = vendors;
+
+    if (query) {
+      data = data.filter(v =>
+        v.vendorName.toLowerCase().includes(query.toLowerCase())
+      );
+    }
+
+    if (statusFilter !== "all") {
+      data = data.filter(v => v.status === statusFilter);
+    }
+
+    setfilteredVendors(data);
+  }, [vendors, query, statusFilter]);
+
 
 
   // Fetch vendor from backend
@@ -76,7 +107,6 @@ const VendorPage = () => {
     setfilteredVendors(results);
   };
 
-  console.log("filter", filteredVendors)
   const handleChange = (e) => {
     const value = e.target.value;
     setQuery(value);
@@ -91,8 +121,21 @@ const VendorPage = () => {
 
         {/* BUTTONS */}
         <div className="flex justify-between gap-4">
-          <div>
-            <input type="text" className="inputCss" onChange={handleChange} placeholder="Search..." />
+          <div className="flex gap-3">
+            <div> <input type="text" className="inputCss" onChange={handleChange} placeholder="Search..." /></div>
+            <div className="flex gap-2 w-[200px]">
+              <select
+                value={statusFilter}
+                onChange={(e) => handleStatusFilter(e.target.value)}
+                className="inputCss"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="blacklist">Blacklisted</option>
+              </select>
+            </div>
+
           </div>
           <div className="flex gap-2">
             <button onClick={() => { setOpen(true); }}
@@ -114,51 +157,64 @@ const VendorPage = () => {
           <table className="min-w-full divide-y divide-gray-200 mt-7">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.No</th>
-                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor name</th>
-                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor Email</th>
-                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone </th>
-                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stauts</th>
-                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Blacklist</th>
-                <th className="px-2  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="p-4  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.No</th>
+                <th className="p-4  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor name</th>
+                <th className="p-4  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor Email</th>
+                <th className="p-4  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone </th>
+                <th className="p-4  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stauts</th>
+                <th className="p-4  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Blacklist</th>
+                <th className="p-4  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredVendors?.map((vendor, index) => {
-                // Row ke liye conditional class
-                const rowClass =
-                  vendor.blacklist === true
-                    ? "bg-red-100" // blacklist → red
-                    : vendor.status === "inactive" && vendor.blacklist === false
-                      ? "bg-yellow-100" // inactive → yellow
-                      : ""; // active → default
+              {filteredVendors && filteredVendors.length > 0 ? (
+                filteredVendors.map((vendor, index) => {
+                  const rowClass =
+                    vendor.status === "blacklist"
+                      ? "bg-red-200"
+                      : vendor.status === "inactive"
+                        ? "bg-yellow-100"
+                        : "";
 
-                return (
-                  <tr key={vendor.id} className={rowClass}>
-                    <td className="px-2 py-0.5 whitespace-nowrap">{index + 1}</td>
-                    <td className="px-2 py-0.5 whitespace-nowrap">{vendor.vendorName}</td>
-                    <td className="px-2 py-0.5 whitespace-nowrap">{vendor.email}</td>
-                    <td className="px-2 py-0.5 whitespace-nowrap">{vendor.phone}</td>
-                    <td className="px-2 py-0.5 whitespace-nowrap">{vendor.status}</td>
-                    <td className="px-2 py-0.5 whitespace-nowrap">{vendor.blacklist == true ? "Yes" : "No"}</td>
-                    <td className="px-2 py-0.5 whitespace-nowrap flex gap-2 items-center mt-5">
-                      <button
-                        onClick={() => handleEdit(vendor)}
-                        className="text-blue-500 hover:text-blue-700"
-                      >
-                        <MdEdit size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(vendor.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <MdDelete size={20} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                  return (
+                    <tr key={vendor.id || `vendor-${index}`} className={rowClass}>
+                      <td className="px-2 py-0.5 whitespace-nowrap">{index + 1}</td>
+                      <td className="px-2 py-0.5 whitespace-nowrap">{vendor.vendorName}</td>
+                      <td className="px-2 py-0.5 whitespace-nowrap">{vendor.email}</td>
+                      <td className="px-2 py-0.5 whitespace-nowrap">{vendor.phone}</td>
+                      <td className="px-2 py-0.5 whitespace-nowrap">{vendor.status}</td>
+                      <td className="px-2 py-0.5 whitespace-nowrap">
+                        {vendor.blacklist === true ? "Yes" : "No"}
+                      </td>
+                      <td className="px-2 p-3 whitespace-nowrap flex gap-2 items-center">
+                        <button
+                          onClick={() => handleEdit(vendor)}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <MdEdit size={20} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(vendor.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <MdDelete size={20} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan="7"
+                    className="text-center py-6 text-gray-500 font-medium"
+                  >
+                    No data found
+                  </td>
+                </tr>
+              )}
             </tbody>
+
 
 
           </table>
@@ -172,7 +228,7 @@ const VendorPage = () => {
       {/* form dialoge */}
       <div>
 
-        <Dialog open={open} onClose={setOpen} className="relative z-[99999]">
+        <Dialog open={open} onClose={setOpen} className="relative z-[99]">
           <DialogBackdrop
             transition
             className="fixed inset-0 bg-gray-900/50 transition-opacity duration-500 ease-in-out data-closed:opacity-0"
@@ -188,10 +244,10 @@ const VendorPage = () => {
 
                   <div className="relative flex h-full flex-col overflow-y-auto bg-white py-6 shadow-xl after:absolute after:inset-y-0 after:left-0 after:w-px after:bg-white/10">
                     <div className="px-4 sm:px-6 border-b pb-5">
-                      <DialogTitle className="text-base font-semibold text-gray-800 flex items-center"><button className="p-2" onClick={() => setOpen(false)}><MdClose size={20} /></button> {editVendor ? "Edit Vendor" : ' Add New Vendor'} </DialogTitle>
+                      <DialogTitle className="text-base font-semibold text-gray-800 flex items-center"><button className="p-2" onClick={() => handleCloseModal()}><MdClose size={20} /></button> {editVendor ? "Edit Vendor" : ' Add New Vendor'} </DialogTitle>
                     </div>
                     <div className="relative mt-6 flex-1 px-4 sm:px-6">
-                      <VendorForm fetchVendors={fetchVendors} setOpen={setOpen} seteditVendor={seteditVendor} editVendor={editVendor} setfilteredVendors={setfilteredVendors} setVendors={setVendors} vendors={vendors} />
+                      <VendorForm fetchVendors={fetchVendors} setOpen={setOpen} seteditVendor={seteditVendor} editVendor={editVendor} setfilteredVendors={setfilteredVendors} setVendors={setVendors} vendors={vendors} handleCloseModal={handleCloseModal} />
                     </div>
                   </div>
                 </DialogPanel>

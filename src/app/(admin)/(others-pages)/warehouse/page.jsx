@@ -4,11 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { MdDelete } from "react-icons/md";
 import Swal from "sweetalert2";
+import { FaEdit } from "react-icons/fa";
 
 const AddWarehouse = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({ fromWarehouse: "", warehouseLocation: "" });
   const [warehouses, setWarehouses] = useState([]);
+  console.log("🚀 ~ AddWarehouse ~ warehouses:", warehouses)
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -72,14 +74,37 @@ const AddWarehouse = () => {
       });
 
       if (result.isConfirmed) {
+        console.log("Sdf",warehouses)
+
+        const currentWarehouse =warehouses.find((el)=>el.id===id);
+
+
+
+
+        const payload = {
+          ...currentWarehouse,
+          status: false,
+          updated_at: new Date().toISOString()
+        };
+
+
+
+        console.log("🚀 ~ deleteWarehouse ~ payload:", payload)
+
         const response = await fetch(`http://localhost:5001/warehouses/${id}`, {
-          method: "DELETE",
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)   // ✅ correct
         });
+
         if (!response.ok) throw new Error("Network response was not ok");
 
         getWarehouses();
         Swal.fire("Deleted!", "Warehouse has been deleted.", "success");
       }
+
     } catch (err) {
       console.error(err);
       toast.error("Failed to delete warehouse");
@@ -117,22 +142,26 @@ const AddWarehouse = () => {
               </tr>
             </thead>
             <tbody>
-              {warehouses.map((warehouse, idx) => (
-                <tr
-                  key={warehouse.id}
-                  className={idx % 2 === 0 ? "bg-gray-50 hover:bg-gray-100" : "bg-white hover:bg-gray-100"}
-                >
-                  <td className="py-2 px-4 border-b border-gray-200">{warehouse.fromWarehouse}</td>
-                  <td className="py-2 px-4 border-b border-gray-200">{warehouse.warehouseLocation}</td>
-                  <td className="py-2 px-4 border-b border-gray-200">
-                    <MdDelete
-                      onClick={() => deleteWarehouse(warehouse.id)}
-                      className="text-red-500 cursor-pointer hover:text-red-700 transition"
-                      size={24}
-                    />
-                  </td>
-                </tr>
-              ))}
+              {warehouses.map((warehouse, idx) => {
+                if (!warehouse.status) return;
+                return (
+                  <tr
+                    key={warehouse.id}
+                    className={idx % 2 === 0 ? "bg-gray-50 hover:bg-gray-100" : "bg-white hover:bg-gray-100"}
+                  >
+                    <td className="py-2 px-4 border-b border-gray-200">{warehouse.fromWarehouse}</td>
+                    <td className="py-2 px-4 border-b border-gray-200">{warehouse.warehouseLocation}</td>
+                    <td className="py-2 px-4 border-b border-gray-200 flex gap-4">
+                      <FaEdit size={24}  className="text-green-800 cursor-pointer hover:text-green-900 transition" />
+                      <MdDelete
+                        onClick={() => deleteWarehouse(warehouse.id)}
+                        className="text-red-500 cursor-pointer hover:text-red-700 transition"
+                        size={24}
+                      />
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

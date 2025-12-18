@@ -1,336 +1,360 @@
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
 import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import Select from "react-select";
 import toast from "react-hot-toast";
 
-function CategoryTree({ data, expanded, toggleExpand, onSelect, selected, level = 0 }) {
-  return (
-    <div>
-      {data.map((cat) => {
-        const hasChildren = cat.children?.length > 0;
-        const isOpen = expanded.includes(cat.id);
-        const isSelected = selected?.some((c) => c.value === cat.id);
+const STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "blacklist", label: "Blacklisted" }
+];
 
-        return (
-          <div key={cat.id} style={{ marginLeft: level * 15 }}>
-            <div className="flex items-center gap-2 cursor-pointer py-1">
-              {hasChildren && (
-                <span className="text-sm" onClick={() => toggleExpand(cat.id)}>
-                  {isOpen ? "▼" : "▶"}
-                </span>
-              )}
-              <span
-                className={`hover:text-blue-600 ${isSelected ? "font-semibold text-blue-600" : ""}`}
-                onClick={() => onSelect(cat)}
-              >
-                {cat.name}
-              </span>
-            </div>
-            {isOpen && hasChildren && (
-              <CategoryTree
-                data={cat.children}
-                expanded={expanded}
-                toggleExpand={toggleExpand}
-                onSelect={onSelect}
-                selected={selected}
-                level={level + 1}
-              />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+const inputClass =
+  "w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black";
 
-export default function VendorForm({ fetchVendors, setOpen, editVendor, setEditVendor, setVendors, vendors }) {
-  const { register, handleSubmit, control, setValue, getValues, formState: { errors } } = useForm();
-  const [categoryTree, setCategoryTree] = useState([]);
-  const [expanded, setExpanded] = useState([]);
-  const [allProducts, setAllProducts] = useState([]);
-  const [productOptions, setProductOptions] = useState([]);
+const labelClass = "text-sm font-medium text-gray-700";
 
-  const toggleExpand = (id) => {
-    setExpanded(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+export default function VendorForm({ editVendor, onSuccess, setOpen,handleCloseModal }) {
+  const defaultFormValues = {
+    vendorName: "",
+    gstin: "",
+    contactPerson: "",
+    authorizedSignature: "",
+    phone: "",
+    email: "",
+    address: "",
+    bankName: "",
+    accountNumber: "",
+    accountType: "",
+    micr: "",
+    rtgs: "",
+    neft: "",
+    productGroups: [],
+    products: [],
+    status: "active"
   };
 
-  // Fetch categories & products
+  const { register, handleSubmit, control, reset, watch, formState: { errors } } = useForm({
+    defaultValues: defaultFormValues
+  });
+
+  const [productGroups, setProductGroups] = useState([]);
+  const [products, setProducts] = useState([]);
+
+  const isEdit = !!editVendor;
+  const selectedGroups = watch("productGroups") || [];
+
+  /* ---------- FETCH DATA ---------- */
   useEffect(() => {
-    const loadData = async () => {
-      const catRes = await fetch("http://localhost:5001/categories");
-      const catData = await catRes.json();
+    fetch("http://localhost:5001/categories")
+      .then(res => res.json())
+      .then(data =>
+        setProductGroups(data.list.map(c => ({ value: c.id, label: c.name })))
+      );
 
-      const prodRes = await fetch("http://localhost:5001/products");
-      const productData = await prodRes.json();
-
-      setCategoryTree(catData.list);
-      setAllProducts(productData);
-    };
-    loadData();
+    fetch("http://localhost:5001/products")
+      .then(res => res.json())
+      .then(setProducts);
   }, []);
 
-  // Populate form when editing
-  useEffect(() => {
-    if (!editVendor) return;
-
-    // Fill basic fields
-    Object.keys(editVendor).forEach(key => {
-      if (typeof editVendor[key] !== "object") setValue(key, editVendor[key]);
-    });
-
-    // Categories
-    const catValue = (editVendor.categories || []).map(c => ({ value: c.id, label: c.name }));
-    setValue("categories", catValue);
-
-    // Products
-    const prodValue = (editVendor.products || []).map(p => ({
-      value: p.id,
-      label: p.name,
-      isSerial: p.isSerial || 0,
-      category: p.productGroup || [],
-    }));
-    setValue("products", prodValue);
-
-    // Filter products based on selected categories
-    const filteredProducts = allProducts
-      .filter(p => {
-        const groups = Array.isArray(p.productGroup) ? p.productGroup : [p.productGroup];
-        return groups.some(grpId => catValue.some(c => c.value.toString() === grpId.toString()));
-      })
-      .map(p => ({
+  /* ---------- RESET FORM ON EDIT OR ADD NEW ---------- */
+useEffect(() => {
+  if (editVendor) {
+    reset({
+      ...editVendor,
+      products: editVendor.products?.map(p => ({
         value: p.id,
-        label: p.productName,
-        category: p.productGroup,
-        isSerial: p.isSerial || 0
-      }));
-    setProductOptions(filteredProducts);
-  }, [editVendor, allProducts, setValue]);
+        label: p.name
+      })) || [],
+      productGroups: editVendor.productGroups.map(p => ({
+        value: p.id,
+        label: p.name
+      })) || [],
+    });
+  } else {
+    reset(defaultFormValues);
+  }
+}, [editVendor, reset]);
 
-  // Handle category selection
-  const handleCategorySelect = (cat) => {
-    setValue("categories", (prev = []) => {
-      const exists = prev.find(c => c.value === cat.id);
-      if (exists) return prev;
-      const updated = [...prev, { value: cat.id, label: cat.name }];
 
-      const products = allProducts
-        .filter(p => {
-          const groups = Array.isArray(p.productGroup) ? p.productGroup : [p.productGroup];
-          return groups.some(grpId => updated.some(c => c.value.toString() === grpId.toString()));
-        })
-        .map(p => ({
-          value: p.id,
-          label: p.productName,
-          category: p.productGroup,
-          isSerial: p.isSerial || 0
-        }));
+  /* ---------- DUPLICATE CHECK ---------- */
+  const normalize = (v) => (v || "").toString().trim().toLowerCase();
 
-      setProductOptions(products);
-      setValue("products", []); // reset selected products
-      return updated;
-    }, { shouldValidate: true });
-  };
+const isDuplicate = async (data) => {
+  try {
+    const res = await fetch("http://localhost:5001/vendors");
+    const vendorList = await res.json();
 
-  // Submit form
+    for (const v of vendorList) {
+      if (isEdit && v.id === editVendor.id) continue;
+
+      // ❌ vendorName duplicate check REMOVED
+
+      if (normalize(v.phone) === normalize(data.phone)) return "phone";
+      if (normalize(v.email) === normalize(data.email)) return "email";
+      if (normalize(v.gstin) === normalize(data.gstin)) return "gstin";
+      if (normalize(v.authorizedSignature) === normalize(data.authorizedSignature)) return "authorizedSignature";
+      if (normalize(v.accountNumber) === normalize(data.accountNumber)) return "accountNumber";
+      if (normalize(v.micr) === normalize(data.micr)) return "micr";
+      if (normalize(v.rtgs) === normalize(data.rtgs)) return "rtgs";
+      if (normalize(v.neft) === normalize(data.neft)) return "neft";
+    }
+
+    return false;
+  } catch (err) {
+    console.error("Duplicate check error:", err);
+    return false;
+  }
+};
+
+  /* ---------- SUBMIT ---------- */
   const onSubmit = async (data) => {
+    const duplicateField = await isDuplicate(data);
+    if (duplicateField) {
+      const messages = {
+        phone: "Phone number already exists",
+        email: "Email already exists",
+        gstin: "GSTIN already exists",
+        authorizedSignature: "Authorized signature already exists",
+        accountNumber: "Account number already exists",
+        micr: "MICR code already exists",
+        rtgs: "RTGS code already exists",
+        neft: "NEFT code already exists",
+      };
+      alert(messages[duplicateField] || "Duplicate vendor detected");
+      return;
+    }
+
+    const generateRandomId = () => Math.floor(Math.random() * 1000000);
+      console.log("🚀 ~ onSubmit ~ data:", data.products)
+
+
+
+    const payload = {
+      ...data,
+      products:data.products.map((product)=>({
+        id:product.value,
+        name:product.label
+      })),
+
+       productGroups:data.productGroups.map((group)=>({
+        id:group.value,
+        name:group.label
+      })),
+      
+
+      id: isEdit ? editVendor.id : generateRandomId(),
+      status: data.status || "active",
+      isDeleted: false,
+      created_at: isEdit ? editVendor.created_at : new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      created_by: "admin"
+    };
+    console.log("🚀 ~ onSubmit ~ payload:", payload)
+
+
+
     try {
-      const productsWithCategory = (data.products || []).map(p => {
-        const prod = productOptions.find(po => po.value === p.value);
-        return {
-          id: p.value,
-          name: p.label,
-          productGroup: prod?.category || [],
-          isSerial: prod?.isSerial || 0
-        };
-      });
+      const url = isEdit
+        ? `http://localhost:5001/vendors/${editVendor.id}`
+        : "http://localhost:5001/vendors";
+      const method = isEdit ? "PUT" : "POST";
 
-      const payload = { ...data, products: productsWithCategory };
-      console.log("🚀 Payload:", payload);
-
-      const url = editVendor ? `http://localhost:5001/vendors/${editVendor.id}` : "http://localhost:5001/vendors";
-      const method = editVendor ? "PUT" : "POST";
-
-      const response = await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
-      if (response.ok) {
-        const savedVendor = await response.json();
-        if (editVendor) {
-          setVendors(prev => prev.map(v => v.id === savedVendor.id ? savedVendor : v));
-          toast.success("Vendor updated successfully!");
-        } else {
-          setVendors(prev => [...prev, savedVendor]);
-          toast.success("Vendor added successfully!");
-        }
-        setOpen(false);
-        setEditVendor(null);
-      } else {
-        toast.error("Failed to save vendor!");
-      }
+      if (!res.ok) throw new Error("Failed to save vendor");
+
+      await res.json();
+
+      toast.success(isEdit ? "Vendor Updated" : "Vendor Created");
+
+      // Reset form to default after submit (both edit & add)
+      handleCloseModal()
+      reset(defaultFormValues);
+      setOpen(false);
+      onSuccess?.();
     } catch (err) {
-      console.error(err);
-    
+      console.error("Error saving vendor:", err);
+      toast.error(err.message || "Something went wrong");
     }
   };
 
-  const selectedCategories = getValues("categories") || [];
+  /* ---------- FILTER PRODUCTS BASED ON SELECTED GROUPS ---------- */
+  const filteredProducts = products
+    .filter(p =>
+      selectedGroups.some(g => Number(g.value) === Number(p.productGroup))
+    )
+    .map(p => ({ value: p.id, label: p.productName }));
+  console.log("🚀 ~ VendorForm ~ filteredProducts:", filteredProducts)
 
   return (
-    <div className="min-h-screen p-6 flex justify-center">
-      <div className="w-full">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6 bg-white rounded shadow">
-
-          {/* Vendor Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { name: "vendorName", label: "Vendor Name", required: true },
-              { name: "gstinNumber", label: "GSTIN Number", required: true },
-              { name: "contactPerson", label: "Contact Person", required: true },
-              { name: "authorizedSignature", label: "Authorized Signature", required: false },
-              { name: "phone", label: "Phone", required: true, pattern: /^[0-9]{10}$/ },
-              { name: "email", label: "Email", required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ }
-            ].map(field => (
-              <div key={field.name}>
-                <label className="block mb-1 font-medium">{field.label}</label>
-                <input
-                  {...register(field.name, {
-                    required: field.required && `${field.label} is required`,
-                    pattern: field.pattern && { value: field.pattern, message: `Invalid ${field.label}` }
-                  })}
-                  placeholder={field.label}
-                  className="w-full p-3 border"
-                />
-                {errors[field.name] && <p className="text-red-600 text-sm mt-1">{errors[field.name]?.message}</p>}
-              </div>
-            ))}
-            <div className="md:col-span-2">
-              <label className="block mb-1 font-medium">Vendor Address</label>
-              <textarea
-                {...register("vendorAddress", { required: "Vendor Address is required" })}
-                placeholder="Vendor Address"
-                className="w-full p-3 border"
-              />
-              {errors.vendorAddress && <p className="text-red-600 text-sm mt-1">{errors.vendorAddress.message}</p>}
-            </div>
-          </div>
-
-          {/* Bank Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { name: "bankName", label: "Bank Name" },
-              { name: "bankAccountNumber", label: "Account Number", pattern: /^[0-9]+$/ },
-              { name: "bankAccountType", label: "Account Type" },
-              { name: "bankBranchMICR", label: "MICR" },
-              { name: "bankBranchRTGS", label: "RTGS" },
-              { name: "bankBranchNEFT", label: "NEFT" }
-            ].map(field => (
-              <div key={field.name}>
-                <label className="block mb-1 font-medium">{field.label}</label>
-                <input
-                  {...register(field.name, {
-                    required: `${field.label} is required`,
-                    pattern: field.pattern && { value: field.pattern, message: `Invalid ${field.label}` }
-                  })}
-                  placeholder={field.label}
-                  className="w-full p-3 border"
-                />
-                {errors[field.name] && <p className="text-red-600 text-sm mt-1">{errors[field.name]?.message}</p>}
-              </div>
-            ))}
-          </div>
-
-          {/* Status & Blacklist */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1 font-medium">Status</label>
-              <select {...register("status", { required: "Status is required" })} className="w-full p-3 border">
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              {errors.status && <p className="text-red-600 text-sm mt-1">{errors.status.message}</p>}
-            </div>
-            <div className="flex items-center mt-6 gap-2">
-              <input
-                type="checkbox"
-                {...register("blacklist")}
-                onChange={e => {
-                  setValue("blacklist", e.target.checked);
-                  if (e.target.checked) setValue("status", "inactive");
-                }}
-              />
-              <label className="font-medium">Blacklist</label>
-            </div>
-          </div>
-
-          {/* Categories */}
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto space-y-8">
+      {/* BASIC DETAILS */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">🥇 Vendor Basic Details</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label className="block mb-1 font-medium">Select Categories</label>
+            <label className={labelClass}>Vendor Name *</label>
+            <input {...register("vendorName", { required: "Vendor Name is required" })} className={inputClass} />
+            {errors.vendorName && <p className="text-red-500">{errors.vendorName.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>GSTIN Number *</label>
+            <input {...register("gstin", { required: "GSTIN is required" })} className={inputClass} />
+            {errors.gstin && <p className="text-red-500">{errors.gstin.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>Contact Person *</label>
+            <input {...register("contactPerson", { required: "Contact Person is required" })} className={inputClass} />
+            {errors.contactPerson && <p className="text-red-500">{errors.contactPerson.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>Authorized Signature *</label>
+            <input {...register("authorizedSignature", { required: "Authorized Signature is required" })} className={inputClass} />
+            {errors.authorizedSignature && <p className="text-red-500">{errors.authorizedSignature.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>Phone Number *</label>
+            <input {...register("phone", { required: "Phone number is required" })} className={inputClass} />
+            {errors.phone && <p className="text-red-500">{errors.phone.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>Email Address *</label>
+            <input {...register("email", { required: "Email is required" })} className={inputClass} />
+            {errors.email && <p className="text-red-500">{errors.email.message}</p>}
+          </div>
+        </div>
+        <div className="mt-4">
+          <label className={labelClass}>Vendor Address *</label>
+          <textarea {...register("address", { required: "Address is required" })} rows="3" className={inputClass} />
+          {errors.address && <p className="text-red-500">{errors.address.message}</p>}
+        </div>
+      </div>
+
+      {/* BANK DETAILS */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">🥈 Bank Details</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label className={labelClass}>Bank Name *</label>
+            <input {...register("bankName", { required: "Bank Name is required" })} className={inputClass} />
+            {errors.bankName && <p className="text-red-500">{errors.bankName.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>Account Number *</label>
+            <input {...register("accountNumber", { required: "Account Number is required" })} className={inputClass} />
+            {errors.accountNumber && <p className="text-red-500">{errors.accountNumber.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>Account Type *</label>
+            <select {...register("accountType", { required: "Account Type is required" })} className={inputClass}>
+              <option value="">Select</option>
+              <option value="saving">Saving</option>
+              <option value="current">Current</option>
+            </select>
+            {errors.accountType && <p className="text-red-500">{errors.accountType.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>MICR Code *</label>
+            <input {...register("micr", { required: "MICR Code is required" })} className={inputClass} />
+            {errors.micr && <p className="text-red-500">{errors.micr.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>RTGS Code *</label>
+            <input {...register("rtgs", { required: "RTGS Code is required" })} className={inputClass} />
+            {errors.rtgs && <p className="text-red-500">{errors.rtgs.message}</p>}
+          </div>
+          <div>
+            <label className={labelClass}>NEFT Code *</label>
+            <input {...register("neft", { required: "NEFT Code is required" })} className={inputClass} />
+            {errors.neft && <p className="text-red-500">{errors.neft.message}</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* PRODUCT GROUP & PRODUCTS */}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">📦 Product Group & Products</h2>
+        <div className="space-y-4">
+          <div>
+            <label className={labelClass}>Product Group *</label>
             <Controller
-              name="categories"
+              name="productGroups"
               control={control}
-              rules={{ required: "Select at least one category" }}
+              rules={{ required: "Product Group is required" }}
               render={({ field }) => (
-                <Select
-                  {...field}
-                  isMulti
-                  placeholder="Select Categories"
-                  value={field.value || []}
-                  options={[]}
-                  components={{
-                    Menu: (props) => (
-                      <div {...props.innerProps} className="border bg-white rounded shadow p-2 max-h-64 overflow-auto">
-                        <CategoryTree
-                          data={categoryTree}
-                          expanded={expanded}
-                          toggleExpand={toggleExpand}
-                          onSelect={handleCategorySelect}
-                          selected={field.value || []}
-                        />
-                      </div>
-                    ),
-                    IndicatorSeparator: () => null,
-                  }}
-                />
+                <Select {...field} isMulti options={productGroups} />
               )}
             />
-            {errors.categories && <p className="text-red-600 text-sm mt-1">{errors.categories.message}</p>}
+            {errors.productGroups && <p className="text-red-500">{errors.productGroups.message}</p>}
           </div>
-
-          {/* Products */}
           <div>
-            <label className="block mb-1 font-medium">Select Products</label>
+            <label className={labelClass}>Select Products *</label>
             <Controller
               name="products"
               control={control}
-              rules={{ required: "Select at least one product" }}
+              rules={{ required: "Products are required" }}
               render={({ field }) => (
-                <Select
-                  {...field}
-                  isMulti
-                  placeholder="Select Products"
-                  options={productOptions}
-                  onChange={(val) => field.onChange(val)}
-                />
+                <Select {...field} isMulti options={filteredProducts} />
               )}
             />
-            {errors.products && <p className="text-red-600 text-sm mt-1">{errors.products.message}</p>}
+            {errors.products && <p className="text-red-500">{errors.products.message}</p>}
           </div>
-
-          {/* Buttons */}
-          <div className="flex justify-end gap-4 mt-4">
-            <button type="button" className="px-6 py-2 border rounded hover:bg-gray-100" onClick={() => setOpen(false)}>Cancel</button>
-            <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-              {editVendor ? "Update Vendor" : "Create Vendor"}
-            </button>
-          </div>
-
-        </form>
+        </div>
       </div>
-    </div>
+
+      {/* STATUS (EDIT ONLY) */}
+      {isEdit && (
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">📊 Vendor Status</h2>
+            <span className="text-xs bg-gray-100 px-3 py-1 rounded-full">Edit Mode</span>
+          </div>
+
+          <div>
+            <label className={labelClass}>Current Status *</label>
+            <Controller
+              name="status"
+              control={control}
+              rules={{ required: "Status is required" }}
+              render={({ field }) => {
+                const selectedOption = STATUS_OPTIONS.find(o => o.value === field.value);
+                return (
+                  <Select
+                    {...field}
+                    value={selectedOption || STATUS_OPTIONS[0]}
+                    onChange={(option) => field.onChange(option.value)}
+                    options={STATUS_OPTIONS}
+                    className="mt-1"
+                  />
+                );
+              }}
+            />
+            {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
+          </div>
+
+          <div className="text-sm text-gray-600 mt-4 pt-4 border-t border-gray-200">
+            <p className="font-medium mb-2">Status Information:</p>
+            <div className="space-y-1">
+              <p>• <span className="text-green-600 font-medium">Active:</span> Vendor can receive orders and payments</p>
+              <p>• <span className="text-yellow-600 font-medium">Inactive:</span> Vendor temporarily paused</p>
+              <p>• <span className="text-red-600 font-medium">Blacklisted:</span> Vendor permanently blocked</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-end">
+        <button type="submit" className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors">
+          {isEdit ? "Update Vendor" : "Create Vendor"}
+        </button>
+      </div>
+    </form>
   );
 }
