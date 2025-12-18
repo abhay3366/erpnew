@@ -46,7 +46,7 @@ export function CategoryTable({
 
           return (
             <TableRow
-              key={category._id}
+              key={category.id}
               className={cn(
                 "hover:bg-muted/30",
                 category.allowItemEntry

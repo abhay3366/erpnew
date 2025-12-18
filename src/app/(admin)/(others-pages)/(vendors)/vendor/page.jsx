@@ -6,10 +6,7 @@ import { MdClose, MdEdit, MdDelete } from "react-icons/md";
 
 
 import { useEffect, useState } from "react";
-import AddProduct from "../../../../../components/vendor/AddProduct";
-import Image from "next/image";
-import GridView from "../../../../../components/vendor/GridView";
-import VendorTable from "../../../../../components/vendor/VendorTable";
+
 import VendorForm from "../../../../../components/vendor/VendorForm";
 const VendorPage = () => {
   const [open, setOpen] = useState(false)

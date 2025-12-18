@@ -70,7 +70,7 @@ export function CategorySearchModal({ open, onOpenChange, categories, onSelect }
             ) : (
               filteredCategories.map((category) => (
                 <button
-                  key={category._id}
+                  key={category.id}
                   onClick={() => handleSelect(category)}
                   className={cn(
                     "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors",

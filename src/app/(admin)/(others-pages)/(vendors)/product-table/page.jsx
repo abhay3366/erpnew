@@ -77,7 +77,7 @@ export default function ProductsPage() {
     if (!Array.isArray(cats) || !categoryId) return []
     
     for (const cat of cats) {
-      if (cat._id === categoryId || cat.id === categoryId) {
+      if (cat.id === categoryId || cat.id === categoryId) {
         path.push(cat.name || "Unnamed")
         return path
       }
@@ -143,7 +143,7 @@ export default function ProductsPage() {
   const handleDelete = async (product) => {
     if (confirm(`Delete product "${product.productName || product.name}"?`)) {
       try {
-        await deleteProduct(product.id || product._id)
+        await deleteProduct(product.id || product.id)
         // Reload data
         await loadData()
       } catch (error) {
@@ -240,7 +240,7 @@ export default function ProductsPage() {
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               {flattenCategories(categories).map((cat) => (
-                <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>
+                <SelectItem key={cat.id || cat.id} value={cat.id || cat.id}>
                   {"  ".repeat(cat.level || 0)}
                   {cat.name || "Unnamed"} 
                   {cat.allowItemEntry ? " (Items)" : ""}
@@ -322,7 +322,7 @@ export default function ProductsPage() {
                 const categoryPath = getCategoryPath(categories, product.categoryId)
                 
                 return (
-                  <TableRow key={product.id || product._id || index}>
+                  <TableRow key={product.id || product.id || index}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         {productImage ? (
@@ -344,7 +344,7 @@ export default function ProductsPage() {
                         <div>
                           <div className="font-medium">{productName}</div>
                           <div className="text-xs text-muted-foreground">
-                            ID: {product.id || product._id}
+                            ID: {product.id || product.id}
                           </div>
                         </div>
                       </div>
