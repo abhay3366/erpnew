@@ -257,8 +257,8 @@ export async function saveWarehouse(warehouse) {
 // ============ HELPER FUNCTIONS ============
 
 // Helper to find category path
-export function getCategoryPath(categories, categoryId) {
-  if (!categories || !Array.isArray(categories) || !categoryId) return []
+export function getCategoryPath(categories, productGroupId) {
+  if (!categories || !Array.isArray(categories) || !productGroupId) return []
 
   const findPath = (cats, targetId, path = []) => {
     for (const cat of cats) {
@@ -277,7 +277,7 @@ export function getCategoryPath(categories, categoryId) {
     return null
   }
 
-  return findPath(categories, categoryId) || []
+  return findPath(categories, productGroupId) || []
 }
 
 // Helper to check if category name exists (case-insensitive)
@@ -303,13 +303,13 @@ export function categoryNameExists(categories, name, excludeId = null) {
 }
 
 // Helper to find category by ID
-export function findCategoryById(categories, categoryId) {
-  if (!categories || !Array.isArray(categories) || !categoryId) return null
+export function findCategoryById(categories, productGroupId) {
+  if (!categories || !Array.isArray(categories) || !productGroupId) return null
 
   for (const cat of categories) {
-    if (cat.id === categoryId || cat.id === categoryId) return cat
+    if (cat.id === productGroupId || cat.id === productGroupId) return cat
     if (cat.children && cat.children.length) {
-      const found = findCategoryById(cat.children, categoryId)
+      const found = findCategoryById(cat.children, productGroupId)
       if (found) return found
     }
   }

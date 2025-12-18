@@ -71,17 +71,17 @@ export default function ProductsPage() {
   }
 
   // Helper function to get category path
-  const getCategoryPath = (cats, categoryId, path = []) => {
-    if (!Array.isArray(cats) || !categoryId) return []
+  const getCategoryPath = (cats, productGroupId, path = []) => {
+    if (!Array.isArray(cats) || !productGroupId) return []
     
     for (const cat of cats) {
-      if (cat.id === categoryId || cat.id === categoryId) {
+      if (cat._id === productGroupId || cat.id === productGroupId) {
         path.push(cat.name || "Unnamed")
         return path
       }
       
       if (cat.children && Array.isArray(cat.children)) {
-        const childPath = getCategoryPath(cat.children, categoryId, [...path, cat.name || "Unnamed"])
+        const childPath = getCategoryPath(cat.children, productGroupId, [...path, cat.name || "Unnamed"])
         if (childPath.length > 0) {
           return childPath
         }
@@ -103,7 +103,7 @@ export default function ProductsPage() {
     const productName = product.name || product.productName || ""
     
     // Filter by category
-    if (filterCategory !== "all" && product.categoryId !== filterCategory) {
+    if (filterCategory !== "all" && product.productGroupId !== filterCategory) {
       return false
     }
     
@@ -123,7 +123,7 @@ export default function ProductsPage() {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      const categoryPath = getCategoryPath(categories, product.categoryId).join(" > ").toLowerCase()
+      const categoryPath = getCategoryPath(categories, product.productGroupId).join(" > ").toLowerCase()
       const productSku = product.sku?.toLowerCase() || ""
       const nameMatch = productName.toLowerCase().includes(query)
       const skuMatch = productSku.includes(query)
@@ -137,13 +137,19 @@ export default function ProductsPage() {
     return true
   })
 
+  // Function to check if category has products
+  const doesCategoryHaveProducts = (productGroupId) => {
+    return products.some(product => product.productGroupId === productGroupId)
+  }
+
   // Handle delete product
   const handleDelete = async (product) => {
     if (confirm(`Delete product "${product.productName || product.name}"?`)) {
       try {
-        await deleteProduct(product.id || product.id)
+        await deleteProduct(product.id || product._id)
         // Reload data
         await loadData()
+        alert(`✅ Product "${product.productName || product.name}" deleted successfully.`)
       } catch (error) {
         console.error("Error deleting product:", error)
         alert("Failed to delete product")
@@ -155,6 +161,7 @@ export default function ProductsPage() {
   const handleEdit = (product) => {
     console.log("Edit product:", product)
     // Navigate to edit page or open modal
+    // For example: router.push(`/products/edit/${product.id}`)
   }
 
   const clearFilters = () => {
@@ -168,6 +175,7 @@ export default function ProductsPage() {
   const handleAddProduct = () => {
     console.log("Add new product")
     // Navigate to add product page
+    // router.push('/products/add')
   }
 
   if (loading) {
@@ -238,7 +246,7 @@ export default function ProductsPage() {
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               {flattenCategories(categories).map((cat) => (
-                <SelectItem key={cat.id || cat.id} value={cat.id || cat.id}>
+                <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>
                   {"  ".repeat(cat.level || 0)}
                   {cat.name || "Unnamed"} 
                   {cat.allowItemEntry ? " (Items)" : ""}
@@ -317,10 +325,10 @@ export default function ProductsPage() {
                 const productImage = product.image || product.imageUrl || ""
                 const productUnit = product.unit || "pieces"
                 const productSku = product.sku || "N/A"
-                const categoryPath = getCategoryPath(categories, product.categoryId)
+                const categoryPath = getCategoryPath(categories, product.productGroupId)
                 
                 return (
-                  <TableRow key={product.id || product.id || index}>
+                  <TableRow key={product.id || product._id || index}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         {productImage ? (
@@ -342,7 +350,7 @@ export default function ProductsPage() {
                         <div>
                           <div className="font-medium">{productName}</div>
                           <div className="text-xs text-muted-foreground">
-                            ID: {product.id || product.id}
+                            ID: {product.id || product._id}
                           </div>
                         </div>
                       </div>
@@ -354,9 +362,9 @@ export default function ProductsPage() {
                         ) : (
                           <div>
                             <span className="text-muted-foreground">Uncategorized</span>
-                            {product.categoryId && (
+                            {product.productGroupId && (
                               <div className="text-xs text-amber-600 mt-1">
-                                Category ID: {product.categoryId}
+                                Category ID: {product.productGroupId}
                               </div>
                             )}
                           </div>
@@ -408,8 +416,6 @@ export default function ProductsPage() {
           </Table>
         </div>
       )}
-
-
     </div>
   )
 }

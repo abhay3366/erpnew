@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,7 +18,7 @@ export default function ProductsPage() {
   
   const [formData, setFormData] = useState({
     name: "",
-    categoryId: "",
+    productGroupId: "",
     unit: "pieces",
     imageUrl: "",
     hasUniqueIdentifier: false,
@@ -34,13 +34,56 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [isCategoryLocked, setIsCategoryLocked] = useState(false)
   
-  const categoryIdFromUrl = searchParams.get('categoryId')
+  // Create ref for dropdown container
+  const dropdownRef = useRef(null)
+  const inputRef = useRef(null)
+  
+  const categoryIdFromUrl = searchParams.get('productGroupId')
   const categoryNameFromUrl = searchParams.get('categoryName')
   const markAsLastOnFirstProduct = searchParams.get('markAsLastOnFirstProduct')
   const autoMarkLast = searchParams.get('autoMarkLast')
 
   // Track if first product has been created
   const [firstProductCreated, setFirstProductCreated] = useState(false)
+
+  // Add click outside listener
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // If dropdown is open and click is outside dropdown and input
+      if (
+        showCategoryDropdown && 
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target) &&
+        inputRef.current && 
+        !inputRef.current.contains(event.target)
+      ) {
+        setShowCategoryDropdown(false)
+      }
+    }
+
+    // Add event listener
+    document.addEventListener("mousedown", handleClickOutside)
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [showCategoryDropdown])
+
+  // Add Escape key listener
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape' && showCategoryDropdown) {
+        setShowCategoryDropdown(false)
+      }
+    }
+
+    document.addEventListener("keydown", handleEscapeKey)
+    
+    return () => {
+      document.removeEventListener("keydown", handleEscapeKey)
+    }
+  }, [showCategoryDropdown])
 
   useEffect(() => {
     fetchCategories()
@@ -237,7 +280,7 @@ export default function ProductsPage() {
     setSelectedCategory(category)
     setFormData(prev => ({
       ...prev,
-      categoryId: String(category.id || category.id)
+      productGroupId: String(category.id || category.id)
     }))
     setCategorySearch(category.path || category.name)
     setShowCategoryDropdown(false)
@@ -254,9 +297,10 @@ export default function ProductsPage() {
     setSelectedCategory(null)
     setFormData(prev => ({
       ...prev,
-      categoryId: ""
+      productGroupId: ""
     }))
     setCategorySearch("")
+    setShowCategoryDropdown(false)
   }
 
   const updateField = (field, value) => {
@@ -271,14 +315,14 @@ export default function ProductsPage() {
       return
     }
     
-    if (!formData.categoryId) {
+    if (!formData.productGroupId) {
       alert("Please select a category")
       return
     }
     
     const productData = {
       id: Date.now().toString(),
-      categoryId: formData.categoryId,
+      productGroupId: formData.productGroupId,
       productName: formData.name.trim(),
       unit: formData.unit,
       sku: `SKU-${Date.now()}`,
@@ -412,17 +456,9 @@ export default function ProductsPage() {
                           <p className="font-medium text-green-700">
                             {selectedCategory.name}
                           </p>
-                          <p className="text-sm text-green-600 mt-1">
-                            Category locked from category page
-                          </p>
                           {categoryNameFromUrl && (
                             <p className="text-xs text-green-600 mt-1">
                               URL Category: {categoryNameFromUrl}
-                            </p>
-                          )}
-                          {markAsLastOnFirstProduct === 'true' && !selectedCategory.allowItemEntry && (
-                            <p className="text-xs text-blue-600 mt-1">
-                              ⓘ Will become Product Category after first product
                             </p>
                           )}
                         </div>
@@ -457,6 +493,7 @@ export default function ProductsPage() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
+                        ref={inputRef}
                         value={categorySearch}
                         onChange={(e) => {
                           setCategorySearch(e.target.value)
@@ -468,7 +505,10 @@ export default function ProductsPage() {
                       />
                     </div>
                     {showCategoryDropdown && (
-                      <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      <div 
+                        ref={dropdownRef}
+                        className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                      >
                         {filteredCategories.length === 0 ? (
                           <div className="p-3 text-center text-muted-foreground text-sm">
                             {leafCategories.length === 0
@@ -606,7 +646,7 @@ export default function ProductsPage() {
                 <Button
                   type="submit"
                   className="flex-1 bg-green-600 hover:bg-green-700"
-                  disabled={!formData.name.trim() || !formData.categoryId}
+                  disabled={!formData.name.trim() || !formData.productGroupId}
                 >
                   {markAsLastOnFirstProduct === 'true' && !selectedCategory?.allowItemEntry 
                     ? "Create First Product & Mark Category" 

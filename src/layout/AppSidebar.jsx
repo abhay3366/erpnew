@@ -197,7 +197,7 @@ const AppSidebar = () => {
               </span>
 
               {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text text-[0.8em]">{nav.name}</span>
+                <span className="menu-item-text text-[0.9em]">{nav.name}</span>
               )}
 
               {(isExpanded || isHovered || isMobileOpen) && (
@@ -231,7 +231,7 @@ const AppSidebar = () => {
                   {nav.icon}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="menu-item-text">{nav.name}</span>
+                  <span className="menu-item-text text-[0.9em]">{nav.name}</span>
                 )}
               </Link>
             )
