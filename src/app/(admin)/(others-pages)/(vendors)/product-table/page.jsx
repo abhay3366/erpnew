@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { getProducts, getCategories, deleteProduct } from "@/components/lib/storage"
+import { useRouter } from "next/navigation"
 
 export default function ProductsPage() {
+  const router = useRouter()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -137,9 +139,27 @@ export default function ProductsPage() {
     return true
   })
 
-  // Function to check if category has products
-  const doesCategoryHaveProducts = (productGroupId) => {
-    return products.some(product => product.productGroupId === productGroupId)
+  // Handle edit product - Redirect to create page with product data
+  const handleEdit = (product) => {
+    console.log("Edit product:", product)
+    
+    // Create URL parameters for product data
+    const params = new URLSearchParams()
+    
+    // Add product data to URL
+    params.append('edit', 'true')
+    params.append('productId', product.id || product._id)
+    params.append('productName', product.productName || product.name || '')
+    params.append('productGroupId', product.productGroupId || '')
+    params.append('unit', product.unit || 'pieces')
+    params.append('imageUrl', product.image || product.imageUrl || '')
+    params.append('hasUniqueIdentifier', product.hasUniqueIdentifier ? 'true' : 'false')
+    params.append('hasSerialNo', product.hasSerialNo ? 'true' : 'false')
+    params.append('hasMacAddress', product.hasMacAddress ? 'true' : 'false')
+    params.append('hasWarranty', product.hasWarranty ? 'true' : 'false')
+    
+    // Redirect to create product page with data
+    router.push(`/products?${params.toString()}`)
   }
 
   // Handle delete product
@@ -157,13 +177,6 @@ export default function ProductsPage() {
     }
   }
 
-  // Handle edit product
-  const handleEdit = (product) => {
-    console.log("Edit product:", product)
-    // Navigate to edit page or open modal
-    // For example: router.push(`/products/edit/${product.id}`)
-  }
-
   const clearFilters = () => {
     setSearchQuery("")
     setFilterCategory("all")
@@ -173,9 +186,8 @@ export default function ProductsPage() {
 
   // Add new product button handler
   const handleAddProduct = () => {
-    console.log("Add new product")
     // Navigate to add product page
-    // router.push('/products/add')
+    router.push('/products/add')
   }
 
   if (loading) {
