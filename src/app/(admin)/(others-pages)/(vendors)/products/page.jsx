@@ -36,6 +36,11 @@ export default function ProductsPage() {
   
   const categoryIdFromUrl = searchParams.get('categoryId')
   const categoryNameFromUrl = searchParams.get('categoryName')
+  const markAsLastOnFirstProduct = searchParams.get('markAsLastOnFirstProduct')
+  const autoMarkLast = searchParams.get('autoMarkLast')
+
+  // Track if first product has been created
+  const [firstProductCreated, setFirstProductCreated] = useState(false)
 
   useEffect(() => {
     fetchCategories()
@@ -44,24 +49,34 @@ export default function ProductsPage() {
   useEffect(() => {
     if (categories.length > 0 && categoryIdFromUrl) {
       console.log("URL Category ID:", categoryIdFromUrl)
-      console.log("Available Categories:", categories)
+      console.log("Auto Mark Last:", autoMarkLast)
+      console.log("Mark on First Product:", markAsLastOnFirstProduct)
       
       const category = findCategoryById(categories, categoryIdFromUrl)
       console.log("Found Category:", category)
       
       if (category) {
         handleCategorySelect(category)
-        setIsCategoryLocked(true)
+        
+        // If category comes from Add Item button, lock it
+        if (categoryIdFromUrl) {
+          setIsCategoryLocked(true)
+        }
+        
+        // If autoMarkLast is true, mark category as last immediately
+        if (autoMarkLast === 'true' && !category.allowItemEntry) {
+          handleAutoMarkAsLastCategory(category)
+        }
       } else {
         console.log("Category not found with ID:", categoryIdFromUrl)
       }
     }
-  }, [categories, categoryIdFromUrl])
+  }, [categories, categoryIdFromUrl, autoMarkLast, markAsLastOnFirstProduct])
 
   const fetchCategories = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:5002/categories')
+      const response = await fetch('http://localhost:5001/categories')
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -128,6 +143,57 @@ export default function ProductsPage() {
     return null
   }
 
+  // Function to mark category as last category (product category)
+  const handleAutoMarkAsLastCategory = async (category) => {
+    try {
+      console.log("Auto-marking category as last:", category.name)
+      
+      // Update category to be a product category
+      const updateCategoryInTree = (cats, targetId) => {
+        return cats.map((cat) => {
+          if (cat._id === targetId || cat.id === targetId) {
+            return {
+              ...cat,
+              allowItemEntry: true,
+              children: cat.children || []
+            }
+          }
+          if (cat.children && Array.isArray(cat.children)) {
+            return { 
+              ...cat, 
+              children: updateCategoryInTree(cat.children, targetId) 
+            }
+          }
+          return cat
+        })
+      }
+
+      const updatedCategories = updateCategoryInTree(categories, category._id || category.id)
+      
+      // Save to server
+      const response = await fetch('http://localhost:5001/categories', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ list: updatedCategories }),
+      })
+
+      if (response.ok) {
+        console.log("Category marked as last successfully")
+        setCategories(updatedCategories)
+        
+        // Update selected category in state
+        const updatedCategory = findCategoryById(updatedCategories, category._id || category.id)
+        if (updatedCategory) {
+          setSelectedCategory(updatedCategory)
+        }
+      }
+    } catch (error) {
+      console.error('Error marking category as last:', error)
+    }
+  }
+
   const getLeafCategories = (cats = []) => {
     let result = []
     
@@ -175,6 +241,9 @@ export default function ProductsPage() {
     }))
     setCategorySearch(category.path || category.name)
     setShowCategoryDropdown(false)
+    
+    // If user selects a category manually, don't lock it
+    setIsCategoryLocked(false)
   }
 
   const clearCategory = () => {
@@ -222,9 +291,12 @@ export default function ProductsPage() {
     }
 
     console.log("Saving product:", productData)
+    console.log("First product created:", firstProductCreated)
+    console.log("Mark on first product param:", markAsLastOnFirstProduct)
 
     try {
-      const response = await fetch('http://localhost:5002/products', {
+      // First, save the product
+      const response = await fetch('http://localhost:5001/products', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -233,10 +305,19 @@ export default function ProductsPage() {
       })
 
       if (response.ok) {
+        console.log("Product created successfully")
+        
+        // Check if we need to mark category as last on first product
+        if (markAsLastOnFirstProduct === 'true' && selectedCategory && !selectedCategory.allowItemEntry) {
+          console.log("Marking category as last on first product")
+          await handleAutoMarkAsLastCategory(selectedCategory)
+          setFirstProductCreated(true)
+        }
+        
         alert("Product created successfully!")
-        router.push('/categories')
+        router.push('/product-table')
+        // Reset form but keep category if locked
         if (isCategoryLocked) {
-          // Reset form but keep category
           setFormData(prev => ({
             ...prev,
             name: "",
@@ -248,7 +329,7 @@ export default function ProductsPage() {
             hasWarranty: false,
           }))
         } else {
-          router.push('/products-group')
+          router.push('/product-table')
         }
       } else {
         alert("Failed to create product")
@@ -260,7 +341,7 @@ export default function ProductsPage() {
   }
 
   const handleCancel = () => {
-    router.push('/products-group')
+    router.push('/product-table')
   }
 
   if (loading) {
@@ -268,7 +349,7 @@ export default function ProductsPage() {
       <div className="min-h-screen bg-background">
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-64">
-            <p>Loading Prodcust Group...</p>
+            <p>Loading product...</p>
           </div>
         </main>
       </div>
@@ -277,7 +358,7 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto p-6">
+      <main className="container mx-auto p-2">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -285,10 +366,28 @@ export default function ProductsPage() {
               Create Product
             </h1>
             <p className="text-muted-foreground mt-1">Add new product to your inventory</p>
+            
+            {/* Show info if category will be marked as last on first product */}
+            {markAsLastOnFirstProduct === 'true' && selectedCategory && !selectedCategory.allowItemEntry && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-300 rounded-md">
+                <p className="text-sm text-blue-700">
+                  <span className="font-medium">Note:</span> This category will be marked as a "Product Category" after you create the first product.
+                </p>
+              </div>
+            )}
+            
+            {/* Show info if category is already a product category */}
+            {selectedCategory && selectedCategory.allowItemEntry && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-300 rounded-md">
+                <p className="text-sm text-green-700">
+                  <span className="font-medium">✓ Product Category:</span> You can add products directly to this category.
+                </p>
+              </div>
+            )}
           </div>
           <Button variant="outline" onClick={handleCancel}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Product Groups
+            Back to Product
           </Button>
         </div>
         
@@ -321,6 +420,11 @@ export default function ProductsPage() {
                               URL Category: {categoryNameFromUrl}
                             </p>
                           )}
+                          {markAsLastOnFirstProduct === 'true' && !selectedCategory.allowItemEntry && (
+                            <p className="text-xs text-blue-600 mt-1">
+                              ⓘ Will become Product Category after first product
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -331,6 +435,11 @@ export default function ProductsPage() {
                       <p className="font-medium text-foreground">{selectedCategory.name}</p>
                       {selectedCategory.path && (
                         <p className="text-xs text-muted-foreground">{selectedCategory.path}</p>
+                      )}
+                      {markAsLastOnFirstProduct === 'true' && !selectedCategory.allowItemEntry && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          ⓘ Will become Product Category after first product
+                        </p>
                       )}
                     </div>
                     <Button 
@@ -354,7 +463,7 @@ export default function ProductsPage() {
                           setShowCategoryDropdown(true)
                         }}
                         onFocus={() => setShowCategoryDropdown(true)}
-                        placeholder="Search product category..."
+                        placeholder="Search product Product..."
                         className="pl-9"
                       />
                     </div>
@@ -363,8 +472,8 @@ export default function ProductsPage() {
                         {filteredCategories.length === 0 ? (
                           <div className="p-3 text-center text-muted-foreground text-sm">
                             {leafCategories.length === 0
-                              ? "No Products Gruop with Product Entry enabled"
-                              : "No matching Products Gruop"}
+                              ? "No Product with Product Entry enabled"
+                              : "No matching Product"}
                           </div>
                         ) : (
                           filteredCategories.map((cat) => (
@@ -376,6 +485,9 @@ export default function ProductsPage() {
                               <p className="font-medium text-foreground">{cat.name}</p>
                               {cat.path && (
                                 <p className="text-xs text-muted-foreground">{cat.path}</p>
+                              )}
+                              {cat.allowItemEntry && (
+                                <p className="text-xs text-green-600 mt-1">✓ Product Category</p>
                               )}
                             </div>
                           ))
@@ -496,7 +608,9 @@ export default function ProductsPage() {
                   className="flex-1 bg-green-600 hover:bg-green-700"
                   disabled={!formData.name.trim() || !formData.categoryId}
                 >
-                  Create Product
+                  {markAsLastOnFirstProduct === 'true' && !selectedCategory?.allowItemEntry 
+                    ? "Create First Product & Mark Category" 
+                    : "Create Product"}
                 </Button>
               </div>
             </form>

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { ChevronRight, ChevronDown, Edit, Trash2, Plus, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { cn } from "../lib/utils"
 
 export function CategoryTree({ categories, onEdit, onDelete, onAddChild, level = 0 }) {
   const [expanded, setExpanded] = useState({})

@@ -1,38 +1,161 @@
 "use client"
 
-import { useState } from "react"
-import { Edit, Trash2, Package, Search, Filter } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Edit, Trash2, Package, Search, Filter, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { getCategoryPath, flattenCategories } from "@/lib/storage"
+import { getProducts, getCategories, deleteProduct } from "@/components/lib/storage"
 
-export function ProductTable({ products, categories, onEdit, onDelete }) {
+export default function ProductsPage() {
+  const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
   const [filterUnit, setFilterUnit] = useState("all")
   const [filterUniqueId, setFilterUniqueId] = useState("all")
 
-  const flatCategories = flattenCategories(categories)
+  // Load data from JSON Server
+  useEffect(() => {
+    loadData()
+  }, [])
 
-  const uniqueUnits = [...new Set(products.map((p) => p.unit).filter(Boolean))]
+  const loadData = async () => {
+    try {
+      console.log("📦 Loading data from JSON Server...")
+      
+      // Load products and categories
+      const [productsData, categoriesData] = await Promise.all([
+        getProducts(),
+        getCategories()
+      ])
+      
+      console.log("✅ Data loaded:", {
+        productsCount: productsData.length,
+        categoriesCount: categoriesData.length,
+        products: productsData,
+        categories: categoriesData
+      })
+      
+      setProducts(productsData)
+      setCategories(categoriesData)
+      
+    } catch (error) {
+      console.error("❌ Error loading data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
+  // Helper function to flatten categories
+  const flattenCategories = (cats, level = 0, result = []) => {
+    if (!Array.isArray(cats)) return []
+    
+    cats.forEach(cat => {
+      if (cat) {
+        result.push({
+          ...cat,
+          level: level
+        })
+        
+        if (cat.children && Array.isArray(cat.children)) {
+          flattenCategories(cat.children, level + 1, result)
+        }
+      }
+    })
+    
+    return result
+  }
+
+  // Helper function to get category path
+  const getCategoryPath = (cats, categoryId, path = []) => {
+    if (!Array.isArray(cats) || !categoryId) return []
+    
+    for (const cat of cats) {
+      if (cat._id === categoryId || cat.id === categoryId) {
+        path.push(cat.name || "Unnamed")
+        return path
+      }
+      
+      if (cat.children && Array.isArray(cat.children)) {
+        const childPath = getCategoryPath(cat.children, categoryId, [...path, cat.name || "Unnamed"])
+        if (childPath.length > 0) {
+          return childPath
+        }
+      }
+    }
+    
+    return []
+  }
+
+  // Get unique units from products
+  const uniqueUnits = [...new Set(products
+    .map((p) => p?.unit)
+    .filter(Boolean))]
+
+  // Filter products
   const filteredProducts = products.filter((product) => {
-    if (filterCategory !== "all" && product.categoryId !== filterCategory) return false
-    if (filterUnit !== "all" && product.unit !== filterUnit) return false
-    if (filterUniqueId === "yes" && !product.hasUniqueIdentifier) return false
-    if (filterUniqueId === "no" && product.hasUniqueIdentifier) return false
+    if (!product) return false
+    
+    const productName = product.name || product.productName || ""
+    
+    // Filter by category
+    if (filterCategory !== "all" && product.categoryId !== filterCategory) {
+      return false
+    }
+    
+    // Filter by unit
+    if (filterUnit !== "all" && product.unit !== filterUnit) {
+      return false
+    }
+    
+    // Filter by unique identifier
+    if (filterUniqueId === "yes" && !product.hasUniqueIdentifier) {
+      return false
+    }
+    if (filterUniqueId === "no" && product.hasUniqueIdentifier) {
+      return false
+    }
+    
+    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       const categoryPath = getCategoryPath(categories, product.categoryId).join(" > ").toLowerCase()
-      if (!product.name?.toLowerCase().includes(query) && !categoryPath.includes(query)) {
+      const productSku = product.sku?.toLowerCase() || ""
+      const nameMatch = productName.toLowerCase().includes(query)
+      const skuMatch = productSku.includes(query)
+      const categoryMatch = categoryPath.includes(query)
+      
+      if (!nameMatch && !skuMatch && !categoryMatch) {
         return false
       }
     }
+    
     return true
   })
+
+  // Handle delete product
+  const handleDelete = async (product) => {
+    if (confirm(`Delete product "${product.productName || product.name}"?`)) {
+      try {
+        await deleteProduct(product.id || product._id)
+        // Reload data
+        await loadData()
+      } catch (error) {
+        console.error("Error deleting product:", error)
+        alert("Failed to delete product")
+      }
+    }
+  }
+
+  // Handle edit product
+  const handleEdit = (product) => {
+    console.log("Edit product:", product)
+    // Navigate to edit page or open modal
+  }
 
   const clearFilters = () => {
     setSearchQuery("")
@@ -41,22 +164,62 @@ export function ProductTable({ products, categories, onEdit, onDelete }) {
     setFilterUniqueId("all")
   }
 
-  if (!products?.length) {
+  // Add new product button handler
+  const handleAddProduct = () => {
+    console.log("Add new product")
+    // Navigate to add product page
+  }
+
+  if (loading) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p>No products yet. Create your first product!</p>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading products...</p>
+          <p className="text-sm text-muted-foreground mt-2">Connecting to JSON Server</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="bg-muted/30 border rounded-lg p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="font-medium">Filters</span>
+    <div className="container mx-auto py-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+          <p className="text-muted-foreground">
+            Manage your inventory products
+          </p>
         </div>
+        <Button onClick={handleAddProduct}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Product
+        </Button>
+      </div>
+
+      {/* Filters Section */}
+      <div className="bg-muted/30 border rounded-lg p-4 space-y-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">Filters</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Badge variant="outline">
+              {products.length} Total Products
+            </Badge>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={loadData}
+              className="text-xs"
+            >
+              Refresh
+            </Button>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -70,14 +233,15 @@ export function ProductTable({ products, categories, onEdit, onDelete }) {
 
           <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger>
-              <SelectValue placeholder="All Products Gruop" />
+              <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Products Gruop</SelectItem>
-              {flatCategories.map((cat) => (
-                <SelectItem key={cat._id} value={cat._id}>
-                  {"  ".repeat(cat.level)}
-                  {cat.name}
+              <SelectItem value="all">All Categories</SelectItem>
+              {flattenCategories(categories).map((cat) => (
+                <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>
+                  {"  ".repeat(cat.level || 0)}
+                  {cat.name || "Unnamed"} 
+                  {cat.allowItemEntry ? " (Items)" : ""}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -112,14 +276,27 @@ export function ProductTable({ products, categories, onEdit, onDelete }) {
             Clear Filters
           </Button>
         </div>
+        
         <div className="text-sm text-muted-foreground">
           Showing {filteredProducts.length} of {products.length} products
         </div>
       </div>
 
+      {/* Products Table */}
       {filteredProducts.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground border rounded-lg">
-          <p>No products match your filters.</p>
+        <div className="text-center py-12 border rounded-lg">
+          <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="font-medium mb-2">No products found</h3>
+          <p className="text-muted-foreground mb-4">
+            {products.length > 0 
+              ? "No products match your filters. Try clearing filters." 
+              : "No products in database. Add your first product!"}
+          </p>
+          {products.length > 0 && (
+            <Button variant="outline" onClick={clearFilters}>
+              Clear Filters
+            </Button>
+          )}
         </div>
       ) : (
         <div className="border rounded-lg overflow-hidden">
@@ -130,37 +307,64 @@ export function ProductTable({ products, categories, onEdit, onDelete }) {
                 <TableHead>Category</TableHead>
                 <TableHead>Unit</TableHead>
                 <TableHead>Unique ID</TableHead>
+                <TableHead>SKU</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => {
+              {filteredProducts.map((product, index) => {
+                const productName = product.name || product.productName || "Unnamed Product"
+                const productImage = product.image || product.imageUrl || ""
+                const productUnit = product.unit || "pieces"
+                const productSku = product.sku || "N/A"
                 const categoryPath = getCategoryPath(categories, product.categoryId)
+                
                 return (
-                  <TableRow key={product._id}>
+                  <TableRow key={product.id || product._id || index}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        {product.imageUrl ? (
+                        {productImage ? (
                           <img
-                            src={product.imageUrl || "/placeholder.svg"}
-                            alt={product.name}
+                            src={productImage}
+                            alt={productName}
                             className="h-10 w-10 rounded object-cover bg-muted"
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                              e.target.nextElementSibling.style.display = 'flex'
+                            }}
                           />
-                        ) : (
-                          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
-                            <Package className="h-5 w-5 text-muted-foreground" />
+                        ) : null}
+                        <div 
+                          className={`h-10 w-10 rounded bg-muted flex items-center justify-center ${productImage ? 'hidden' : ''}`}
+                        >
+                          <Package className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <div className="font-medium">{productName}</div>
+                          <div className="text-xs text-muted-foreground">
+                            ID: {product.id || product._id}
                           </div>
-                        )}
-                        <span className="font-medium">{product.name}</span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {categoryPath.join(" > ") || "Uncategorized"}
-                      </span>
+                      <div className="text-sm">
+                        {categoryPath.length > 0 ? (
+                          categoryPath.join(" > ")
+                        ) : (
+                          <div>
+                            <span className="text-muted-foreground">Uncategorized</span>
+                            {product.categoryId && (
+                              <div className="text-xs text-amber-600 mt-1">
+                                Category ID: {product.categoryId}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{product.unit}</Badge>
+                      <Badge variant="secondary">{productUnit}</Badge>
                     </TableCell>
                     <TableCell>
                       {product.hasUniqueIdentifier ? (
@@ -173,18 +377,29 @@ export function ProductTable({ products, categories, onEdit, onDelete }) {
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{productSku}</Badge>
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => onEdit(product)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => onDelete(product)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleEdit(product)}
+                          title="Edit product"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(product)}
+                          title="Delete product"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
@@ -193,6 +408,8 @@ export function ProductTable({ products, categories, onEdit, onDelete }) {
           </Table>
         </div>
       )}
+
+
     </div>
   )
 }

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
-import { categoryNameExists } from "@/lib/storage"
+import { categoryNameExists } from "../lib/storage"
 
 export function CategoryForm({ open, onOpenChange, onSubmit, initialData, parentCategory, allCategories = [] }) {
   const [name, setName] = useState("")

@@ -5,7 +5,7 @@ import { Search, X, Folder } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { flattenCategories } from "../lib/storage"
-import { cn } from "@/lib/utils"
+import { cn } from "../lib/utils"
 
 export function CategorySearchModal({ open, onOpenChange, categories, onSelect }) {
   const [search, setSearch] = useState("")

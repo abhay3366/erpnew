@@ -45,7 +45,8 @@ const navItems = [
     icon: <VendorIcon className=" w-5" />,
     subItems: [
       { name: "Product Group", path: "/products-group", pro: false },
-      { name: "Product", path: "/products", pro: false },
+      { name: "Create Product", path: "/products", pro: false },
+      { name: "View Product", path: "/product-table", pro: false },
     ],
   },
 
@@ -196,12 +197,12 @@ const AppSidebar = () => {
               </span>
 
               {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text">{nav.name}</span>
+                <span className="menu-item-text text-[0.8em]">{nav.name}</span>
               )}
 
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${
+                  className={`ml-auto w-4 h-4 transition-transform duration-200 ${
                     openSubmenu?.type === menuType &&
                     openSubmenu?.index === index
                       ? "rotate-180 text-brand-500"
@@ -255,7 +256,7 @@ const AppSidebar = () => {
                   <li key={sub.name}>
                     <Link
                       href={sub.path}
-                      className={`menu-dropdown-item ${
+                      className={`menu-dropdown-item text-[0.8em] ${
                         isActive(sub.path)
                           ? "menu-dropdown-item-active"
                           : "menu-dropdown-item-inactive"
@@ -319,9 +320,9 @@ const AppSidebar = () => {
       className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
         ${
           isExpanded || isMobileOpen
-            ? "w-[290px]"
+            ? "w-[220px]"
             : isHovered
-            ? "w-[290px]"
+            ? "w-[220px]"
             : "w-[90px]"
         }
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}

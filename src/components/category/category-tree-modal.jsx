@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Folder, X } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "../lib/utils"
 
 const LEVEL_COLORS = [
   "border-red-500",

@@ -3,14 +3,14 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2, ChevronRight, Folder, Package } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "../lib/utils"
 
-export function CategoryTable({ 
-  categories, 
-  onEdit, 
-  onDelete, 
-  onNavigate, 
-  onAddProduct, 
+export function CategoryTable({
+  categories,
+  onEdit,
+  onDelete,
+  onNavigate,
+  onAddProduct,
   parentPath = "",
   isParentProductCategory = false,
   shouldShowAddItemOnlyForSingleCategory = false
@@ -39,10 +39,10 @@ export function CategoryTable({
       <TableBody>
         {categories.map((category) => {
           // Check if this category is eligible for Add Item in table row
-          const isEligibleForAddItemInRow = shouldShowAddItemOnlyForSingleCategory && 
-                                          hasSingleCategory && 
-                                          !category.allowItemEntry &&
-                                          (!category.children || category.children.length === 0)
+          const isEligibleForAddItemInRow = shouldShowAddItemOnlyForSingleCategory &&
+            hasSingleCategory &&
+            !category.allowItemEntry &&
+            (!category.children || category.children.length === 0)
 
           return (
             <TableRow
@@ -57,13 +57,8 @@ export function CategoryTable({
               <TableCell>
                 <button
                   onClick={() => {
-                    if (category.allowItemEntry) {
-                      // Last category - go to products
-                      onAddProduct(category)
-                    } else {
-                      // Regular category - navigate deeper
-                      onNavigate(category)
-                    }
+                    // ALWAYS navigate - never redirect to products page
+                    onNavigate(category)
                   }}
                   className={cn(
                     "flex items-center gap-2 font-medium text-foreground",
@@ -77,7 +72,7 @@ export function CategoryTable({
                     category.allowItemEntry ? "text-green-600" : "text-primary"
                   )} />
                   {category.name}
-                  {!category.allowItemEntry && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </button>
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">
@@ -95,8 +90,8 @@ export function CategoryTable({
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
-                  {/* ✅ Add Item button - only show for single category when it's not already last category AND has NO children */}
-                  {isEligibleForAddItemInRow && (
+                  {/* Add Item button for eligible categories */}
+                  {/* {(isEligibleForAddItemInRow || category.allowItemEntry) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -107,21 +102,7 @@ export function CategoryTable({
                       <Package className="h-4 w-4 mr-2" />
                       Add Item
                     </Button>
-                  )}
-
-                  {/* Add Item button for last category - ALWAYS show */}
-                  {category.allowItemEntry && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-3 bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
-                      onClick={() => onAddProduct(category)}
-                      title="Add Product"
-                    >
-                      <Package className="h-4 w-4 mr-2" />
-                      Add Item
-                    </Button>
-                  )}
+                  )} */}
 
                   <Button
                     variant="ghost"
