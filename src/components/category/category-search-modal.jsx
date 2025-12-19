@@ -57,9 +57,9 @@ export function CategorySearchModal({ open, onOpenChange, categories, onSelect }
               <X className="h-5 w-5" />
             </button>
           )}
-          <button onClick={() => onOpenChange(false)} className="text-muted-foreground hover:text-foreground">
+          {/* <button onClick={() => onOpenChange(false)} className="text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
-          </button>
+          </button> */}
         </div>
 
         <div className="p-4">

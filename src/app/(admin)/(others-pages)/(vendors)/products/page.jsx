@@ -39,9 +39,10 @@ export default function ProductsPage() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingProductId, setEditingProductId] = useState("")
 
-  // Create ref for dropdown container
+  // Create refs for dropdown and input
   const dropdownRef = useRef(null)
   const inputRef = useRef(null)
+  const categoryContainerRef = useRef(null)
 
   const categoryIdFromUrl = searchParams.get('productGroupId')
   const categoryNameFromUrl = searchParams.get('categoryName')
@@ -59,6 +60,31 @@ export default function ProductsPage() {
   const hasSerialNoParam = searchParams.get('hasSerialNo')
   const hasMacAddressParam = searchParams.get('hasMacAddress')
   const hasWarrantyParam = searchParams.get('hasWarranty')
+
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is outside both the input and dropdown
+      if (
+        categoryContainerRef.current &&
+        !categoryContainerRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setShowCategoryDropdown(false)
+      }
+    }
+
+    // Add event listener when dropdown is shown
+    if (showCategoryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCategoryDropdown])
 
   useEffect(() => {
     fetchCategories()
@@ -616,10 +642,11 @@ export default function ProductsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="relative">
+                  <div className="relative" ref={categoryContainerRef}>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
+                        ref={inputRef}
                         value={categorySearch}
                         onChange={(e) => {
                           setCategorySearch(e.target.value)
@@ -631,7 +658,10 @@ export default function ProductsPage() {
                       />
                     </div>
                     {showCategoryDropdown && (
-                      <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      <div
+                        ref={dropdownRef}
+                        className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                      >
                         {filteredCategories.length === 0 ? (
                           <div className="p-3 text-center text-muted-foreground text-sm">
                             {leafCategories.length === 0

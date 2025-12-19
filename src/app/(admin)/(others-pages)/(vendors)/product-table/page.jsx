@@ -1,12 +1,13 @@
+// app/products/page.jsx
 "use client"
 
 import { useState, useEffect } from "react"
-import { Edit, Trash2, Package, Search, Filter, Plus } from "lucide-react"
+import { Package, Search, Filter, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ProductTable } from "@/components/products/ProductTable"
 import { getProducts, getCategories, deleteProduct } from "@/components/lib/storage"
 import { useRouter } from "next/navigation"
 
@@ -20,39 +21,26 @@ export default function ProductsPage() {
   const [filterUnit, setFilterUnit] = useState("all")
   const [filterUniqueId, setFilterUniqueId] = useState("all")
 
-  // Load data from JSON Server
   useEffect(() => {
     loadData()
   }, [])
 
   const loadData = async () => {
     try {
-      console.log("📦 Loading data from JSON Server...")
-      
-      // Load products and categories
       const [productsData, categoriesData] = await Promise.all([
         getProducts(),
         getCategories()
       ])
       
-      console.log("✅ Data loaded:", {
-        productsCount: productsData.length,
-        categoriesCount: categoriesData.length,
-        products: productsData,
-        categories: categoriesData
-      })
-      
       setProducts(productsData)
       setCategories(categoriesData)
-      
     } catch (error) {
-      console.error("❌ Error loading data:", error)
+      console.error("Error loading data:", error)
     } finally {
       setLoading(false)
     }
   }
 
-  // Helper function to flatten categories
   const flattenCategories = (cats, level = 0, result = []) => {
     if (!Array.isArray(cats)) return []
     
@@ -71,32 +59,6 @@ export default function ProductsPage() {
     
     return result
   }
-
-  // Helper function to get category path
-  const getCategoryPath = (cats, productGroupId, path = []) => {
-    if (!Array.isArray(cats) || !productGroupId) return []
-    
-    for (const cat of cats) {
-      if (cat._id === productGroupId || cat.id === productGroupId) {
-        path.push(cat.name || "Unnamed")
-        return path
-      }
-      
-      if (cat.children && Array.isArray(cat.children)) {
-        const childPath = getCategoryPath(cat.children, productGroupId, [...path, cat.name || "Unnamed"])
-        if (childPath.length > 0) {
-          return childPath
-        }
-      }
-    }
-    
-    return []
-  }
-
-  // Get unique units from products
-  const uniqueUnits = [...new Set(products
-    .map((p) => p?.unit)
-    .filter(Boolean))]
 
   // Filter products
   const filteredProducts = products.filter((product) => {
@@ -125,13 +87,11 @@ export default function ProductsPage() {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      const categoryPath = getCategoryPath(categories, product.productGroupId).join(" > ").toLowerCase()
       const productSku = product.sku?.toLowerCase() || ""
       const nameMatch = productName.toLowerCase().includes(query)
       const skuMatch = productSku.includes(query)
-      const categoryMatch = categoryPath.includes(query)
       
-      if (!nameMatch && !skuMatch && !categoryMatch) {
+      if (!nameMatch && !skuMatch) {
         return false
       }
     }
@@ -139,35 +99,10 @@ export default function ProductsPage() {
     return true
   })
 
-  // Handle edit product - Redirect to create page with product data
-  const handleEdit = (product) => {
-    console.log("Edit product:", product)
-    
-    // Create URL parameters for product data
-    const params = new URLSearchParams()
-    
-    // Add product data to URL
-    params.append('edit', 'true')
-    params.append('productId', product.id || product._id)
-    params.append('productName', product.productName || product.name || '')
-    params.append('productGroupId', product.productGroupId || '')
-    params.append('unit', product.unit || 'pieces')
-    params.append('imageUrl', product.image || product.imageUrl || '')
-    params.append('hasUniqueIdentifier', product.hasUniqueIdentifier ? 'true' : 'false')
-    params.append('hasSerialNo', product.hasSerialNo ? 'true' : 'false')
-    params.append('hasMacAddress', product.hasMacAddress ? 'true' : 'false')
-    params.append('hasWarranty', product.hasWarranty ? 'true' : 'false')
-    
-    // Redirect to create product page with data
-    router.push(`/products?${params.toString()}`)
-  }
-
-  // Handle delete product
   const handleDelete = async (product) => {
     if (confirm(`Delete product "${product.productName || product.name}"?`)) {
       try {
         await deleteProduct(product.id || product._id)
-        // Reload data
         await loadData()
         alert(`✅ Product "${product.productName || product.name}" deleted successfully.`)
       } catch (error) {
@@ -184,11 +119,14 @@ export default function ProductsPage() {
     setFilterUniqueId("all")
   }
 
-  // Add new product button handler
   const handleAddProduct = () => {
-    // Navigate to add product page
-    router.push('/products/add')
+    router.push('/products')
   }
+
+  // Get unique units
+  const uniqueUnits = [...new Set(products
+    .map((p) => p?.unit)
+    .filter(Boolean))]
 
   if (loading) {
     return (
@@ -196,7 +134,6 @@ export default function ProductsPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p>Loading products...</p>
-          <p className="text-sm text-muted-foreground mt-2">Connecting to JSON Server</p>
         </div>
       </div>
     )
@@ -204,7 +141,6 @@ export default function ProductsPage() {
 
   return (
     <div className="container mx-auto py-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Products</h1>
@@ -302,132 +238,13 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Products Table */}
-      {filteredProducts.length === 0 ? (
-        <div className="text-center py-12 border rounded-lg">
-          <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="font-medium mb-2">No products found</h3>
-          <p className="text-muted-foreground mb-4">
-            {products.length > 0 
-              ? "No products match your filters. Try clearing filters." 
-              : "No products in database. Add your first product!"}
-          </p>
-          {products.length > 0 && (
-            <Button variant="outline" onClick={clearFilters}>
-              Clear Filters
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead>Product</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Unique ID</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product, index) => {
-                const productName = product.name || product.productName || "Unnamed Product"
-                const productImage = product.image || product.imageUrl || ""
-                const productUnit = product.unit || "pieces"
-                const productSku = product.sku || "N/A"
-                const categoryPath = getCategoryPath(categories, product.productGroupId)
-                
-                return (
-                  <TableRow key={product.id || product._id || index}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {productImage ? (
-                          <img
-                            src={productImage}
-                            alt={productName}
-                            className="h-10 w-10 rounded object-cover bg-muted"
-                            onError={(e) => {
-                              e.target.style.display = 'none'
-                              e.target.nextElementSibling.style.display = 'flex'
-                            }}
-                          />
-                        ) : null}
-                        <div 
-                          className={`h-10 w-10 rounded bg-muted flex items-center justify-center ${productImage ? 'hidden' : ''}`}
-                        >
-                          <Package className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{productName}</div>
-                          <div className="text-xs text-muted-foreground">
-                            ID: {product.id || product._id}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {categoryPath.length > 0 ? (
-                          categoryPath.join(" > ")
-                        ) : (
-                          <div>
-                            <span className="text-muted-foreground">Uncategorized</span>
-                            {product.productGroupId && (
-                              <div className="text-xs text-amber-600 mt-1">
-                                Category ID: {product.productGroupId}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{productUnit}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {product.hasUniqueIdentifier ? (
-                        <div className="flex flex-wrap gap-1">
-                          {product.hasSerialNo && <Badge variant="outline">Serial</Badge>}
-                          {product.hasMacAddress && <Badge variant="outline">MAC</Badge>}
-                          {product.hasWarranty && <Badge variant="outline">Warranty</Badge>}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{productSku}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleEdit(product)}
-                          title="Edit product"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDelete(product)}
-                          title="Delete product"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      {/* Use ProductTable Component */}
+      <ProductTable
+        products={filteredProducts}
+        categories={categories}
+        onDelete={handleDelete}
+        showActions={true}
+      />
     </div>
   )
 }
