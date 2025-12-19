@@ -10,16 +10,30 @@ export function generateId() {
 export async function getCategories() {
   try {
     const response = await fetch(`${API_BASE_URL}/categories`)
-    if (!response.ok) throw new Error('Failed to fetch categories')
+    console.log("🚀 ~ getCategories ~ response:", response)
+    
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch categories: ${response.statusText}`)
+    }
 
     const data = await response.json()
-    // JSON Server में data format: { list: [...] } या सीधे array
-    return data.list || data || []
+    console.log("🚀 ~ getCategories ~ data:", data)
+
+    // Normalize: if API returns { list: [...] } use it, otherwise check if data itself is an array
+    if (Array.isArray(data.list)) {
+      return data.list
+    } else if (Array.isArray(data)) {
+      return data.list
+    } else {
+      return []
+    }
   } catch (error) {
     console.error('Error fetching categories:', error)
     return []
   }
 }
+
 
 export async function saveCategories(categories) {
   try {
@@ -38,6 +52,68 @@ export async function saveCategories(categories) {
     throw error
   }
 }
+ 
+export async function saveStockEntries(entries) {
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/stocks`)
+    if (!response.ok) throw new Error('Failed to fetch stocks')
+
+    const data = await response.json()
+    return data ||  []
+  } catch (error) {
+    console.error('Error fetching stocks:', error)
+    return []
+  }
+
+  // saveToStorage(STORAGE_KEYS.STOCK_ENTRIES, entries)
+}
+
+
+// Vendors
+export async function getVendors() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/vendors`);
+
+    // Check if response status is 2xx
+    if (!response.ok) {
+      throw new Error(`Failed to fetch vendors. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Ensure data is always returned as an array
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('Error fetching vendors:', error);
+    return [];
+  }
+}
+
+
+export async function saveVendors(vendors) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/vendors`, {
+      method: 'POST', 
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(vendors),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to save vendors. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data || [];
+  } catch (error) {
+    console.error('Error saving vendors:', error);
+    return [];
+  }
+
+}
+
 
 // ============ PRODUCTS ============
 export async function getProducts() {
@@ -104,36 +180,36 @@ export async function deleteProduct(id) {
 }
 
 // ============ VENDORS ============
-export async function getVendors() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/vendors`)
-    if (!response.ok) throw new Error('Failed to fetch vendors')
+// export async function getVendors() {
+//   try {
+//     const response = await fetch(`${API_BASE_URL}/vendors`)
+//     if (!response.ok) throw new Error('Failed to fetch vendors')
 
-    const data = await response.json()
-    return Array.isArray(data) ? data : []
-  } catch (error) {
-    console.error('Error fetching vendors:', error)
-    return []
-  }
-}
+//     const data = await response.json()
+//     return Array.isArray(data) ? data : []
+//   } catch (error) {
+//     console.error('Error fetching vendors:', error)
+//     return []
+//   }
+// }
 
-export async function saveVendor(vendor) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/vendors`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(vendor),
-    })
+// export async function saveVendor(vendor) {
+//   try {
+//     const response = await fetch(`${API_BASE_URL}/vendors`, {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify(vendor),
+//     })
 
-    if (!response.ok) throw new Error('Failed to save vendor')
-    return await response.json()
-  } catch (error) {
-    console.error('Error saving vendor:', error)
-    throw error
-  }
-}
+//     if (!response.ok) throw new Error('Failed to save vendor')
+//     return await response.json()
+//   } catch (error) {
+//     console.error('Error saving vendor:', error)
+//     throw error
+//   }
+// }
 
 // ============ STOCK ENTRIES ============
 export async function getStockEntries() {
@@ -166,6 +242,8 @@ export async function saveStockEntry(entry) {
     throw error
   }
 }
+
+
 
 // ============ TRANSFERS ============
 export async function getTransfers() {
@@ -257,8 +335,8 @@ export async function saveWarehouse(warehouse) {
 // ============ HELPER FUNCTIONS ============
 
 // Helper to find category path
-export function getCategoryPath(categories, categoryId) {
-  if (!categories || !Array.isArray(categories) || !categoryId) return []
+export function getCategoryPath(categories, productGroupId) {
+  if (!categories || !Array.isArray(categories) || !productGroupId) return []
 
   const findPath = (cats, targetId, path = []) => {
     for (const cat of cats) {
@@ -277,7 +355,7 @@ export function getCategoryPath(categories, categoryId) {
     return null
   }
 
-  return findPath(categories, categoryId) || []
+  return findPath(categories, productGroupId) || []
 }
 
 // Helper to check if category name exists (case-insensitive)
@@ -303,13 +381,13 @@ export function categoryNameExists(categories, name, excludeId = null) {
 }
 
 // Helper to find category by ID
-export function findCategoryById(categories, categoryId) {
-  if (!categories || !Array.isArray(categories) || !categoryId) return null
+export function findCategoryById(categories, productGroupId) {
+  if (!categories || !Array.isArray(categories) || !productGroupId) return null
 
   for (const cat of categories) {
-    if (cat.id === categoryId || cat.id === categoryId) return cat
+    if (cat.id === productGroupId || cat.id === productGroupId) return cat
     if (cat.children && cat.children.length) {
-      const found = findCategoryById(cat.children, categoryId)
+      const found = findCategoryById(cat.children, productGroupId)
       if (found) return found
     }
   }

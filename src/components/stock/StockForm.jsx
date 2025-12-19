@@ -1,294 +1,384 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import Select from "react-select";
+import { MdAdd, MdDelete } from "react-icons/md";
 
-export default function StockForm() {
+export default function AddStockPage() {
+  const { control, handleSubmit, watch, setValue, reset } = useForm();
+
   const [vendors, setVendors] = useState([]);
-  const [selectedVendor, setSelectedVendor] = useState(null);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [vendorProducts, setVendorProducts] = useState([]);
+  const [rows, setRows] = useState([]);
 
-  const warrantyButtons = ["1 Year", "2 Years", "3 Years", "4 Years", "No Warranty"];
-
-  const [rows, setRows] = useState([
-    { id: 1, serial: "", mac: "", warranty: "No Warranty" },
-  ]);
-  const [quantity, setQuantity] = useState(1);
-  const [appliedWarranty, setAppliedWarranty] = useState(null);
+  const [existingSerials, setExistingSerials] = useState([]);
+  const [existingMacs, setExistingMacs] = useState([]);
   const [errors, setErrors] = useState({});
 
-  // ================= FETCH VENDORS =================
+  const selectedVendor = watch("vendor");
+  const selectedProduct = watch("product");
+
+  /* ---------- FETCH DATA ---------- */
   useEffect(() => {
-    fetch("http://localhost:5001/vendors")
-      .then((res) => res.json())
-      .then(setVendors);
+    const fetchData = async () => {
+      try {
+        const [vendorRes, productRes] = await Promise.all([
+          fetch("http://localhost:5001/vendors"),
+          fetch("http://localhost:5001/products"),
+        ]);
+        setVendors(await vendorRes.json());
+        setProducts(await productRes.json());
+      } catch (err) {
+        console.error("Failed to fetch vendors/products", err);
+      }
+    };
+    fetchData();
   }, []);
 
-  // Reset product when vendor changes
+  /* ---------- VENDOR CHANGE ---------- */
   useEffect(() => {
-    setSelectedProduct(null);
-  }, [selectedVendor]);
+    if (!selectedVendor) return;
 
-  // ================= HELPERS =================
-  const applyWarrantyToAll = (w) => {
-    setAppliedWarranty(w);
-    setRows((prev) => prev.map((r) => ({ ...r, warranty: w })));
-  };
+    setValue("product", null);
+    setRows([]);
+    setErrors({});
+    setValue("quantity", "");
 
-  const addRow = () => {
-    setRows((prev) => [
-      ...prev,
-      { id: Date.now(), serial: "", mac: "", warranty: appliedWarranty || "No Warranty" },
+    const ids = selectedVendor.products?.map(p => p.id) || [];
+    setVendorProducts(products.filter(p => ids.includes(p.id)));
+  }, [selectedVendor, products, setValue]);
+
+  /* ---------- PRODUCT CHANGE ---------- */
+  useEffect(() => {
+    if (!selectedProduct) return;
+
+    setRows([]);
+    setErrors({});
+    setValue("quantity", "");
+
+    if (
+      selectedProduct.hasUniqueIdentifier ||
+      selectedProduct.hasSerialNo ||
+      selectedProduct.hasMacAddress
+    ) {
+      addRows(1);
+    }
+
+    // 🔥 fetch existing serials / macs from DB
+    fetch(`http://localhost:5001/stocks/identifiers/${selectedProduct.id}`)
+      .then(r => r.json())
+      .then(d => {
+        setExistingSerials(d.serials || []);
+        setExistingMacs(d.macs || []);
+      });
+
+  }, [selectedProduct, setValue]);
+
+  /*----------------------SUBMIT DATA--------------------*/
+
+
+
+
+  /* ---------- ROW HELPERS ---------- */
+  const createRow = () => ({
+    id: Date.now() + Math.random(),
+    serialNo: "",
+    macAddress: "",
+    warranty: "",
+  });
+
+  const addRows = (count) => {
+    setRows(prev => [
+      ...Array.from({ length: count }, () => createRow()),
+      ...prev, // top se add
     ]);
   };
 
-  const removeRow = (index) => {
-    setRows((prev) => prev.filter((_, i) => i !== index));
+  const removeRow = (id) => {
+    setRows(prev => prev.filter(r => r.id !== id));
   };
 
-  // ================= VALIDATION =================
-  const validate = () => {
+  const isRowDuplicate = (field, value, index) => {
+    if (!value) return false;
+    return rows.some((r, i) => i !== index && r[field] === value);
+  };
+
+  /* ---------- VALIDATION ---------- */
+  const validateRows = () => {
     let newErrors = {};
 
-    if (!selectedVendor) newErrors.vendor = "Vendor required";
-    if (!selectedProduct) newErrors.product = "Product required";
+    rows.forEach((row, i) => {
 
-    if (selectedProduct?.isUnique === true) {
-      let serialSet = new Set();
-      let macSet = new Set();
+      if (selectedProduct.hasSerialNo) {
+        if (!row.serialNo) {
+          newErrors[`serial-${i}`] = "Serial number required";
+        } else if (isRowDuplicate("serialNo", row.serialNo, i)) {
+          newErrors[`serial-${i}`] = "Duplicate serial in rows";
+        } else if (existingSerials.includes(row.serialNo)) {
+          newErrors[`serial-${i}`] = "Serial already exists";
+        }
+      }
 
-      rows.forEach((row, idx) => {
-        if (!row.serial.trim()) newErrors[`serial_${idx}`] = "Required";
-        else if (serialSet.has(row.serial.trim())) newErrors[`serial_${idx}`] = "Duplicate";
-        serialSet.add(row.serial.trim());
-
-        if (!row.mac.trim()) newErrors[`mac_${idx}`] = "Required";
-        else if (macSet.has(row.mac.trim())) newErrors[`mac_${idx}`] = "Duplicate";
-        macSet.add(row.mac.trim());
-      });
-    }
-
-    if (selectedProduct?.isUnique === false) {
-      if (!quantity || quantity <= 0) newErrors.quantity = "Quantity must be > 0";
-    }
+      if (selectedProduct.hasMacAddress) {
+        if (!row.macAddress) {
+          newErrors[`mac-${i}`] = "MAC address required";
+        } else if (isRowDuplicate("macAddress", row.macAddress, i)) {
+          newErrors[`mac-${i}`] = "Duplicate MAC in rows";
+        } else if (existingMacs.includes(row.macAddress)) {
+          newErrors[`mac-${i}`] = "MAC already exists";
+        }
+      }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // ================= SUBMIT =================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const isUnique =
+    selectedProduct?.hasUniqueIdentifier ||
+    selectedProduct?.hasSerialNo ||
+    selectedProduct?.hasMacAddress;
 
-    if (selectedVendor.status !== "active") {
-      alert("Vendor inactive, cannot add stock");
-      return;
-    }
+  /* ---------- SUBMIT ---------- */
+  const onSubmit = async (formData) => {
+    if (isUnique && !validateRows()) return;
 
-    let vendorItem = null;
-    const res = await fetch(
-      `http://localhost:5001/stocks?vendorId=${selectedVendor.id}&productId=${selectedProduct.value}`
-    );
-    const data = await res.json();
-    vendorItem = data[0] || null;
+    const payload = {
+      vendorId: formData.vendor.id,
+      productId: formData.product.id,
+      quantity: isUnique ? rows.length : Number(formData.quantity),
+      items: rows,
+    };
 
-    let dataToSave;
-
-    if (selectedProduct.isUnique === true) {
-      const oldItems = vendorItem?.items || [];
-      const newItems = rows.map((r) => ({
-        serial: r.serial.trim(),
-        mac: r.mac.trim(),
-        warranty: r.warranty,
-      }));
-
-      dataToSave = {
-        productId: selectedProduct.value,
-        vendorId: selectedVendor.id,
-        items: [...oldItems, ...newItems],
-        quantity: oldItems.length + newItems.length,
-      };
-    } else {
-      const currentQty = vendorItem?.quantity || 0;
-      dataToSave = {
-        productId: selectedProduct.value,
-        vendorId: selectedVendor.id,
-        quantity: currentQty + quantity,
-      };
-    }
-
-    const url = vendorItem
-      ? `http://localhost:5001/stocks/${vendorItem.id}`
-      : "http://localhost:5001/stocks";
-
-    await fetch(url, {
-      method: vendorItem ? "PUT" : "POST",
+    await fetch("http://localhost:5001/stocks", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dataToSave),
+      body: JSON.stringify(payload),
     });
 
     alert("Stock saved successfully");
-
-    setSelectedVendor(null);
-    setSelectedProduct(null);
-    setRows([{ id: 1, serial: "", mac: "", warranty: "No Warranty" }]);
-    setQuantity(1);
-    setAppliedWarranty(null);
+    reset();
+    setRows([]);
     setErrors({});
   };
 
-  // ================= UI =================
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="bg-white rounded-2xl shadow-lg p-8">
-        <h2 className="text-2xl font-semibold mb-8">Add Stock</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="text-sm font-medium">Vendor *</label>
-            <Select
-              value={selectedVendor}
-              onChange={setSelectedVendor}
-              options={vendors.map((v) => ({ value: v.id, label: v.vendorName, ...v }))}
-            />
-            {errors.vendor && <p className="text-red-500 text-sm">{errors.vendor}</p>}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Product *</label>
-            <Select
-              isDisabled={!selectedVendor}
-              value={selectedProduct}
-              onChange={setSelectedProduct}
-              options={selectedVendor?.products?.map((p) => ({
-                value: p.id,
-                label: p.productName || p.name,
-                isUnique: p.isUnique === true,
-              }))}
-            />
-            {errors.product && <p className="text-red-500 text-sm">{errors.product}</p>}
-          </div>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="max-w-7xl mx-auto p-8 bg-white rounded-2xl shadow-lg"
+    >
+      {/* VENDOR + PRODUCT */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Vendor
+          </label>
+          <Controller
+            name="vendor"
+            control={control}
+            render={({ field }) => (
+              <Select
+                {...field}
+                options={vendors}
+                placeholder="Select Vendor"
+                getOptionLabel={(v) => v.vendorName}
+                getOptionValue={(v) => v.id}
+              />
+            )}
+          />
         </div>
 
-        {selectedProduct && selectedProduct.isUnique === true && (
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium">Serial Items</h3>
-              <button
-                onClick={addRow}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-              >
-                + Add Row
-              </button>
-            </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Product
+          </label>
+          <Controller
+            name="product"
+            control={control}
+            render={({ field }) => (
+              <Select
+                {...field}
+                options={vendorProducts}
+                placeholder="Select Product"
+                isDisabled={!selectedVendor}
+                getOptionLabel={(p) => p.productName}
+                getOptionValue={(p) => p.id}
+              />
+            )}
+          />
+        </div>
+      </div>
 
-            <div className="flex flex-wrap gap-2 mb-4">
-              {warrantyButtons.map((w) => (
-                <button
-                  key={w}
-                  onClick={() => applyWarrantyToAll(w)}
-                  className={`px-3 py-1 rounded-full border text-sm ${
-                    appliedWarranty === w ? "bg-blue-600 text-white" : "bg-gray-50"
-                  }`}
-                >
-                  {w}
-                </button>
-              ))}
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full border rounded-lg">
-                <thead className="bg-gray-100 text-sm">
-                  <tr>
-                    <th className="p-2">#</th>
-                    <th>Serial</th>
-                    <th>MAC</th>
-                    <th>Warranty</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, idx) => (
-                    <tr key={row.id} className="border-t">
-                      <td className="p-2">{idx + 1}</td>
-                      <td>
-                        <input
-                          className="input"
-                          value={row.serial}
-                          onChange={(e) =>
-                            setRows((p) =>
-                              p.map((r, i) => (i === idx ? { ...r, serial: e.target.value } : r))
-                            )
-                          }
-                        />
-                        {errors[`serial_${idx}`] && (
-                          <p className="text-red-500 text-xs">{errors[`serial_${idx}`]}</p>
-                        )}
-                      </td>
-                      <td>
-                        <input
-                          className="input"
-                          value={row.mac}
-                          onChange={(e) =>
-                            setRows((p) =>
-                              p.map((r, i) => (i === idx ? { ...r, mac: e.target.value } : r))
-                            )
-                          }
-                        />
-                        {errors[`mac_${idx}`] && (
-                          <p className="text-red-500 text-xs">{errors[`mac_${idx}`]}</p>
-                        )}
-                      </td>
-                      <td>
-                        <select
-                          className="input"
-                          value={row.warranty}
-                          onChange={(e) =>
-                            setRows((p) =>
-                              p.map((r, i) => (i === idx ? { ...r, warranty: e.target.value } : r))
-                            )
-                          }
-                        >
-                          {warrantyButtons.map((w) => (
-                            <option key={w}>{w}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="text-center">
-                        <button onClick={() => removeRow(idx)}>❌</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {selectedProduct && selectedProduct.isUnique === false && (
-          <div className="mt-8">
-            <label className="font-medium">Quantity</label>
-            <input
-              type="number"
-              min={1}
-              className="input mt-2"
-              value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
+      {/* QUANTITY */}
+      {selectedProduct && !isUnique && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label className="font-medium mb-1 block">Quantity</label>
+            <Controller
+              name="quantity"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="number"
+                  className="border w-full p-2 rounded"
+                  placeholder="Enter quantity"
+                />
+              )}
             />
-            {errors.quantity && <p className="text-red-500 text-sm">{errors.quantity}</p>}
           </div>
-        )}
 
-        <div className="mt-10 text-right">
+          <div>
+            <label className="font-medium mb-1 block">Warranty</label>
+            <Controller
+              name="warranty"
+              control={control}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="text"
+                  className="border w-full p-2 rounded"
+                  placeholder="e.g. 1 Year"
+                />
+              )}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ADD BUTTONS */}
+      {selectedProduct && isUnique && (
+        <div className="flex flex-wrap gap-3 mt-8">
           <button
-            onClick={handleSubmit}
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl"
+            type="button"
+            onClick={() => addRows(1)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
+          >
+            <MdAdd /> Add 1
+          </button>
+
+          <button
+            type="button"
+            onClick={() => addRows(10)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+          >
+            +10 Rows
+          </button>
+
+          <button
+            type="button"
+            onClick={() => addRows(20)}
+            className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-lg"
+          >
+            +20 Rows
+          </button>
+        </div>
+      )}
+
+      {/* ROWS */}
+      {
+        selectedProduct?.hasSerialNo == true ? (<div className="mt-8 overflow-x-auto">
+          <table className="min-w-full border border-gray-200 rounded-lg">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-4 py-2 border">#</th>
+                {selectedProduct?.hasSerialNo && <th className="px-4 py-2 border">Serial Number</th>}
+                {selectedProduct?.hasMacAddress && <th className="px-4 py-2 border">MAC Address</th>}
+                {selectedProduct?.hasWarranty && <th className="px-4 py-2 border">Warranty</th>}
+                <th className="px-4 py-2 border">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => (
+                <tr key={row.id} className="bg-gray-50">
+                  <td className="px-4 py-2 border text-center">{i + 1}</td>
+
+                  {selectedProduct.hasSerialNo && (
+                    <td className="px-4 py-2 border">
+                      <input
+                        className={`border rounded-lg px-2 py-1 w-full ${errors[`serial-${i}`] ? "border-red-500" : ""
+                          }`}
+                        placeholder="Serial Number"
+                        value={row.serialNo}
+                        onChange={(e) => {
+                          const updated = [...rows];
+                          updated[i].serialNo = e.target.value;
+                          setRows(updated);
+                        }}
+                      />
+                      {errors[`serial-${i}`] && (
+                        <p className="text-xs text-red-500 mt-1">{errors[`serial-${i}`]}</p>
+                      )}
+                    </td>
+                  )}
+
+                  {selectedProduct.hasMacAddress && (
+                    <td className="px-4 py-2 border">
+                      <input
+                        className={`border rounded-lg px-2 py-1 w-full ${errors[`mac-${i}`] ? "border-red-500" : ""
+                          }`}
+                        placeholder="MAC Address"
+                        value={row.macAddress}
+                        onChange={(e) => {
+                          const updated = [...rows];
+                          updated[i].macAddress = e.target.value;
+                          setRows(updated);
+                        }}
+                      />
+                      {errors[`mac-${i}`] && (
+                        <p className="text-xs text-red-500 mt-1">{errors[`mac-${i}`]}</p>
+                      )}
+                    </td>
+                  )}
+
+                  {selectedProduct.hasWarranty && (
+                    <td className="px-4 py-2 border">
+                      <input
+                        className="border rounded-lg px-2 py-1 w-full"
+                        placeholder="Warranty"
+                        value={row.warranty}
+                        onChange={(e) => {
+                          const updated = [...rows];
+                          updated[i].warranty = e.target.value;
+                          setRows(updated);
+                        }}
+                      />
+                    </td>
+                  )}
+
+                  <td className="px-4 py-2 border text-center">
+                    <button
+                      type="button"
+                      onClick={() => removeRow(row.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <MdDelete size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        ) : ""
+      }
+
+
+
+      {/* SAVE */}
+      {selectedProduct && (
+        <div className="mt-10 flex justify-end">
+          <button
+            type="submit"
+            className="bg-green-600 hover:bg-green-700 text-white px-10 py-3 rounded-xl text-lg font-semibold"
           >
             Save Stock
           </button>
         </div>
-      </div>
-    </div>
+      )}
+    </form>
   );
 }

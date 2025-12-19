@@ -10,8 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { getProducts, getCategories, deleteProduct } from "@/components/lib/storage"
 import { useRouter } from "next/navigation"
 
-
 export default function ProductsPage() {
+  const router = useRouter()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -19,7 +19,6 @@ export default function ProductsPage() {
   const [filterCategory, setFilterCategory] = useState("all")
   const [filterUnit, setFilterUnit] = useState("all")
   const [filterUniqueId, setFilterUniqueId] = useState("all")
-  const router = useRouter()
   // Load data from JSON Server
   useEffect(() => {
     loadData()
@@ -73,17 +72,17 @@ export default function ProductsPage() {
   }
 
   // Helper function to get category path
-  const getCategoryPath = (cats, categoryId, path = []) => {
-    if (!Array.isArray(cats) || !categoryId) return []
+  const getCategoryPath = (cats, productGroupId, path = []) => {
+    if (!Array.isArray(cats) || !productGroupId) return []
     
     for (const cat of cats) {
-      if (cat.id === categoryId || cat.id === categoryId) {
+      if (cat._id === productGroupId || cat.id === productGroupId) {
         path.push(cat.name || "Unnamed")
         return path
       }
       
       if (cat.children && Array.isArray(cat.children)) {
-        const childPath = getCategoryPath(cat.children, categoryId, [...path, cat.name || "Unnamed"])
+        const childPath = getCategoryPath(cat.children, productGroupId, [...path, cat.name || "Unnamed"])
         if (childPath.length > 0) {
           return childPath
         }
@@ -105,7 +104,7 @@ export default function ProductsPage() {
     const productName = product.name || product.productName || ""
     
     // Filter by category
-    if (filterCategory !== "all" && product.categoryId !== filterCategory) {
+    if (filterCategory !== "all" && product.productGroupId !== filterCategory) {
       return false
     }
     
@@ -125,7 +124,7 @@ export default function ProductsPage() {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      const categoryPath = getCategoryPath(categories, product.categoryId).join(" > ").toLowerCase()
+      const categoryPath = getCategoryPath(categories, product.productGroupId).join(" > ").toLowerCase()
       const productSku = product.sku?.toLowerCase() || ""
       const nameMatch = productName.toLowerCase().includes(query)
       const skuMatch = productSku.includes(query)
@@ -139,24 +138,42 @@ export default function ProductsPage() {
     return true
   })
 
+  // Handle edit product - Redirect to create page with product data
+  const handleEdit = (product) => {
+    console.log("Edit product:", product)
+    
+    // Create URL parameters for product data
+    const params = new URLSearchParams()
+    
+    // Add product data to URL
+    params.append('edit', 'true')
+    params.append('productId', product.id || product._id)
+    params.append('productName', product.productName || product.name || '')
+    params.append('productGroupId', product.productGroupId || '')
+    params.append('unit', product.unit || 'pieces')
+    params.append('imageUrl', product.image || product.imageUrl || '')
+    params.append('hasUniqueIdentifier', product.hasUniqueIdentifier ? 'true' : 'false')
+    params.append('hasSerialNo', product.hasSerialNo ? 'true' : 'false')
+    params.append('hasMacAddress', product.hasMacAddress ? 'true' : 'false')
+    params.append('hasWarranty', product.hasWarranty ? 'true' : 'false')
+    
+    // Redirect to create product page with data
+    router.push(`/products?${params.toString()}`)
+  }
+
   // Handle delete product
   const handleDelete = async (product) => {
     if (confirm(`Delete product "${product.productName || product.name}"?`)) {
       try {
-        await deleteProduct(product.id || product.id)
+        await deleteProduct(product.id || product._id)
         // Reload data
         await loadData()
+        alert(`✅ Product "${product.productName || product.name}" deleted successfully.`)
       } catch (error) {
         console.error("Error deleting product:", error)
         alert("Failed to delete product")
       }
     }
-  }
-
-  // Handle edit product
-  const handleEdit = (product) => {
-    console.log("Edit product:", product)
-    // Navigate to edit page or open modal
   }
 
   const clearFilters = () => {
@@ -168,8 +185,8 @@ export default function ProductsPage() {
 
   // Add new product button handler
   const handleAddProduct = () => {
-    router.push("/products")
     // Navigate to add product page
+    router.push('/products/add')
   }
 
   if (loading) {
@@ -240,7 +257,7 @@ export default function ProductsPage() {
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               {flattenCategories(categories).map((cat) => (
-                <SelectItem key={cat.id || cat.id} value={cat.id || cat.id}>
+                <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>
                   {"  ".repeat(cat.level || 0)}
                   {cat.name || "Unnamed"} 
                   {cat.allowItemEntry ? " (Items)" : ""}
@@ -319,10 +336,10 @@ export default function ProductsPage() {
                 const productImage = product.image || product.imageUrl || ""
                 const productUnit = product.unit || "pieces"
                 const productSku = product.sku || "N/A"
-                const categoryPath = getCategoryPath(categories, product.categoryId)
+                const categoryPath = getCategoryPath(categories, product.productGroupId)
                 
                 return (
-                  <TableRow key={product.id || product.id || index}>
+                  <TableRow key={product.id || product._id || index}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         {productImage ? (
@@ -344,7 +361,7 @@ export default function ProductsPage() {
                         <div>
                           <div className="font-medium">{productName}</div>
                           <div className="text-xs text-muted-foreground">
-                            ID: {product.id || product.id}
+                            ID: {product.id || product._id}
                           </div>
                         </div>
                       </div>
@@ -356,9 +373,9 @@ export default function ProductsPage() {
                         ) : (
                           <div>
                             <span className="text-muted-foreground">Uncategorized</span>
-                            {product.categoryId && (
+                            {product.productGroupId && (
                               <div className="text-xs text-amber-600 mt-1">
-                                Category ID: {product.categoryId}
+                                Category ID: {product.productGroupId}
                               </div>
                             )}
                           </div>
@@ -410,8 +427,6 @@ export default function ProductsPage() {
           </Table>
         </div>
       )}
-
-
     </div>
   )
 }

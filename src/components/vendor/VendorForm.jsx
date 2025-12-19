@@ -10,13 +10,14 @@ const STATUS_OPTIONS = [
   { value: "inactive", label: "Inactive" },
   { value: "blacklist", label: "Blacklisted" }
 ];
-
+const mapStatusToOption = (status) =>
+  STATUS_OPTIONS.find(opt => opt.value === status) || STATUS_OPTIONS[0];
 const inputClass =
   "w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black";
 
 const labelClass = "text-sm font-medium text-gray-700";
 
-export default function VendorForm({ editVendor, onSuccess, setOpen,handleCloseModal }) {
+export default function VendorForm({ editVendor, onSuccess, setOpen, handleCloseModal }) {
   const defaultFormValues = {
     vendorName: "",
     gstin: "",
@@ -36,7 +37,7 @@ export default function VendorForm({ editVendor, onSuccess, setOpen,handleCloseM
     status: "active"
   };
 
-  const { register, handleSubmit, control, reset, watch, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm({
     defaultValues: defaultFormValues
   });
 
@@ -47,64 +48,149 @@ export default function VendorForm({ editVendor, onSuccess, setOpen,handleCloseM
   const selectedGroups = watch("productGroups") || [];
 
   /* ---------- FETCH DATA ---------- */
+  const extractAllowedCategories = (categories) => {
+    let result = [];
+
+    categories.forEach(cat => {
+      // agar current category allowed hai
+      if (cat.allowItemEntry) {
+        result.push({
+          value: cat.id,
+          label: cat.name
+        });
+      }
+
+      // agar children hain to unko bhi check karo
+      if (cat.children && cat.children.length > 0) {
+        result = result.concat(extractAllowedCategories(cat.children));
+      }
+    });
+
+    return result;
+  };
   useEffect(() => {
     fetch("http://localhost:5001/categories")
       .then(res => res.json())
-      .then(data =>
-        setProductGroups(data.list.map(c => ({ value: c.id, label: c.name })))
-      );
+      .then(data => {
+        const allowedGroups = extractAllowedCategories(data.list);
+        setProductGroups(allowedGroups);
+      });
 
     fetch("http://localhost:5001/products")
       .then(res => res.json())
       .then(setProducts);
   }, []);
 
+
+  useEffect(() => {
+    // agar koi product group select hi nahi hai
+    if (!selectedGroups || selectedGroups.length === 0) {
+      setValue("products", []);
+      return;
+    }
+
+    // selected group ids
+    const selectedGroupIds = selectedGroups.map(g => String(g.value));
+
+    // valid products jo selected groups se belong karte hain
+    const validProducts = products
+      .filter(p =>
+        selectedGroupIds.includes(String(p.productGroupId))
+      )
+      .map(p => ({
+        value: p.id,
+        label: p.productName
+      }));
+
+    // jo products already selected hain unme se
+    // sirf wahi rakho jo abhi bhi valid hain
+    setValue("products", (prevProducts = []) =>
+      prevProducts.filter(sel =>
+        validProducts.some(v => v.value === sel.value)
+      )
+    );
+
+  }, [selectedGroups, products, setValue]);
+
+
+  // useEffect(() => {
+  //   fetch("http://localhost:5001/categories")
+  //     .then(res => res.json())
+  //     .then(data =>
+  //       setProductGroups(data.list.map(c => ({ value: c.id, label: c.name })))
+  //     );
+
+  //   fetch("http://localhost:5001/products")
+  //     .then(res => res.json())
+  //     .then(setProducts);
+  // }, []);
+
+
   /* ---------- RESET FORM ON EDIT OR ADD NEW ---------- */
-useEffect(() => {
-  if (editVendor) {
+  useEffect(() => {
+    if (!editVendor) {
+      reset(defaultFormValues);
+      return;
+    }
+
+    // products & productGroups load hone ka wait
+    if (products.length === 0 || productGroups.length === 0) return;
+
+    // const editStatus=editVendor.status?.map((el)=>({
+    //   value:el.name,
+    //   label:el.va
+    // }))
+
+    const mappedGroups = editVendor.productGroups?.map(pg => ({
+      value: pg.id,
+      label: pg.name
+    })) || [];
+
+    const mappedProducts = editVendor.products
+      ?.map(p => {
+        const found = products.find(pr => pr.id === p.id);
+        return found
+          ? { value: found.id, label: found.productName }
+          : null;
+      })
+      .filter(Boolean) || [];
+
     reset({
       ...editVendor,
-      products: editVendor.products?.map(p => ({
-        value: p.id,
-        label: p.name
-      })) || [],
-      productGroups: editVendor.productGroups.map(p => ({
-        value: p.id,
-        label: p.name
-      })) || [],
+      productGroups: mappedGroups,
+      products: mappedProducts,
+      status: editVendor.status || "active"
     });
-  } else {
-    reset(defaultFormValues);
-  }
-}, [editVendor, reset]);
+
+  }, [editVendor, products, productGroups, reset]);
 
 
   /* ---------- DUPLICATE CHECK ---------- */
   const normalize = (v) => (v || "").toString().trim().toLowerCase();
 
-const isDuplicate = async (data) => {
-  try {
-    const res = await fetch("http://localhost:5001/vendors");
-    const vendorList = await res.json();
+  const isDuplicate = async (data) => {
+    try {
+      const res = await fetch("http://localhost:5001/vendors");
+      const vendorList = await res.json();
 
-    for (const v of vendorList) {
-      if (isEdit && v.id === editVendor.id) continue;
-      if (normalize(v.phone) === normalize(data.phone)) return "phone";
-      if (normalize(v.email) === normalize(data.email)) return "email";
-      if (normalize(v.gstin) === normalize(data.gstin)) return "gstin";
-      if (normalize(v.authorizedSignature) === normalize(data.authorizedSignature)) return "authorizedSignature";
-      if (normalize(v.accountNumber) === normalize(data.accountNumber)) return "accountNumber";
-      if (normalize(v.micr) === normalize(data.micr)) return "micr";
-      if (normalize(v.rtgs) === normalize(data.rtgs)) return "rtgs";
-      if (normalize(v.neft) === normalize(data.neft)) return "neft";
+      for (const v of vendorList) {
+        if (isEdit && v.id === editVendor.id) continue;
+        if (normalize(v.phone) === normalize(data.phone)) return "phone";
+        if (normalize(v.email) === normalize(data.email)) return "email";
+        if (normalize(v.gstin) === normalize(data.gstin)) return "gstin";
+        if (normalize(v.authorizedSignature) === normalize(data.authorizedSignature)) return "authorizedSignature";
+        if (normalize(v.accountNumber) === normalize(data.accountNumber)) return "accountNumber";
+        if (normalize(v.micr) === normalize(data.micr)) return "micr";
+        if (normalize(v.rtgs) === normalize(data.rtgs)) return "rtgs";
+        if (normalize(v.neft) === normalize(data.neft)) return "neft";
+      }
+
+      return false;
+    } catch (err) {
+      console.error("Duplicate check error:", err);
+      return false;
     }
-
-    return false;
-  } catch (err) {
-    console.error("Duplicate check error:", err);
-    return false;
-  }
-};
+  };
 
   /* ---------- SUBMIT ---------- */
   const onSubmit = async (data) => {
@@ -125,22 +211,25 @@ const isDuplicate = async (data) => {
     }
 
     const generateRandomId = () => Math.floor(Math.random() * 1000000);
-      console.log("🚀 ~ onSubmit ~ data:", data.products)
 
 
 
     const payload = {
       ...data,
-      products:data.products.map((product)=>({
-        id:product.value,
-        name:product.label
-      })),
 
-       productGroups:data.productGroups.map((group)=>({
-        id:group.value,
-        name:group.label
-      })),
-      
+      productGroups: Array.isArray(data.productGroups)
+        ? data.productGroups.map(group => ({
+          id: group.value,
+          name: group.label
+        }))
+        : [],
+
+      products: Array.isArray(data.products)
+        ? data.products.map(product => ({
+          id: product.value,
+          name: product.label
+        }))
+        : [],
 
       id: isEdit ? editVendor.id : generateRandomId(),
       status: data.status || "active",
@@ -149,6 +238,7 @@ const isDuplicate = async (data) => {
       updated_at: new Date().toISOString(),
       created_by: "admin"
     };
+
     console.log("🚀 ~ onSubmit ~ payload:", payload)
 
 
@@ -183,25 +273,29 @@ const isDuplicate = async (data) => {
   };
 
   /* ---------- FILTER PRODUCTS BASED ON SELECTED GROUPS ---------- */
-const selectedGroupIds = selectedGroups.map(g => Number(g.value));
-console.log("🚀 ~ VendorForm ~ selectedGroupIds:", selectedGroupIds)
-console.log("🚀 ~ VendorForm ~ products:", products)
-const groupBasedProducts = products.filter(product => {
-  console.log("🚀 ~ VendorForm ~ product:", product)
-  return selectedGroupIds.includes(product.productGroup);
-});
-
-console.log("🚀 ~ VendorForm ~ groupBasedProducts:", groupBasedProducts)
-const filteredProducts = groupBasedProducts.map(product => ({
-  value: product.id,
-  label: product.productName,
-}));
-console.log("🚀 ~ VendorForm ~ filteredProducts:", filteredProducts)
+  const selectedGroupIds = selectedGroups.map(g => Number(g.value));
+  // console.log("🚀 ~ VendorForm ~ selectedGroupIds:", selectedGroupIds)
+  // console.log("🚀 ~ VendorForm ~ products:", products)
 
 
+  const groupBasedProducts = products.filter(product => {
+    // console.log("🚀 ~ VendorForm ~ product:", product)
+    // console.log("Sdfs",product.productGroupId)
+    return selectedGroupIds.includes(Number(product.productGroupId));
+  });
+
+  // console.log("🚀 ~ VendorForm ~ groupBasedProducts:", groupBasedProducts)
+
+  const filteredProducts = groupBasedProducts.map(product => ({
+    value: product.id,
+    label: product.productName,
+  }));
+  // console.log("🚀 ~ VendorForm ~ filteredProducts:", filteredProducts)
 
 
-  console.log("🚀 ~ VendorForm ~ filteredProducts:", filteredProducts)
+
+
+  // console.log("🚀 ~ VendorForm ~ filteredProducts:", filteredProducts)
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto space-y-8">
@@ -333,19 +427,16 @@ console.log("🚀 ~ VendorForm ~ filteredProducts:", filteredProducts)
               name="status"
               control={control}
               rules={{ required: "Status is required" }}
-              render={({ field }) => {
-                const selectedOption = STATUS_OPTIONS.find(o => o.value === field.value);
-                return (
-                  <Select
-                    {...field}
-                    value={selectedOption || STATUS_OPTIONS[0]}
-                    onChange={(option) => field.onChange(option.value)}
-                    options={STATUS_OPTIONS}
-                    className="mt-1"
-                  />
-                );
-              }}
+              render={({ field }) => (
+                <Select
+                  options={STATUS_OPTIONS}
+                  value={mapStatusToOption(field.value)}
+                  onChange={(option) => field.onChange(option.value)}
+                  className="mt-1"
+                />
+              )}
             />
+
             {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
           </div>
 
