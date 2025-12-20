@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import Select from "react-select";
 import { MdAdd, MdDelete } from "react-icons/md";
+import toast from "react-hot-toast";
 
 export default function AddStockPage() {
   const { control, handleSubmit, watch, setValue, reset } = useForm();
@@ -11,6 +12,8 @@ export default function AddStockPage() {
   const [vendors, setVendors] = useState([]);
   const [products, setProducts] = useState([]);
   const [vendorProducts, setVendorProducts] = useState([]);
+  const [stockExists, setStockExists] = useState(false);
+
   const [rows, setRows] = useState([]);
 
   const [existingSerials, setExistingSerials] = useState([]);
@@ -19,6 +22,32 @@ export default function AddStockPage() {
 
   const selectedVendor = watch("vendor");
   const selectedProduct = watch("product");
+
+  // Vendor + Product select pe check karo
+
+    useEffect(() => {
+  if (!selectedVendor || !selectedProduct) {
+    setStockExists(false);
+    return;
+  }
+
+  const checkStockExists = async () => {
+    try {
+      const res = await fetch(
+        `http://localhost:5001/stocks?vendorId=${selectedVendor.id}&productId=${selectedProduct.id}`
+      );
+      const data = await res.json();
+
+      setStockExists(data.length > 0); // 👈 main logic
+    } catch (err) {
+      console.error("Stock check failed", err);
+      setStockExists(false);
+    }
+  };
+
+  checkStockExists();
+}, [selectedVendor, selectedProduct]);
+
 
   /* ---------- FETCH DATA ---------- */
   useEffect(() => {
@@ -143,13 +172,19 @@ export default function AddStockPage() {
 
   /* ---------- SUBMIT ---------- */
   const onSubmit = async (formData) => {
+      if (stockExists) {
+    toast.error("This vendor already has stock for the selected product");
+    return;
+  }
     if (isUnique && !validateRows()) return;
 
     const payload = {
       vendorId: formData.vendor.id,
       productId: formData.product.id,
       quantity: isUnique ? rows.length : Number(formData.quantity),
+      warranty: formData.warranty,
       items: rows,
+      createdAt: new Date().toLocaleString("en-IN")
     };
 
     await fetch("http://localhost:5001/stocks", {
@@ -208,7 +243,14 @@ export default function AddStockPage() {
               />
             )}
           />
+          {stockExists && (
+            <p className="text-sm text-red-600 mt-2">
+              ⚠️ This vendor already has stock for this product.
+            </p>
+          )}
+
         </div>
+        
       </div>
 
       {/* QUANTITY */}
