@@ -12,7 +12,7 @@ import { ArrowLeft, Package, Search, X, Lock, Save } from "lucide-react"
 
 const UNITS = ["pieces", "meter", "liter", "kg"]
 
-export default function ProductsPage() {
+export default function ProductsCreatePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -28,6 +28,7 @@ export default function ProductsPage() {
   })
 
   const [categories, setCategories] = useState([])
+  const [products, setProducts] = useState([])
   const [categorySearch, setCategorySearch] = useState("")
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -39,14 +40,17 @@ export default function ProductsPage() {
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingProductId, setEditingProductId] = useState("")
 
-  // Create ref for dropdown container
+  // Refs
   const dropdownRef = useRef(null)
   const inputRef = useRef(null)
+  const categoryContainerRef = useRef(null)
 
+  // Get URL parameters
   const categoryIdFromUrl = searchParams.get('productGroupId')
   const categoryNameFromUrl = searchParams.get('categoryName')
   const markAsLastOnFirstProduct = searchParams.get('markAsLastOnFirstProduct')
   const autoMarkLast = searchParams.get('autoMarkLast')
+  const returnCategoryId = searchParams.get('returnCategoryId') // New parameter
 
   // Check if edit mode
   const editParam = searchParams.get('edit')
@@ -60,20 +64,35 @@ export default function ProductsPage() {
   const hasMacAddressParam = searchParams.get('hasMacAddress')
   const hasWarrantyParam = searchParams.get('hasWarranty')
 
+  // Click outside handler
   useEffect(() => {
-    fetchCategories()
+    const handleClickOutside = (event) => {
+      if (
+        categoryContainerRef.current &&
+        !categoryContainerRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setShowCategoryDropdown(false)
+      }
+    }
 
-    // Check if we're in edit mode
+    if (showCategoryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCategoryDropdown])
+
+  useEffect(() => {
+    fetchData()
+
     if (editParam === 'true' && productIdParam) {
-      console.log("EDIT MODE DETECTED")
-      console.log("Product ID:", productIdParam)
-      console.log("Product Name:", productNameParam)
-      console.log("Category ID:", productGroupIdParam)
-
       setIsEditMode(true)
       setEditingProductId(productIdParam)
 
-      // Set form data from URL params
       setFormData({
         name: productNameParam || "",
         productGroupId: productGroupIdParam || "",
@@ -85,73 +104,34 @@ export default function ProductsPage() {
         hasWarranty: hasWarrantyParam === 'true',
       })
 
-      // Set category search text
       if (productGroupIdParam) {
         setCategorySearch(`Editing product category: ${productGroupIdParam}`)
       }
     }
   }, [])
 
-  useEffect(() => {
-    if (categories.length > 0 && categoryIdFromUrl) {
-      console.log("URL Category ID:", categoryIdFromUrl)
-      console.log("Auto Mark Last:", autoMarkLast)
-      console.log("Mark on First Product:", markAsLastOnFirstProduct)
-
-      const category = findCategoryById(categories, categoryIdFromUrl)
-      console.log("Found Category:", category)
-
-      if (category) {
-        handleCategorySelect(category)
-
-        // If category comes from Add Item button, lock it
-        if (categoryIdFromUrl) {
-          setIsCategoryLocked(true)
-        }
-
-        // If autoMarkLast is true, mark category as last immediately
-        if (autoMarkLast === 'true' && !category.allowItemEntry) {
-          handleAutoMarkAsLastCategory(category)
-        }
-      } else {
-        console.log("Category not found with ID:", categoryIdFromUrl)
-      }
-    }
-
-    // If edit mode, find and set the category
-    if (isEditMode && categories.length > 0 && formData.productGroupId) {
-      const category = findCategoryById(categories, formData.productGroupId)
-      if (category) {
-        setSelectedCategory(category)
-        setCategorySearch(category.name)
-      }
-    }
-  }, [categories, categoryIdFromUrl, autoMarkLast, markAsLastOnFirstProduct, isEditMode, formData.productGroupId])
-
-  const fetchCategories = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:5001/categories')
+      const [categoriesResponse, productsResponse] = await Promise.all([
+        fetch('http://localhost:5001/categories'),
+        fetch('http://localhost:5001/products')
+      ])
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      if (!categoriesResponse.ok) {
+        throw new Error(`HTTP error! status: ${categoriesResponse.status}`)
       }
 
-      const data = await response.json()
-      console.log("Fetched categories data:", data)
+      const categoriesData = await categoriesResponse.json()
+      const productsData = productsResponse.ok ? await productsResponse.json() : []
 
       let categoriesList = []
-      if (Array.isArray(data)) {
-        categoriesList = data
-      } else if (data && data.list) {
-        categoriesList = data.list
-      } else if (data && Array.isArray(data.categories)) {
-        categoriesList = data.categories
+      if (Array.isArray(categoriesData)) {
+        categoriesList = categoriesData
+      } else if (categoriesData && categoriesData.list) {
+        categoriesList = categoriesData.list
       }
 
-      console.log("Categories list:", categoriesList)
-
-      // ✅ Normalize the categories structure
       const normalizeCategories = (cats) => {
         if (!Array.isArray(cats)) return []
 
@@ -159,7 +139,7 @@ export default function ProductsPage() {
           if (!cat) return null
 
           return {
-            id: cat.id || cat.id || String(Date.now()),
+            id: cat.id || String(Date.now()),
             name: cat.name || "",
             allowItemEntry: Boolean(cat.allowItemEntry),
             productName: cat.productName || "",
@@ -169,24 +149,57 @@ export default function ProductsPage() {
       }
 
       const normalizedCategories = normalizeCategories(categoriesList)
-      console.log("Normalized categories:", normalizedCategories)
-
       setCategories(normalizedCategories)
+      setProducts(Array.isArray(productsData) ? productsData : [])
+
+      if (normalizedCategories.length > 0 && categoryIdFromUrl) {
+        const category = findCategoryById(normalizedCategories, categoryIdFromUrl)
+
+        if (category) {
+          handleCategorySelect(category)
+          setIsCategoryLocked(true)
+
+          if (autoMarkLast === 'true' && !category.allowItemEntry) {
+            handleAutoMarkAsLastCategory(category)
+          }
+        }
+      }
+
+      if (isEditMode && normalizedCategories.length > 0 && formData.productGroupId) {
+        const category = findCategoryById(normalizedCategories, formData.productGroupId)
+        if (category) {
+          setSelectedCategory(category)
+          setCategorySearch(category.name)
+        }
+      }
+
     } catch (error) {
-      console.error('Error fetching categories:', error)
+      console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const checkProductDuplicateAnywhere = (productName, excludeProductId = null) => {
+    if (!productName) return false
+
+    const normalizedProductName = productName.trim().toLowerCase()
+
+    return products.some(product => {
+      if (excludeProductId && (product.id === excludeProductId || product._id === excludeProductId)) {
+        return false
+      }
+
+      const existingProductName = (product.productName || product.name || "").trim().toLowerCase()
+      return existingProductName === normalizedProductName
+    })
   }
 
   const findCategoryById = (cats, id) => {
     if (!cats || !Array.isArray(cats)) return null
 
     for (const cat of cats) {
-      console.log("Checking category:", cat.id, "against:", id)
-
-      if (String(cat.id) === String(id) || String(cat.id) === String(id)) {
-        console.log("Category found:", cat)
+      if (String(cat.id) === String(id)) {
         return cat
       }
 
@@ -198,15 +211,11 @@ export default function ProductsPage() {
     return null
   }
 
-  // Function to mark category as last category (product category)
   const handleAutoMarkAsLastCategory = async (category) => {
     try {
-      console.log("Auto-marking category as last:", category.name)
-
-      // Update category to be a product category
       const updateCategoryInTree = (cats, targetId) => {
         return cats.map((cat) => {
-          if (cat.id === targetId || cat.id === targetId) {
+          if (cat.id === targetId) {
             return {
               ...cat,
               allowItemEntry: true,
@@ -223,9 +232,8 @@ export default function ProductsPage() {
         })
       }
 
-      const updatedCategories = updateCategoryInTree(categories, category.id || category.id)
+      const updatedCategories = updateCategoryInTree(categories, category.id)
 
-      // Save to server
       const response = await fetch('http://localhost:5001/categories', {
         method: 'PUT',
         headers: {
@@ -235,11 +243,8 @@ export default function ProductsPage() {
       })
 
       if (response.ok) {
-        console.log("Category marked as last successfully")
         setCategories(updatedCategories)
-
-        // Update selected category in state
-        const updatedCategory = findCategoryById(updatedCategories, category.id || category.id)
+        const updatedCategory = findCategoryById(updatedCategories, category.id)
         if (updatedCategory) {
           setSelectedCategory(updatedCategory)
         }
@@ -288,16 +293,13 @@ export default function ProductsPage() {
     : leafCategories
 
   const handleCategorySelect = (category) => {
-    console.log("Category selected:", category)
     setSelectedCategory(category)
     setFormData(prev => ({
       ...prev,
-      productGroupId: String(category.id || category.id)
+      productGroupId: String(category.id)
     }))
     setCategorySearch(category.path || category.name)
     setShowCategoryDropdown(false)
-
-    // If user selects a category manually, don't lock it
     setIsCategoryLocked(false)
   }
 
@@ -319,6 +321,23 @@ export default function ProductsPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  // Navigate back to categories page with the same category
+  const navigateBackToCategories = () => {
+    // If we have returnCategoryId, use it
+    if (returnCategoryId) {
+      router.push(`/products-group?returnCategoryId=${returnCategoryId}`)
+    } else if (selectedCategory) {
+      // Otherwise use current selected category
+      router.push(`/products-group?returnCategoryId=${selectedCategory.id}`)
+    } else if (categoryIdFromUrl) {
+      // Or use category from URL
+      router.push(`/products-group?returnCategoryId=${categoryIdFromUrl}`)
+    } else {
+      // Fallback to home
+      router.push('/products-group')
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -328,7 +347,18 @@ export default function ProductsPage() {
     }
 
     if (!formData.productGroupId) {
-      alert("Please select a category")
+      alert("Please select a Product Group")
+      return
+    }
+
+    // Check for duplicate product
+    const isDuplicate = checkProductDuplicateAnywhere(
+      formData.name,
+      isEditMode ? editingProductId : null
+    )
+
+    if (isDuplicate) {
+      alert(`❌ Product "${formData.name}" already exists in the system!\n\nYou cannot create a product with the same name anywhere.`)
       return
     }
 
@@ -346,23 +376,12 @@ export default function ProductsPage() {
       createdAt: isEditMode ? new Date().toISOString() : new Date().toISOString()
     }
 
-    console.log("Saving product:", productData)
-    console.log("Edit mode:", isEditMode)
-    console.log("Product ID:", editingProductId)
-
     try {
       setSaving(true)
 
       if (isEditMode) {
-        // EDIT MODE: Update existing product
-        console.log("Updating existing product...")
-
-        // First, let's test if the API is working
-        console.log("Testing API connection...")
-
-        // Method 1: Try direct PUT to individual product
+        // EDIT MODE
         try {
-          console.log("Trying PUT to /products/:id")
           const putResponse = await fetch(`http://localhost:5001/products/${editingProductId}`, {
             method: 'PUT',
             headers: {
@@ -371,80 +390,32 @@ export default function ProductsPage() {
             body: JSON.stringify(productData),
           })
 
-          console.log("PUT Response status:", putResponse.status)
-          console.log("PUT Response:", putResponse)
-
           if (putResponse.ok) {
             alert("✅ Product updated successfully!")
-            router.push('/product-table')
+            navigateBackToCategories()
             return
           }
-        } catch (putError) {
-          console.log("PUT failed, trying alternative method:", putError)
+        } catch (error) {
+          console.error("Error updating product:", error)
         }
 
-        // Method 2: Try PATCH to individual product
+        // Fallback method
         try {
-          console.log("Trying PATCH to /products/:id")
-          const patchResponse = await fetch(`http://localhost:5001/products/${editingProductId}`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(productData),
-          })
-
-          console.log("PATCH Response status:", patchResponse.status)
-
-          if (patchResponse.ok) {
-            alert("✅ Product updated successfully!")
-            router.push('/product-table')
-            return
-          }
-        } catch (patchError) {
-          console.log("PATCH failed, trying third method:", patchError)
-        }
-
-        // Method 3: Fetch all products, update in memory, and PUT back entire array
-        try {
-          console.log("Trying to update entire products array")
-
-          // Get all products
           const getResponse = await fetch('http://localhost:5001/products')
-          console.log("GET Response status:", getResponse.status)
-
+          
           if (!getResponse.ok) {
             throw new Error(`Failed to fetch products: ${getResponse.status}`)
           }
 
           const allProducts = await getResponse.json()
-          console.log("Fetched products:", allProducts)
-          console.log("Looking for product with ID:", editingProductId)
 
-          // Check if product exists
-          const productExists = allProducts.some(p =>
-            p.id === editingProductId || p._id === editingProductId
-          )
-          console.log("Product exists:", productExists)
-
-          if (!productExists) {
-            alert("❌ Product not found in database!")
-            return
-          }
-
-          // Find and update the product
           const updatedProducts = allProducts.map(product => {
             if (product.id === editingProductId || product._id === editingProductId) {
-              console.log("Found and updating product:", product)
               return productData
             }
             return product
           })
 
-          console.log("Updated products array:", updatedProducts)
-
-          // Save updated products back
-          console.log("Sending PUT to /products with entire array")
           const saveResponse = await fetch('http://localhost:5001/products', {
             method: 'PUT',
             headers: {
@@ -453,11 +424,9 @@ export default function ProductsPage() {
             body: JSON.stringify(updatedProducts),
           })
 
-          console.log("PUT Response status:", saveResponse.status)
-
           if (saveResponse.ok) {
             alert("✅ Product updated successfully!")
-            router.push('/product-table')
+            navigateBackToCategories()
           } else {
             throw new Error(`Failed to save: ${saveResponse.status}`)
           }
@@ -466,8 +435,7 @@ export default function ProductsPage() {
           alert(`❌ Failed to update product: ${finalError.message}`)
         }
       } else {
-        // CREATE MODE: Create new product
-        console.log("Creating new product...")
+        // CREATE MODE
         const response = await fetch('http://localhost:5001/products', {
           method: 'POST',
           headers: {
@@ -479,14 +447,13 @@ export default function ProductsPage() {
         if (response.ok) {
           console.log("Product created successfully")
 
-          // Check if we need to mark category as last on first product
           if (markAsLastOnFirstProduct === 'true' && selectedCategory && !selectedCategory.allowItemEntry) {
             console.log("Marking category as last on first product")
             await handleAutoMarkAsLastCategory(selectedCategory)
           }
 
           alert("✅ Product created successfully!")
-          router.push('/product-table')
+          navigateBackToCategories()
         } else {
           alert("Failed to create product")
         }
@@ -500,7 +467,7 @@ export default function ProductsPage() {
   }
 
   const handleCancel = () => {
-    router.push('/product-table')
+    navigateBackToCategories()
   }
 
   if (loading) {
@@ -536,18 +503,17 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* Show info if category will be marked as last on first product */}
             {!isEditMode && markAsLastOnFirstProduct === 'true' && selectedCategory && !selectedCategory.allowItemEntry && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-300 rounded-md">
                 <p className="text-sm text-blue-700">
-                  <span className="font-medium">Note:</span> This category will be marked as a "Product Category" after you create the first product.
+                  <span className="font-medium">Note:</span> This Product Group will be marked as a "Product Product Group" after you create the first product.
                 </p>
               </div>
             )}
           </div>
           <Button variant="outline" onClick={handleCancel}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Products
+            {returnCategoryId || selectedCategory || categoryIdFromUrl ? "Back to Product Group" : "Back"}
           </Button>
         </div>
 
@@ -557,10 +523,9 @@ export default function ProductsPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Category selection */}
               <div className="space-y-2">
                 <Label htmlFor="category" className="text-sm font-medium">
-                  Product Category *
+                   Product Group *
                 </Label>
 
                 {isEditMode && selectedCategory ? (
@@ -571,7 +536,7 @@ export default function ProductsPage() {
                           {selectedCategory.name}
                         </p>
                         <p className="text-xs text-blue-600 mt-1">
-                          Current category for editing
+                          Current Product Group for editing
                         </p>
                       </div>
                     </div>
@@ -586,7 +551,7 @@ export default function ProductsPage() {
                         </p>
                         {categoryNameFromUrl && (
                           <p className="text-xs text-green-600 mt-1">
-                            URL Category: {categoryNameFromUrl}
+                            URL Product Group: {categoryNameFromUrl}
                           </p>
                         )}
                       </div>
@@ -601,7 +566,7 @@ export default function ProductsPage() {
                       )}
                       {markAsLastOnFirstProduct === 'true' && !selectedCategory.allowItemEntry && (
                         <p className="text-xs text-blue-600 mt-1">
-                          ⓘ Will become Product Category after first product
+                          ⓘ Will become Product Product Group after first product
                         </p>
                       )}
                     </div>
@@ -616,22 +581,26 @@ export default function ProductsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="relative">
+                  <div className="relative" ref={categoryContainerRef}>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
+                        ref={inputRef}
                         value={categorySearch}
                         onChange={(e) => {
                           setCategorySearch(e.target.value)
                           setShowCategoryDropdown(true)
                         }}
                         onFocus={() => setShowCategoryDropdown(true)}
-                        placeholder={isEditMode ? "Select new category (optional)" : "Search product category..."}
+                        placeholder={isEditMode ? "Select new Product Group (optional)" : "Search product Product Group..."}
                         className="pl-9"
                       />
                     </div>
                     {showCategoryDropdown && (
-                      <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      <div
+                        ref={dropdownRef}
+                        className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                      >
                         {filteredCategories.length === 0 ? (
                           <div className="p-3 text-center text-muted-foreground text-sm">
                             {leafCategories.length === 0
@@ -641,7 +610,7 @@ export default function ProductsPage() {
                         ) : (
                           filteredCategories.map((cat) => (
                             <div
-                              key={cat.id || cat.id}
+                              key={cat.id}
                               className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
                               onClick={() => handleCategorySelect(cat)}
                             >
@@ -669,6 +638,9 @@ export default function ProductsPage() {
                   onChange={(e) => updateField("name", e.target.value)}
                   required
                 />
+                <p className="text-xs text-muted-foreground">
+                  Product name must be unique across all categories
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -777,7 +749,7 @@ export default function ProductsPage() {
                       Update Product
                     </>
                   ) : markAsLastOnFirstProduct === 'true' && !selectedCategory?.allowItemEntry ? (
-                    "Create First Product & Mark Category"
+                    "Create First Product & Mark Product Group"
                   ) : (
                     "Create Product"
                   )}

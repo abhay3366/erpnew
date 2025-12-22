@@ -15,7 +15,7 @@ export function CategoryTree({ categories, onEdit, onDelete, onAddChild, level =
 
   if (!categories?.length) {
     return level === 0 ? (
-      <p className="text-muted-foreground text-center py-8">No categories yet. Create your first category!</p>
+      <p className="text-muted-foreground text-center py-8">No Product Group yet. Create your first Product Group!</p>
     ) : null
   }
 

@@ -40,10 +40,10 @@ export function CategoryForm({ open, onOpenChange, onSubmit, initialData, parent
   }
 
   const title = initialData
-    ? `Edit Category "${initialData.name}"`
+    ? `Edit Product Group "${initialData.name}"`
     : parentCategory
-      ? `Add Sub-category to "${parentCategory.name}"`
-      : "Create New Category"
+      ? `Add Sub-Product Group to "${parentCategory.name}"`
+      : "Create New Product Group"
 
   const parentHasItemEntry = parentCategory?.allowItemEntry
 
@@ -58,7 +58,7 @@ export function CategoryForm({ open, onOpenChange, onSubmit, initialData, parent
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Cannot add sub-category because "{parentCategory.name}" is already a product category.
+              Cannot add sub-Product Group because "{parentCategory.name}" is already a product Product Group.
             </AlertDescription>
           </Alert>
         ) : (
@@ -72,7 +72,7 @@ export function CategoryForm({ open, onOpenChange, onSubmit, initialData, parent
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="name">Category Name</Label>
+                <Label htmlFor="name">Product Group Name</Label>
                 <Input
                   id="name"
                   value={name}
@@ -80,12 +80,12 @@ export function CategoryForm({ open, onOpenChange, onSubmit, initialData, parent
                     setName(e.target.value)
                     setError("")
                   }}
-                  placeholder="Enter category name"
+                  placeholder="Enter Product Group name"
                   autoFocus
                   required
                 />
                 <p className="text-sm text-muted-foreground">
-                  Note: Category will be marked as "Last Category" automatically when you click "Add Item"
+                  Note: Product Group will be marked as "Last Product Group" automatically when you click "Add Product"
                 </p>
               </div>
             </div>

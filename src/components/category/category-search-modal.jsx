@@ -57,9 +57,9 @@ export function CategorySearchModal({ open, onOpenChange, categories, onSelect }
               <X className="h-5 w-5" />
             </button>
           )}
-          <button onClick={() => onOpenChange(false)} className="text-muted-foreground hover:text-foreground">
+          {/* <button onClick={() => onOpenChange(false)} className="text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
-          </button>
+          </button> */}
         </div>
 
         <div className="p-4">
@@ -124,7 +124,7 @@ export function CategorySearchModal({ open, onOpenChange, categories, onSelect }
         </div>
 
         <div className="p-3 border-t bg-muted/50 text-center text-sm text-muted-foreground">
-          Press Enter to search • <span className="text-green-600">Light Green = Last Category Level</span> • Click to
+          Press Enter to search • <span className="text-green-600">Light Green = Last Product Group Level</span> • Click to
           navigate
         </div>
       </DialogContent>

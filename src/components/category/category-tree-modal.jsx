@@ -62,9 +62,9 @@ export function CategoryTreeModal({ open, onOpenChange, categories, onSelect, cu
       <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-row items-center justify-between">
           <DialogTitle className="text-green-600">Product Tree Structure</DialogTitle>
-          <button onClick={() => onOpenChange(false)} className="text-muted-foreground hover:text-foreground">
+          {/* <button onClick={() => onOpenChange(false)} className="text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
-          </button>
+          </button> */}
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-4">
           <div className="flex items-center gap-2 mb-4">

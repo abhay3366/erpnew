@@ -1,45 +1,97 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { CategoryTable } from "@/components/category/category-table"
 import { CategoryForm } from "@/components/category/category-form"
 import { CategorySearchModal } from "@/components/category/category-search-modal"
 import { CategoryTreeModal } from "@/components/category/category-tree-modal"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Home, Search, GitBranch, Package, Plus } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Home, Search, GitBranch, Package, Plus, Filter, X, View } from "lucide-react"
+import { ProductTable } from "@/components/products/ProductTable"
 
-export default function CategoriesPage() {
+export default function CreateProductGroup() {
   const [categories, setCategories] = useState([])
+  const [products, setProducts] = useState([])
   const [formOpen, setFormOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [treeOpen, setTreeOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
   const [parentCategory, setParentCategory] = useState(null)
   const [currentPath, setCurrentPath] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Filter states for products in last category
+  const [productSearchQuery, setProductSearchQuery] = useState("")
+  const [filterUnit, setFilterUnit] = useState("all")
+  const [filterUniqueId, setFilterUniqueId] = useState("all")
+
   const router = useRouter()
+  const searchParams = useSearchParams()
 
-  // Fetch categories from JSON Server
+  // Load from URL when component mounts
   useEffect(() => {
-    fetchCategories()
-  }, [])
+    fetchCategoriesAndProducts()
+    
+    // Check if we have a return category ID from products page
+    const returnCategoryId = searchParams.get('returnCategoryId')
+    if (returnCategoryId) {
+      console.log("Returning from products page with category ID:", returnCategoryId)
+      
+      // Wait for categories to load, then find and navigate to this category
+      setTimeout(() => {
+        const category = findCategoryById(categories, returnCategoryId)
+        if (category) {
+          console.log("Found category:", category.name)
+          // Build path to this category
+          const path = buildPathToCategory(categories, returnCategoryId)
+          if (path && path.length > 0) {
+            console.log("Setting path:", path)
+            setCurrentPath(path)
+          }
+        }
+      }, 500)
+    }
+  }, [searchParams])
 
-  const fetchCategories = async () => {
+  // Build path to a specific category
+  const buildPathToCategory = (cats, targetId, path = []) => {
+    for (const cat of cats) {
+      if (cat.id === targetId) {
+        return [...path, { id: cat.id, name: cat.name }]
+      }
+      if (cat.children && Array.isArray(cat.children)) {
+        const result = buildPathToCategory(cat.children, targetId, [...path, { id: cat.id, name: cat.name }])
+        if (result) return result
+      }
+    }
+    return null
+  }
+
+  const fetchCategoriesAndProducts = async () => {
     try {
-      const response = await fetch('http://localhost:5001/categories')
+      setLoading(true)
+      const [categoriesResponse, productsResponse] = await Promise.all([
+        fetch('http://localhost:5001/categories'),
+        fetch('http://localhost:5001/products')
+      ])
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+      if (!categoriesResponse.ok || !productsResponse.ok) {
+        throw new Error(`HTTP error! status: ${categoriesResponse.status}`)
       }
 
-      const data = await response.json()
+      const categoriesData = await categoriesResponse.json()
+      const productsData = await productsResponse.json()
 
-      // Handle different response formats
+      // Handle different response formats for categories
       let categoriesList = []
-      if (data && data.list) {
-        categoriesList = data.list
-      } else if (Array.isArray(data)) {
-        categoriesList = data
+      if (categoriesData && categoriesData.list) {
+        categoriesList = categoriesData.list
+      } else if (Array.isArray(categoriesData)) {
+        categoriesList = categoriesData
       }
 
       // Deep normalize the fetched data
@@ -61,13 +113,30 @@ export default function CategoriesPage() {
 
       const normalizedCategories = deepNormalize(categoriesList)
       setCategories(normalizedCategories)
+      setProducts(productsData || [])
+
+      // Check for returnCategoryId after loading categories
+      const returnCategoryId = searchParams.get('returnCategoryId')
+      if (returnCategoryId && normalizedCategories.length > 0) {
+        const category = findCategoryById(normalizedCategories, returnCategoryId)
+        if (category) {
+          const path = buildPathToCategory(normalizedCategories, returnCategoryId)
+          if (path && path.length > 0) {
+            setCurrentPath(path)
+          }
+        }
+      }
 
     } catch (error) {
-      console.error('Error fetching categories:', error)
+      console.error('Error fetching data:', error)
       setCategories([])
+      setProducts([])
+    } finally {
+      setLoading(false)
     }
   }
 
+  // Save categories function
   const saveCategoriesToServer = async (categoriesData) => {
     try {
       const deepNormalize = (data) => {
@@ -89,8 +158,6 @@ export default function CategoriesPage() {
 
       const normalizedData = deepNormalize(categoriesData)
 
-      console.log("Saving to server:", JSON.stringify(normalizedData, null, 2))
-
       const response = await fetch('http://localhost:5001/categories', {
         method: 'PUT',
         headers: {
@@ -103,7 +170,6 @@ export default function CategoriesPage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      // Update local state with normalized data
       setCategories(normalizedData)
       return true
     } catch (error) {
@@ -153,56 +219,85 @@ export default function CategoriesPage() {
     return null
   }
 
-  // Check if current level has only one category
-  const hasSingleCategoryInCurrentLevel = () => {
-    const currentCats = getCurrentCategories()
-    return currentCats.length === 1
+  // Check if we are in a last category (product category)
+  const isInLastCategory = () => {
+    const currentParent = getCurrentParent()
+    return currentParent ? currentParent.allowItemEntry : false
   }
 
-  // Check if current category has children
-  const hasChildren = (category) => {
-    return category && category.children && category.children.length > 0
-  }
-
-  // Check if current category is eligible for "Add Item"
+  // Check if we should show Add Item button
   const shouldShowAddItem = () => {
+    if (isInLastCategory()) return true
+
     const currentParent = getCurrentParent()
     if (!currentParent) return false
 
-    const currentCats = getCurrentCategories()
+    if (currentParent.allowItemEntry) return false
 
-    // CASE 1: If current level has NO categories (empty), show Add Item
-    if (currentCats.length <= 0) {
+    const currentCats = getCurrentCategories()
+    const isCurrentParentLeafNode = currentParent && (!currentParent.children || currentParent.children.length === 0)
+
+    if (currentCats.length === 0 && isCurrentParentLeafNode) {
       return true
     }
 
-    // CASE 2: If current category is already a product category, always show Add Item
-    if (currentParent.allowItemEntry) return false
-
-    // CASE 3: Check if single category exists AND it has NO children
-    if (hasSingleCategoryInCurrentLevel()) {
-      const singleCategory = currentCats[0]
-      // Check if the single category has NO children (leaf node)
-      if (!singleCategory.children || singleCategory.children.length < 0) {
-        return true
-      }
-    }
-
     return false
+  }
+
+  // Get products for current last category
+  const getProductsForCurrentCategory = () => {
+    const currentParent = getCurrentParent()
+    if (!currentParent || !currentParent.allowItemEntry) return []
+
+    return products.filter(product => product.productGroupId === currentParent.id)
+  }
+
+  // Get filtered products
+  const getFilteredProductsForCurrentCategory = () => {
+    const allProducts = getProductsForCurrentCategory()
+
+    return allProducts.filter((product) => {
+      if (!product) return false
+
+      const productName = product.name || product.productName || ""
+
+      if (filterUnit !== "all" && product.unit !== filterUnit) {
+        return false
+      }
+
+      if (filterUniqueId === "yes" && !product.hasUniqueIdentifier) {
+        return false
+      }
+      if (filterUniqueId === "no" && product.hasUniqueIdentifier) {
+        return false
+      }
+
+      if (productSearchQuery) {
+        const query = productSearchQuery.toLowerCase()
+        const productSku = product.sku?.toLowerCase() || ""
+        const nameMatch = productName.toLowerCase().includes(query)
+        const skuMatch = productSku.includes(query)
+
+        if (!nameMatch && !skuMatch) {
+          return false
+        }
+      }
+
+      return true
+    })
   }
 
   const handleCreate = async ({ name, productName }) => {
     const newCategory = {
       id: Date.now().toString(),
       name: name.trim(),
-      allowItemEntry: false, // Always false when creating
+      allowItemEntry: false,
       productName: productName || "",
       children: [],
     }
 
     const currentParent = getCurrentParent()
 
-    // Function to add category to the tree
     const addCategoryToTree = (cats, targetId, newCat) => {
       if (!Array.isArray(cats)) return cats
 
@@ -210,9 +305,8 @@ export default function CategoriesPage() {
         if (!cat) return cat
 
         if (cat.id === targetId) {
-          // Check if parent is already a product category
           if (cat.allowItemEntry) {
-            alert(`Cannot add sub-category because "${cat.name}" is already a product category.`)
+            alert(`Cannot add sub-Product Group because "${cat.name}" is already a product Product Group.`)
             return cat
           }
 
@@ -240,11 +334,9 @@ export default function CategoriesPage() {
     } else if (parentCategory) {
       updatedCategories = addCategoryToTree(categories, parentCategory.id, newCategory)
     } else {
-      // Add as root category
       updatedCategories = [...categories, newCategory]
     }
 
-    // Save to server
     const success = await saveCategoriesToServer(updatedCategories)
 
     if (success) {
@@ -285,76 +377,39 @@ export default function CategoriesPage() {
   }
 
   const handleDelete = async (category) => {
-    // First check if this category or any of its children have products
-    try {
-      // Fetch all products
-      const productsResponse = await fetch('http://localhost:5001/products')
-      const productsData = await productsResponse.json()
+    const getAllCategoryIdsInHierarchy = (cat, ids = []) => {
+      if (!cat) return ids
 
-      // Function to find all category IDs in the hierarchy (including children)
-      const getAllCategoryIdsInHierarchy = (cat, ids = []) => {
-        if (!cat) return ids
+      ids.push(cat.id)
+      if (cat.children && Array.isArray(cat.children)) {
+        cat.children.forEach(child => {
+          getAllCategoryIdsInHierarchy(child, ids)
+        })
+      }
+      return ids
+    }
 
-        ids.push(cat.id)
-        if (cat.children && Array.isArray(cat.children)) {
-          cat.children.forEach(child => {
-            getAllCategoryIdsInHierarchy(child, ids)
-          })
-        }
-        return ids
+    const categoryHierarchy = findCategoryById(categories, category.id)
+    const allCategoryIdsInHierarchy = getAllCategoryIdsInHierarchy(categoryHierarchy)
+
+    const productsInHierarchy = Array.isArray(products)
+      ? products.filter(product => allCategoryIdsInHierarchy.includes(product.productGroupId))
+      : []
+
+    if (productsInHierarchy.length > 0) {
+      let errorMessage = `Cannot delete "${category.name}" because:\n\n`
+
+      const categoryWithProducts = findCategoryById(categories, productsInHierarchy[0].productGroupId)
+      if (categoryWithProducts) {
+        errorMessage += `• "${categoryWithProducts.name}" has ${productsInHierarchy.length} product(s)\n`
       }
 
-      // Get all category IDs in this hierarchy
-      const categoryHierarchy = findCategoryById(categories, category.id)
-      const allCategoryIdsInHierarchy = getAllCategoryIdsInHierarchy(categoryHierarchy)
-
-      // Check if any product belongs to any category in this hierarchy
-      const productsInHierarchy = Array.isArray(productsData)
-        ? productsData.filter(product => allCategoryIdsInHierarchy.includes(product.productGroupId))
-        : []
-
-      if (productsInHierarchy.length > 0) {
-        // Count products in each category for detailed message
-        const productCountByCategory = {}
-        productsInHierarchy.forEach(product => {
-          productCountByCategory[product.productGroupId] = (productCountByCategory[product.productGroupId] || 0) + 1
-        })
-
-        // Find category names for better error message
-        const categoryNamesWithProducts = []
-        allCategoryIdsInHierarchy.forEach(catId => {
-          if (productCountByCategory[catId]) {
-            const cat = findCategoryById(categories, catId)
-            if (cat) {
-              categoryNamesWithProducts.push({
-                name: cat.name,
-                count: productCountByCategory[catId]
-              })
-            }
-          }
-        })
-
-        // Create detailed error message
-        let errorMessage = `Cannot delete "${category.name}" because:\n\n`
-
-        categoryNamesWithProducts.forEach(({ name, count }) => {
-          errorMessage += `• "${name}" has ${count} product(s)\n`
-        })
-
-        errorMessage += `\nPlease delete all products in these categories first.`
-
-        alert(errorMessage)
-        return
-      }
-    } catch (error) {
-      console.error("Error checking products:", error)
-      // If we can't check, don't allow deletion (safer)
-      alert("Cannot delete category at the moment. Please try again later.")
+      errorMessage += `\nPlease delete all products in these Product Group first.`
+      alert(errorMessage)
       return
     }
 
-    // Only proceed if no products found in entire hierarchy
-    if (!confirm(`Are you sure you want to delete "${category.name}" and all its sub-categories?`)) return
+    if (!confirm(`Are you sure you want to delete "${category.name}" and all its sub-Product Group?`)) return
 
     const deleteCategory = (cats) => {
       return cats
@@ -376,64 +431,73 @@ export default function CategoriesPage() {
   }
 
   const handleNavigate = (category) => {
-    // ALWAYS navigate within categories - never go to products page
-    setCurrentPath([...currentPath, { id: category.id, name: category.name }])
+    const newPath = [...currentPath, { id: category.id, name: category.name }]
+    setCurrentPath(newPath)
   }
 
   const handleAddProductDirectly = () => {
     const currentParent = getCurrentParent()
-    const currentCats = getCurrentCategories()
+    if (!currentParent) return
 
-    if (currentParent) {
-      // If already a product category
-      if (currentParent.allowItemEntry) {
-        // Go to products page WITHOUT marking (already marked)
-        router.push(`/products?productGroupId=${currentParent.id}&categoryName=${encodeURIComponent(currentParent.name)}`)
-        return
-      }
-
-      // Check if current level has NO categories (empty)
-      if (currentCats.length === 0) {
-        // Go to products page WITHOUT automatic marking
-        router.push(`/products?productGroupId=${currentParent.id}&categoryName=${encodeURIComponent(currentParent.name)}&markAsLastOnFirstProduct=true`)
-        return
-      }
-
-      // Check if current level has only one category AND it has NO children
-      if (hasSingleCategoryInCurrentLevel()) {
-        const singleCategory = currentCats[0]
-
-        // Check if single category has children
-        if (singleCategory.children && singleCategory.children.length > 0) {
-          alert(`Cannot add items to "${singleCategory.name}" because it has sub-categories.\n\nPlease remove all sub-categories first.`)
-          return
-        }
-
-        // Go to products page WITHOUT automatic marking
-        router.push(`/products?productGroupId=${singleCategory.id}&categoryName=${encodeURIComponent(singleCategory.name)}&markAsLastOnFirstProduct=true`)
-        return
-      }
-
-      // If multiple categories exist
-      alert(`"Add Item" is only available when there is exactly one category in this level.\n\nCurrent level has ${getCurrentCategories().length} categories.`)
-    }
-  }
-
-  const handleAddProduct = async (category) => {
-    // Check if category has children
-    if (category.children && category.children.length > 0) {
-      alert(`Cannot add items to "${category.name}" because it has sub-categories.\n\nPlease remove all sub-categories first.`)
+    if (currentParent.allowItemEntry) {
+      router.push(`/products?productGroupId=${currentParent.id}&categoryName=${encodeURIComponent(currentParent.name)}&returnCategoryId=${currentParent.id}`)
       return
     }
 
-    // Check if category is already a product category
-    if (category.allowItemEntry) {
-      // Just go to products page
-      router.push(`/products?productGroupId=${category.id}&categoryName=${encodeURIComponent(category.name)}`)
-    } else {
-      // Go to products page WITHOUT automatic marking
-      router.push(`/products?productGroupId=${category.id}&categoryName=${encodeURIComponent(category.name)}&markAsLastOnFirstProduct=true`)
+    const currentCats = getCurrentCategories()
+    const isCurrentParentLeafNode = currentParent && (!currentParent.children || currentParent.children.length === 0)
+
+    if (currentCats.length === 0 && isCurrentParentLeafNode) {
+      handleMarkAsLastAndAddProduct(currentParent)
+      return
     }
+
+    alert("Cannot add Product at this level. Please navigate to a single Product Group with no sub-Product Group.")
+  }
+
+  const handleAddProduct = async (category) => {
+    if (category.children && category.children.length > 0) {
+      alert(`Cannot add Product to "${category.name}" because it has sub-Product Group.\n\nPlease remove all sub-Product Group first.`)
+      return
+    }
+
+    if (category.allowItemEntry) {
+      router.push(`/products?productGroupId=${category.id}&categoryName=${encodeURIComponent(category.name)}&returnCategoryId=${category.id}`)
+    } else {
+      handleMarkAsLastAndAddProduct(category)
+    }
+  }
+
+  const handleMarkAsLastAndAddProduct = async (category) => {
+    if (confirm(`Mark "${category.name}" as a  Product Group and add Product?\n\nOnce marked as Product Group, you cannot add sub-Product Group to it.`)) {
+      const updateCategoryToLast = (cats) => {
+        return cats.map((cat) => {
+          if (cat.id === category.id) {
+            return {
+              ...cat,
+              allowItemEntry: true,
+              productName: cat.productName || ""
+            }
+          }
+          if (cat.children && Array.isArray(cat.children)) {
+            return { ...cat, children: updateCategoryToLast(cat.children) }
+          }
+          return cat
+        })
+      }
+
+      const updated = updateCategoryToLast(categories)
+      const success = await saveCategoriesToServer(updated)
+
+      if (success) {
+        await fetchCategoriesAndProducts()
+        router.push(`/products?productGroupId=${category.id}&categoryName=${encodeURIComponent(category.name)}&markAsLastOnFirstProduct=true&returnCategoryId=${category.id}`)
+      }
+    }
+  }
+
+  const ViewProductFn = () => {
+    router.push('/product-table')
   }
 
   const handleBreadcrumbClick = (index) => {
@@ -445,6 +509,7 @@ export default function CategoriesPage() {
   }
 
   const handleBack = () => {
+    resetProductFilters()
     setCurrentPath(currentPath.slice(0, -1))
   }
 
@@ -471,9 +536,8 @@ export default function CategoriesPage() {
   const handleAddRoot = () => {
     const currentParent = getCurrentParent()
 
-    // Check if we're at a product category level
     if (currentParent && currentParent.allowItemEntry) {
-      alert(`Cannot add category because "${currentParent.name}" is already a product category.`)
+      alert(`Cannot add Product Group because "${currentParent.name}" is already a Product Group.`)
       return
     }
 
@@ -482,12 +546,42 @@ export default function CategoriesPage() {
     setFormOpen(true)
   }
 
-  const currentCategories = getCurrentCategories()
-  const currentParent = getCurrentParent()
-  const currentParentName = currentPath.length > 0 ? currentPath[currentPath.length - 1].name : "Home"
+  // Reset product filters
+  const resetProductFilters = () => {
+    setProductSearchQuery("")
+    setFilterUnit("all")
+    setFilterUniqueId("all")
+  }
 
-  const isCurrentCategoryProductCategory = currentParent ? currentParent.allowItemEntry : false
+  // Get unique units for current category products
+  const getUniqueUnitsForCurrentProducts = () => {
+    const currentProducts = getProductsForCurrentCategory()
+    return [...new Set(currentProducts
+      .map((p) => p?.unit)
+      .filter(Boolean))]
+  }
+
+  // Check if we are in a last category
+  const inLastCategory = isInLastCategory()
+  const currentParent = getCurrentParent()
+  const currentCategories = getCurrentCategories()
+  const currentProducts = getProductsForCurrentCategory()
+  const filteredProducts = getFilteredProductsForCurrentCategory()
+  const uniqueUnits = getUniqueUnitsForCurrentProducts()
   const shouldShowAddItemButton = shouldShowAddItem()
+  const isCurrentParentLeafNode = currentParent && (!currentParent.children || currentParent.children.length === 0)
+  const isInsideSingleCategory = currentCategories.length === 0 && currentParent && isCurrentParentLeafNode
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -496,20 +590,33 @@ export default function CategoriesPage() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Home className="h-6 w-6" />
-              {currentParentName}
-              {isCurrentCategoryProductCategory && (
+              {currentParent ? currentParent.name : "Home"}
+              {inLastCategory && (
                 <span className="ml-2 text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                  Product Category
+                  Product Group
+                </span>
+              )}
+              {isInsideSingleCategory && !inLastCategory && (
+                <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  Single Product Group
                 </span>
               )}
             </h1>
-            {currentParent && isCurrentCategoryProductCategory && (
+            {inLastCategory ? (
               <p className="text-sm text-gray-600 mt-1">
-                ✓ This is a product category. You can add products directly here.
+                ✓ This is a Product Group. You can add and manage products here.
               </p>
-            )}
+            ) : isInsideSingleCategory ? (
+              <p className="text-sm text-gray-600 mt-1">
+                ✓ You are inside a single Product Group. You can mark it as a Product Group to add Products.
+              </p>
+            ) : null}
           </div>
           <div className="flex items-center gap-2">
+            <Button onClick={ViewProductFn} className="bg-blue-600 hover:bg-blue-700">
+              <View className="h-4 w-4 mr-2" />
+              View All Products
+            </Button>
             <Button onClick={() => setSearchOpen(true)} className="bg-blue-600 hover:bg-blue-700">
               <Search className="h-4 w-4 mr-2" />
               Search
@@ -539,7 +646,8 @@ export default function CategoriesPage() {
                 <button
                   onClick={() => handleBreadcrumbClick(index)}
                   className={`px-2 py-1 rounded-md text-sm font-medium transition-colors ${index === currentPath.length - 1
-                    ? isCurrentCategoryProductCategory ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-700"
+                    ? inLastCategory ? "bg-green-100 text-green-800" :
+                      isInsideSingleCategory ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-700"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}
                 >
@@ -558,40 +666,169 @@ export default function CategoriesPage() {
             </Button>
           )}
 
-          {/* Create Category Button - Show when not in product category */}
-          {!isCurrentCategoryProductCategory && (
+          {/* Create Product Group Button - Show when not in last Product Group and not inside a single leaf Product Group */}
+          {!inLastCategory && (
             <Button onClick={handleAddRoot} className="bg-primary hover:bg-primary/90">
               <Plus className="h-4 w-4 mr-2" />
-              Create Category
+              Create Product Group
             </Button>
           )}
 
-          {/* Show Add Item button only when conditions are met */}
+          {/* Show Add Item button when inside a single category (with no children) */}
           {shouldShowAddItemButton && (
             <Button
               onClick={handleAddProductDirectly}
               className="bg-green-600 hover:bg-green-700 ml-auto"
               variant="default"
-              title="Add product to this category"
+              title="Add product to this Product Group"
             >
               <Package className="h-4 w-4 mr-2" />
-              Add Item
+              Add Products
             </Button>
           )}
         </div>
 
-        <div className="bg-card rounded-lg border">
-          <CategoryTable
-            categories={currentCategories}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onNavigate={handleNavigate}
-            onAddProduct={handleAddProduct}
-            parentPath={getParentPathString()}
-            isParentProductCategory={isCurrentCategoryProductCategory}
-            shouldShowAddItemOnlyForSingleCategory={true}
-          />
-        </div>
+        {/* Show Products Table if in last Product Group */}
+        {inLastCategory ? (
+          <div className="space-y-4">
+            {/* Filters Section for Products */}
+            <div className="bg-muted/30 border rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Product Filters</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Badge variant="outline">
+                    {filteredProducts.length} of {currentProducts.length} Products
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={fetchCategoriesAndProducts}
+                    className="text-xs"
+                  >
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search products..."
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                <Select value={filterUnit} onValueChange={setFilterUnit}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Units" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Units</SelectItem>
+                    {uniqueUnits.map((unit) => (
+                      <SelectItem key={unit} value={unit}>
+                        {unit}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterUniqueId} onValueChange={setFilterUniqueId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Unique ID" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Products</SelectItem>
+                    <SelectItem value="yes">With Unique ID</SelectItem>
+                    <SelectItem value="no">Without Unique ID</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="outline"
+                  onClick={resetProductFilters}
+                  className="flex items-center gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Clear Filters
+                </Button>
+              </div>
+
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredProducts.length} of {currentProducts.length} products in "{currentParent.name}"
+              </div>
+            </div>
+
+            {/* Products Table */}
+            <div className="bg-card rounded-lg border p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">
+                  Products in "{currentParent.name}"
+                </h2>
+              </div>
+
+              {filteredProducts.length > 0 ? (
+                <ProductTable
+                  products={filteredProducts}
+                  categories={categories}
+                  onDelete={async (product) => {
+                    try {
+                      const response = await fetch(`http://localhost:5001/products/${product.id}`, {
+                        method: 'DELETE',
+                      })
+                      if (response.ok) {
+                        await fetchCategoriesAndProducts() // Refresh data
+                      }
+                    } catch (error) {
+                      console.error("Error deleting product:", error)
+                      alert("Failed to delete product")
+                    }
+                  }}
+                  showActions={true}
+                  compact={false}
+                />
+              ) : (
+                <div className="text-center py-12 border rounded-lg">
+                  <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="font-medium mb-2">No products found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {productSearchQuery || filterUnit !== "all" || filterUniqueId !== "all"
+                      ? "No products match your filters. Try clearing filters."
+                      : `No products in "${currentParent.name}" yet. Click "Add Item" to add your first product.`}
+                  </p>
+                  {(productSearchQuery || filterUnit !== "all" || filterUniqueId !== "all") && (
+                    <Button
+                      variant="outline"
+                      onClick={resetProductFilters}
+                      className="mt-2"
+                    >
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Show Product Group Table if not in last Product Group */
+          <div className="bg-card rounded-lg border">
+            <CategoryTable
+              categories={currentCategories}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onNavigate={handleNavigate}
+              onAddProduct={handleAddProduct}
+              parentPath={getParentPathString()}
+              isParentProductCategory={inLastCategory}
+              shouldShowAddItemOnlyForSingleCategory={false}
+            />
+          </div>
+        )}
 
         <CategoryForm
           open={formOpen}
