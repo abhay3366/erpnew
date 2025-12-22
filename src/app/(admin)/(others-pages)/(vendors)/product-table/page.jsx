@@ -11,7 +11,7 @@ import { ProductTable } from "@/components/products/ProductTable"
 import { getProducts, getCategories, deleteProduct } from "@/components/lib/storage"
 import { useRouter } from "next/navigation"
 
-export default function ProductsPage() {
+export default function ProductTableHomePage() {
   const router = useRouter()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
@@ -189,10 +189,10 @@ export default function ProductsPage() {
 
           <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger>
-              <SelectValue placeholder="All Categories" />
+              <SelectValue placeholder="All Product Group" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="all">All Product Group</SelectItem>
               {flattenCategories(categories).map((cat) => (
                 <SelectItem key={cat._id || cat.id} value={cat._id || cat.id}>
                   {"  ".repeat(cat.level || 0)}

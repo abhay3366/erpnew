@@ -73,7 +73,7 @@ export function CategoryTable({
     }
 
     if (productCount > 0) {
-      alert(`🚫 CANNOT DELETE!\n\nCategory "${category.name}" has ${productCount} product(s).\n\nFirst delete all products in this category from Products page.`)
+      alert(`🚫 CANNOT DELETE!\n\nCategory "${category.name}" has ${productCount} product(s).\n\nFirst delete all products in this Product Group from Products page.`)
       return
     }
 
@@ -139,7 +139,7 @@ export function CategoryTable({
   if (!categories?.length) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        No categories at this level. Create your first product category!
+        No Product Group at this level. Create your first product category!
       </div>
     )
   }
@@ -225,7 +225,7 @@ export function CategoryTable({
                         "cursor-default",
                         hasSubCategories && "hover:text-primary transition-colors"
                       )}>
-                        {category.children?.length || 0} sub-categories
+                        {category.children?.length || 0} sub-Product Group
                       </span>
                       {hasSubCategories && (
                         <Button
@@ -233,7 +233,7 @@ export function CategoryTable({
                           size="sm"
                           className="h-6 w-6 p-0 hover:bg-muted hover:text-primary"
                           onClick={(e) => handleReadMoreClick(category, e)}
-                          title="View all sub-categories"
+                          title="View all sub-Product Group"
                           onMouseEnter={(e) => e.stopPropagation()}
                         >
                           <MoreHorizontal className="h-3 w-3" />
@@ -308,10 +308,10 @@ export function CategoryTable({
           <div className="space-y-2">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-medium text-sm">
-                Immediate Sub-categories
+                Immediate Sub-Product Group
               </h4>
               <Badge variant="outline" className="text-xs">
-                {hoveredCategory.children.length} items
+                {hoveredCategory.children.length} product
               </Badge>
             </div>
             {hoveredCategory.children.map((subCat) => (
@@ -355,7 +355,7 @@ export function CategoryTable({
                   setHoveredCategory(null)
                 }}
               >
-                View All Nested Sub-categories →
+                View All Nested Sub-Product Group →
               </Button>
             </div>
           </div>
@@ -368,7 +368,7 @@ export function CategoryTable({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Folder className="h-4 w-4 text-primary" />
-              All Sub-categories of "{selectedCategoryForModal?.name}"
+              All Sub-Product Group of "{selectedCategoryForModal?.name}"
               <Badge variant="outline" className="ml-2">
                 {getAllSubCategories(selectedCategoryForModal)?.length || 0} total
               </Badge>
@@ -394,7 +394,7 @@ export function CategoryTable({
                       <div className="flex items-center gap-2">
                         {subCat.isProductCategory ? (
                           <Badge variant="secondary" className="text-xs">
-                            Last Category
+                            Last Product Group
                           </Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">

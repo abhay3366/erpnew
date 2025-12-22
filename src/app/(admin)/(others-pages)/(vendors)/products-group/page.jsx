@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { CategoryTable } from "@/components/category/category-table"
 import { CategoryForm } from "@/components/category/category-form"
 import { CategorySearchModal } from "@/components/category/category-search-modal"
@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Home, Search, GitBranch, Package, Plus, Filter, X, View } from "lucide-react"
 import { ProductTable } from "@/components/products/ProductTable"
 
-export default function CategoriesPage() {
+export default function CreateProductGroup() {
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
   const [formOpen, setFormOpen] = useState(false)
@@ -30,11 +30,46 @@ export default function CategoriesPage() {
   const [filterUniqueId, setFilterUniqueId] = useState("all")
 
   const router = useRouter()
+  const searchParams = useSearchParams()
 
-  // Fetch categories and products from JSON Server
+  // Load from URL when component mounts
   useEffect(() => {
     fetchCategoriesAndProducts()
-  }, [])
+    
+    // Check if we have a return category ID from products page
+    const returnCategoryId = searchParams.get('returnCategoryId')
+    if (returnCategoryId) {
+      console.log("Returning from products page with category ID:", returnCategoryId)
+      
+      // Wait for categories to load, then find and navigate to this category
+      setTimeout(() => {
+        const category = findCategoryById(categories, returnCategoryId)
+        if (category) {
+          console.log("Found category:", category.name)
+          // Build path to this category
+          const path = buildPathToCategory(categories, returnCategoryId)
+          if (path && path.length > 0) {
+            console.log("Setting path:", path)
+            setCurrentPath(path)
+          }
+        }
+      }, 500)
+    }
+  }, [searchParams])
+
+  // Build path to a specific category
+  const buildPathToCategory = (cats, targetId, path = []) => {
+    for (const cat of cats) {
+      if (cat.id === targetId) {
+        return [...path, { id: cat.id, name: cat.name }]
+      }
+      if (cat.children && Array.isArray(cat.children)) {
+        const result = buildPathToCategory(cat.children, targetId, [...path, { id: cat.id, name: cat.name }])
+        if (result) return result
+      }
+    }
+    return null
+  }
 
   const fetchCategoriesAndProducts = async () => {
     try {
@@ -80,6 +115,18 @@ export default function CategoriesPage() {
       setCategories(normalizedCategories)
       setProducts(productsData || [])
 
+      // Check for returnCategoryId after loading categories
+      const returnCategoryId = searchParams.get('returnCategoryId')
+      if (returnCategoryId && normalizedCategories.length > 0) {
+        const category = findCategoryById(normalizedCategories, returnCategoryId)
+        if (category) {
+          const path = buildPathToCategory(normalizedCategories, returnCategoryId)
+          if (path && path.length > 0) {
+            setCurrentPath(path)
+          }
+        }
+      }
+
     } catch (error) {
       console.error('Error fetching data:', error)
       setCategories([])
@@ -89,6 +136,7 @@ export default function CategoriesPage() {
     }
   }
 
+  // Save categories function
   const saveCategoriesToServer = async (categoriesData) => {
     try {
       const deepNormalize = (data) => {
@@ -122,7 +170,6 @@ export default function CategoriesPage() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      // Update local state with normalized data
       setCategories(normalizedData)
       return true
     } catch (error) {
@@ -172,24 +219,6 @@ export default function CategoriesPage() {
     return null
   }
 
-  // Check if current level has only one category
-  const hasSingleCategoryInCurrentLevel = () => {
-    const currentCats = getCurrentCategories()
-    return currentCats.length === 1
-  }
-
-  // Check if current parent has children
-  const currentParentHasChildren = () => {
-    const currentParent = getCurrentParent()
-    return currentParent && currentParent.children && currentParent.children.length > 0
-  }
-
-  // Check if current parent is a leaf node (has no children)
-  const isCurrentParentLeafNode = () => {
-    const currentParent = getCurrentParent()
-    return currentParent && (!currentParent.children || currentParent.children.length === 0)
-  }
-
   // Check if we are in a last category (product category)
   const isInLastCategory = () => {
     const currentParent = getCurrentParent()
@@ -198,21 +227,17 @@ export default function CategoriesPage() {
 
   // Check if we should show Add Item button
   const shouldShowAddItem = () => {
-    // If we're already in a last category, always show Add Item
     if (isInLastCategory()) return true
 
     const currentParent = getCurrentParent()
     if (!currentParent) return false
 
-    // Check if current parent is NOT already a product category
     if (currentParent.allowItemEntry) return false
 
-    // Get the categories at current level (children of current parent)
     const currentCats = getCurrentCategories()
+    const isCurrentParentLeafNode = currentParent && (!currentParent.children || currentParent.children.length === 0)
 
-    // CASE 1: If we're INSIDE a single category and it has NO sub-categories
-    // (i.e., current level is empty because the single category has no children)
-    if (currentCats.length === 0 && isCurrentParentLeafNode()) {
+    if (currentCats.length === 0 && isCurrentParentLeafNode) {
       return true
     }
 
@@ -227,7 +252,7 @@ export default function CategoriesPage() {
     return products.filter(product => product.productGroupId === currentParent.id)
   }
 
-  // Get filtered products for current last category
+  // Get filtered products
   const getFilteredProductsForCurrentCategory = () => {
     const allProducts = getProductsForCurrentCategory()
 
@@ -236,12 +261,10 @@ export default function CategoriesPage() {
 
       const productName = product.name || product.productName || ""
 
-      // Filter by unit
       if (filterUnit !== "all" && product.unit !== filterUnit) {
         return false
       }
 
-      // Filter by unique identifier
       if (filterUniqueId === "yes" && !product.hasUniqueIdentifier) {
         return false
       }
@@ -249,7 +272,6 @@ export default function CategoriesPage() {
         return false
       }
 
-      // Search filter
       if (productSearchQuery) {
         const query = productSearchQuery.toLowerCase()
         const productSku = product.sku?.toLowerCase() || ""
@@ -276,7 +298,6 @@ export default function CategoriesPage() {
 
     const currentParent = getCurrentParent()
 
-    // Function to add category to the tree
     const addCategoryToTree = (cats, targetId, newCat) => {
       if (!Array.isArray(cats)) return cats
 
@@ -284,9 +305,8 @@ export default function CategoriesPage() {
         if (!cat) return cat
 
         if (cat.id === targetId) {
-          // Check if parent is already a product category
           if (cat.allowItemEntry) {
-            alert(`Cannot add sub-category because "${cat.name}" is already a product category.`)
+            alert(`Cannot add sub-Product Group because "${cat.name}" is already a product Product Group.`)
             return cat
           }
 
@@ -314,11 +334,9 @@ export default function CategoriesPage() {
     } else if (parentCategory) {
       updatedCategories = addCategoryToTree(categories, parentCategory.id, newCategory)
     } else {
-      // Add as root category
       updatedCategories = [...categories, newCategory]
     }
 
-    // Save to server
     const success = await saveCategoriesToServer(updatedCategories)
 
     if (success) {
@@ -359,50 +377,39 @@ export default function CategoriesPage() {
   }
 
   const handleDelete = async (category) => {
-    // First check if this category or any of its children have products
-    try {
-      // Get all category IDs in the hierarchy
-      const getAllCategoryIdsInHierarchy = (cat, ids = []) => {
-        if (!cat) return ids
+    const getAllCategoryIdsInHierarchy = (cat, ids = []) => {
+      if (!cat) return ids
 
-        ids.push(cat.id)
-        if (cat.children && Array.isArray(cat.children)) {
-          cat.children.forEach(child => {
-            getAllCategoryIdsInHierarchy(child, ids)
-          })
-        }
-        return ids
+      ids.push(cat.id)
+      if (cat.children && Array.isArray(cat.children)) {
+        cat.children.forEach(child => {
+          getAllCategoryIdsInHierarchy(child, ids)
+        })
+      }
+      return ids
+    }
+
+    const categoryHierarchy = findCategoryById(categories, category.id)
+    const allCategoryIdsInHierarchy = getAllCategoryIdsInHierarchy(categoryHierarchy)
+
+    const productsInHierarchy = Array.isArray(products)
+      ? products.filter(product => allCategoryIdsInHierarchy.includes(product.productGroupId))
+      : []
+
+    if (productsInHierarchy.length > 0) {
+      let errorMessage = `Cannot delete "${category.name}" because:\n\n`
+
+      const categoryWithProducts = findCategoryById(categories, productsInHierarchy[0].productGroupId)
+      if (categoryWithProducts) {
+        errorMessage += `• "${categoryWithProducts.name}" has ${productsInHierarchy.length} product(s)\n`
       }
 
-      // Get all category IDs in this hierarchy
-      const categoryHierarchy = findCategoryById(categories, category.id)
-      const allCategoryIdsInHierarchy = getAllCategoryIdsInHierarchy(categoryHierarchy)
-
-      // Check if any product belongs to any category in this hierarchy
-      const productsInHierarchy = Array.isArray(products)
-        ? products.filter(product => allCategoryIdsInHierarchy.includes(product.productGroupId))
-        : []
-
-      if (productsInHierarchy.length > 0) {
-        let errorMessage = `Cannot delete "${category.name}" because:\n\n`
-
-        const categoryWithProducts = findCategoryById(categories, productsInHierarchy[0].productGroupId)
-        if (categoryWithProducts) {
-          errorMessage += `• "${categoryWithProducts.name}" has ${productsInHierarchy.length} product(s)\n`
-        }
-
-        errorMessage += `\nPlease delete all products in these categories first.`
-        alert(errorMessage)
-        return
-      }
-    } catch (error) {
-      console.error("Error checking products:", error)
-      alert("Cannot delete category at the moment. Please try again later.")
+      errorMessage += `\nPlease delete all products in these Product Group first.`
+      alert(errorMessage)
       return
     }
 
-    // Only proceed if no products found in entire hierarchy
-    if (!confirm(`Are you sure you want to delete "${category.name}" and all its sub-categories?`)) return
+    if (!confirm(`Are you sure you want to delete "${category.name}" and all its sub-Product Group?`)) return
 
     const deleteCategory = (cats) => {
       return cats
@@ -424,56 +431,45 @@ export default function CategoriesPage() {
   }
 
   const handleNavigate = (category) => {
-    // Reset product filters when navigating to a new category
-    if (category.allowItemEntry) {
-      resetProductFilters()
-    }
-    // Navigate within categories
-    setCurrentPath([...currentPath, { id: category.id, name: category.name }])
+    const newPath = [...currentPath, { id: category.id, name: category.name }]
+    setCurrentPath(newPath)
   }
 
   const handleAddProductDirectly = () => {
     const currentParent = getCurrentParent()
     if (!currentParent) return
 
-    const currentCats = getCurrentCategories()
-
-    // If in last category, go to products page for this category
     if (currentParent.allowItemEntry) {
-      router.push(`/products?productGroupId=${currentParent.id}&categoryName=${encodeURIComponent(currentParent.name)}`)
+      router.push(`/products?productGroupId=${currentParent.id}&categoryName=${encodeURIComponent(currentParent.name)}&returnCategoryId=${currentParent.id}`)
       return
     }
 
-    // If we're inside a single category that has no children
-    if (currentCats.length === 0 && isCurrentParentLeafNode()) {
-      // Mark as last category and go to products page
+    const currentCats = getCurrentCategories()
+    const isCurrentParentLeafNode = currentParent && (!currentParent.children || currentParent.children.length === 0)
+
+    if (currentCats.length === 0 && isCurrentParentLeafNode) {
       handleMarkAsLastAndAddProduct(currentParent)
       return
     }
 
-    alert("Cannot add items at this level. Please navigate to a single category with no sub-categories.")
+    alert("Cannot add Product at this level. Please navigate to a single Product Group with no sub-Product Group.")
   }
 
   const handleAddProduct = async (category) => {
-    // Check if category has children
     if (category.children && category.children.length > 0) {
-      alert(`Cannot add items to "${category.name}" because it has sub-categories.\n\nPlease remove all sub-categories first.`)
+      alert(`Cannot add Product to "${category.name}" because it has sub-Product Group.\n\nPlease remove all sub-Product Group first.`)
       return
     }
 
-    // Check if category is already a product category
     if (category.allowItemEntry) {
-      // Just go to products page
-      router.push(`/products?productGroupId=${category.id}&categoryName=${encodeURIComponent(category.name)}`)
+      router.push(`/products?productGroupId=${category.id}&categoryName=${encodeURIComponent(category.name)}&returnCategoryId=${category.id}`)
     } else {
-      // Mark as last category and go to products page
       handleMarkAsLastAndAddProduct(category)
     }
   }
 
   const handleMarkAsLastAndAddProduct = async (category) => {
-    if (confirm(`Mark "${category.name}" as a product category and add items?\n\nOnce marked as product category, you cannot add sub-categories to it.`)) {
-      // Mark the category as allowItemEntry
+    if (confirm(`Mark "${category.name}" as a  Product Group and add Product?\n\nOnce marked as Product Group, you cannot add sub-Product Group to it.`)) {
       const updateCategoryToLast = (cats) => {
         return cats.map((cat) => {
           if (cat.id === category.id) {
@@ -494,9 +490,8 @@ export default function CategoriesPage() {
       const success = await saveCategoriesToServer(updated)
 
       if (success) {
-        // Refresh categories and navigate to products page
         await fetchCategoriesAndProducts()
-        router.push(`/products?productGroupId=${category.id}&categoryName=${encodeURIComponent(category.name)}&markAsLastOnFirstProduct=true`)
+        router.push(`/products?productGroupId=${category.id}&categoryName=${encodeURIComponent(category.name)}&markAsLastOnFirstProduct=true&returnCategoryId=${category.id}`)
       }
     }
   }
@@ -514,7 +509,6 @@ export default function CategoriesPage() {
   }
 
   const handleBack = () => {
-    // Reset product filters when going back
     resetProductFilters()
     setCurrentPath(currentPath.slice(0, -1))
   }
@@ -542,9 +536,8 @@ export default function CategoriesPage() {
   const handleAddRoot = () => {
     const currentParent = getCurrentParent()
 
-    // Check if we're at a product category level
     if (currentParent && currentParent.allowItemEntry) {
-      alert(`Cannot add category because "${currentParent.name}" is already a product category.`)
+      alert(`Cannot add Product Group because "${currentParent.name}" is already a Product Group.`)
       return
     }
 
@@ -576,7 +569,8 @@ export default function CategoriesPage() {
   const filteredProducts = getFilteredProductsForCurrentCategory()
   const uniqueUnits = getUniqueUnitsForCurrentProducts()
   const shouldShowAddItemButton = shouldShowAddItem()
-  const isInsideSingleCategory = currentCategories.length === 0 && currentParent && !currentParentHasChildren()
+  const isCurrentParentLeafNode = currentParent && (!currentParent.children || currentParent.children.length === 0)
+  const isInsideSingleCategory = currentCategories.length === 0 && currentParent && isCurrentParentLeafNode
 
   if (loading) {
     return (
@@ -599,22 +593,22 @@ export default function CategoriesPage() {
               {currentParent ? currentParent.name : "Home"}
               {inLastCategory && (
                 <span className="ml-2 text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                  Product Category
+                  Product Group
                 </span>
               )}
               {isInsideSingleCategory && !inLastCategory && (
                 <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                  Single Category
+                  Single Product Group
                 </span>
               )}
             </h1>
             {inLastCategory ? (
               <p className="text-sm text-gray-600 mt-1">
-                ✓ This is a product category. You can add and manage products here.
+                ✓ This is a Product Group. You can add and manage products here.
               </p>
             ) : isInsideSingleCategory ? (
               <p className="text-sm text-gray-600 mt-1">
-                ✓ You are inside a single category. You can mark it as a product category to add items.
+                ✓ You are inside a single Product Group. You can mark it as a Product Group to add Products.
               </p>
             ) : null}
           </div>
@@ -672,11 +666,11 @@ export default function CategoriesPage() {
             </Button>
           )}
 
-          {/* Create Category Button - Show when not in last category and not inside a single leaf category */}
+          {/* Create Product Group Button - Show when not in last Product Group and not inside a single leaf Product Group */}
           {!inLastCategory && (
             <Button onClick={handleAddRoot} className="bg-primary hover:bg-primary/90">
               <Plus className="h-4 w-4 mr-2" />
-              Create Category
+              Create Product Group
             </Button>
           )}
 
@@ -686,30 +680,15 @@ export default function CategoriesPage() {
               onClick={handleAddProductDirectly}
               className="bg-green-600 hover:bg-green-700 ml-auto"
               variant="default"
-              title="Add product to this category"
+              title="Add product to this Product Group"
             >
               <Package className="h-4 w-4 mr-2" />
-              Add Item
+              Add Products
             </Button>
           )}
         </div>
 
-        {/* Show message if inside a single category but it's not marked as last category */}
-        {/* {isInsideSingleCategory && !inLastCategory && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div className="flex items-start gap-3">
-              <Package className="h-5 w-5 text-blue-600 mt-0.5" />
-              <div>
-                <h3 className="font-medium text-blue-800">Ready to Add Products?</h3>
-                <p className="text-blue-600 text-sm mt-1">
-                  This category has no sub-categories. Click "Add Item" to mark it as a product category and start adding products.
-                </p>
-              </div>
-            </div>
-          </div>
-        )} */}
-
-        {/* Show Products Table if in last category */}
+        {/* Show Products Table if in last Product Group */}
         {inLastCategory ? (
           <div className="space-y-4">
             {/* Filters Section for Products */}
@@ -836,7 +815,7 @@ export default function CategoriesPage() {
             </div>
           </div>
         ) : (
-          /* Show Categories Table if not in last category */
+          /* Show Product Group Table if not in last Product Group */
           <div className="bg-card rounded-lg border">
             <CategoryTable
               categories={currentCategories}
