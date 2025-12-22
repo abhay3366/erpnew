@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { DevTool } from "@hookform/devtools";
 import Select from "react-select";
 import toast from "react-hot-toast";
 
@@ -10,12 +11,12 @@ const STATUS_OPTIONS = [
   { value: "inactive", label: "Inactive" },
   { value: "blacklist", label: "Blacklisted" }
 ];
+
 const mapStatusToOption = (status) =>
   STATUS_OPTIONS.find(opt => opt.value === status) || STATUS_OPTIONS[0];
-const inputClass =
-  "w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black";
 
-const labelClass = "text-sm font-medium text-gray-700";
+const inputClass = "w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
+const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 
 export default function VendorForm({ editVendor, onSuccess, setOpen, handleCloseModal }) {
   const defaultFormValues = {
@@ -34,157 +35,128 @@ export default function VendorForm({ editVendor, onSuccess, setOpen, handleClose
     neft: "",
     productGroups: [],
     products: [],
-    status: "active"
+    status: "active",
+    blacklist: false
   };
 
-  const { register, handleSubmit, control, reset, watch, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm({
     defaultValues: defaultFormValues
   });
 
   const [productGroups, setProductGroups] = useState([]);
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const isEdit = !!editVendor;
   const selectedGroups = watch("productGroups") || [];
 
-  /* ---------- FETCH DATA ---------- */
-  const extractAllowedCategories = (categories) => {
-    let result = [];
-
-    categories.forEach(cat => {
-      // agar current category allowed hai
-      if (cat.allowItemEntry) {
-        result.push({
-          value: cat.id,
-          label: cat.name
-        });
-      }
-
-      // agar children hain to unko bhi check karo
-      if (cat.children && cat.children.length > 0) {
-        result = result.concat(extractAllowedCategories(cat.children));
-      }
-    });
-
-    return result;
-  };
+  // Fetch product groups and products
   useEffect(() => {
-    fetch("http://localhost:5001/categories")
-      .then(res => res.json())
-      .then(data => {
-        const allowedGroups = extractAllowedCategories(data.list);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch categories
+        const categoriesRes = await fetch("http://localhost:5001/categories");
+        const categoriesData = await categoriesRes.json();
+        
+        // Extract allowed categories
+        const extractAllowedCategories = (categories) => {
+          let result = [];
+          categories.forEach(cat => {
+            if (cat.allowItemEntry) {
+              result.push({
+                value: cat.id.toString(),
+                label: cat.name
+              });
+            }
+            if (cat.children && cat.children.length > 0) {
+              result = result.concat(extractAllowedCategories(cat.children));
+            }
+          });
+          return result;
+        };
+        
+        const allowedGroups = extractAllowedCategories(categoriesData.list || []);
         setProductGroups(allowedGroups);
-      });
-
-    fetch("http://localhost:5001/products")
-      .then(res => res.json())
-      .then(setProducts);
+        
+        // Fetch products
+        const productsRes = await fetch("http://localhost:5001/products");
+        const productsData = await productsRes.json();
+        setProducts(productsData || []);
+        
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load product data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
   }, []);
 
-
-  useEffect(() => {
-    // agar koi product group select hi nahi hai
-    if (!selectedGroups || selectedGroups.length === 0) {
-      setValue("products", []);
-      return;
-    }
-
-    // selected group ids
-    const selectedGroupIds = selectedGroups.map(g => String(g.value));
-
-    // valid products jo selected groups se belong karte hain
-    const validProducts = products
-      .filter(p =>
-        selectedGroupIds.includes(String(p.productGroupId))
-      )
-      .map(p => ({
-        value: p.id,
-        label: p.productName
-      }));
-
-    // jo products already selected hain unme se
-    // sirf wahi rakho jo abhi bhi valid hain
-    setValue("products", (prevProducts = []) =>
-      prevProducts.filter(sel =>
-        validProducts.some(v => v.value === sel.value)
-      )
-    );
-
-  }, [selectedGroups, products, setValue]);
-
-
-  // useEffect(() => {
-  //   fetch("http://localhost:5001/categories")
-  //     .then(res => res.json())
-  //     .then(data =>
-  //       setProductGroups(data.list.map(c => ({ value: c.id, label: c.name })))
-  //     );
-
-  //   fetch("http://localhost:5001/products")
-  //     .then(res => res.json())
-  //     .then(setProducts);
-  // }, []);
-
-
-  /* ---------- RESET FORM ON EDIT OR ADD NEW ---------- */
+  // Reset form when editVendor changes
   useEffect(() => {
     if (!editVendor) {
       reset(defaultFormValues);
       return;
     }
 
-    // products & productGroups load hone ka wait
-    if (products.length === 0 || productGroups.length === 0) return;
+    // Wait for data to load
+    if (loading || products.length === 0 || productGroups.length === 0) return;
 
-    // const editStatus=editVendor.status?.map((el)=>({
-    //   value:el.name,
-    //   label:el.va
-    // }))
+    // Map product groups
+    const mappedGroups = (editVendor.productGroups || []).map(pg => {
+      const foundGroup = productGroups.find(g => g.value === pg.id?.toString());
+      return foundGroup || { value: pg.id?.toString(), label: pg.name || pg.label };
+    });
 
-    const mappedGroups = editVendor.productGroups?.map(pg => ({
-      value: pg.id,
-      label: pg.name
-    })) || [];
-
-    const mappedProducts = editVendor.products
-      ?.map(p => {
-        const found = products.find(pr => pr.id === p.id);
-        return found
-          ? { value: found.id, label: found.productName }
-          : null;
-      })
-      .filter(Boolean) || [];
+    // Map products
+    const mappedProducts = (editVendor.products || []).map(p => {
+      const foundProduct = products.find(pr => pr.id === p.id);
+      return foundProduct
+        ? { value: foundProduct.id.toString(), label: foundProduct.productName || p.name }
+        : { value: p.id?.toString(), label: p.name || p.label };
+    });
 
     reset({
       ...editVendor,
       productGroups: mappedGroups,
       products: mappedProducts,
-      status: editVendor.status || "active"
+      status: editVendor.status || "active",
+      blacklist: editVendor.blacklist || false
     });
+    
+  }, [editVendor, products, productGroups, loading, reset]);
 
-  }, [editVendor, products, productGroups, reset]);
+  // Filter products based on selected groups
+  const selectedGroupIds = selectedGroups.map(g => g.value);
+  const filteredProducts = products
+    .filter(product => selectedGroupIds.includes(product.productGroupId?.toString()))
+    .map(product => ({
+      value: product.id.toString(),
+      label: product.productName
+    }));
 
-
-  /* ---------- DUPLICATE CHECK ---------- */
-  const normalize = (v) => (v || "").toString().trim().toLowerCase();
-
+  // Duplicate check
   const isDuplicate = async (data) => {
     try {
       const res = await fetch("http://localhost:5001/vendors");
       const vendorList = await res.json();
-
+      
+      const normalize = (v) => (v || "").toString().trim().toLowerCase();
+      
       for (const v of vendorList) {
+        // Skip the current vendor in edit mode
         if (isEdit && v.id === editVendor.id) continue;
+        
         if (normalize(v.phone) === normalize(data.phone)) return "phone";
         if (normalize(v.email) === normalize(data.email)) return "email";
         if (normalize(v.gstin) === normalize(data.gstin)) return "gstin";
         if (normalize(v.authorizedSignature) === normalize(data.authorizedSignature)) return "authorizedSignature";
-        if (normalize(v.accountNumber) === normalize(data.accountNumber)) return "accountNumber";
-        if (normalize(v.micr) === normalize(data.micr)) return "micr";
-        if (normalize(v.rtgs) === normalize(data.rtgs)) return "rtgs";
-        if (normalize(v.neft) === normalize(data.neft)) return "neft";
       }
-
+      
       return false;
     } catch (err) {
       console.error("Duplicate check error:", err);
@@ -192,199 +164,166 @@ export default function VendorForm({ editVendor, onSuccess, setOpen, handleClose
     }
   };
 
-  /* ---------- SUBMIT ---------- */
+  // Submit handler
   const onSubmit = async (data) => {
-    const duplicateField = await isDuplicate(data);
-    if (duplicateField) {
-      const messages = {
-        phone: "Phone number already exists",
-        email: "Email already exists",
-        gstin: "GSTIN already exists",
-        authorizedSignature: "Authorized signature already exists",
-        accountNumber: "Account number already exists",
-        micr: "MICR code already exists",
-        rtgs: "RTGS code already exists",
-        neft: "NEFT code already exists",
-      };
-      alert(messages[duplicateField] || "Duplicate vendor detected");
-      return;
-    }
+    try {
+      // Check for duplicates
+      const duplicateField = await isDuplicate(data);
+      if (duplicateField) {
+        const messages = {
+          phone: "Phone number already exists",
+          email: "Email already exists",
+          gstin: "GSTIN already exists",
+          authorizedSignature: "Authorized signature already exists",
+        };
+        toast.error(messages[duplicateField] || "Duplicate vendor detected");
+        return;
+      }
 
-    const generateRandomId = () => Math.floor(Math.random() * 1000000);
-
-
-
-    const payload = {
-      ...data,
-
-      productGroups: Array.isArray(data.productGroups)
-        ? data.productGroups.map(group => ({
+      // Prepare payload for JSON Server
+      const payload = {
+        ...data,
+        productGroups: data.productGroups.map(group => ({
           id: group.value,
           name: group.label
-        }))
-        : [],
-
-      products: Array.isArray(data.products)
-        ? data.products.map(product => ({
+        })),
+        products: data.products.map(product => ({
           id: product.value,
           name: product.label
-        }))
-        : [],
+        })),
+        status: data.status,
+        blacklist: data.status === "blacklist",
+        updated_at: new Date().toISOString()
+      };
 
-      id: isEdit ? editVendor.id : generateRandomId(),
-      status: data.status || "active",
-      isDeleted: false,
-      created_at: isEdit ? editVendor.created_at : new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      created_by: "admin"
-    };
+      // Add creation date for new vendors
+      if (!isEdit) {
+        payload.created_at = new Date().toISOString();
+        payload.created_by = "admin";
+      }
 
-    console.log("🚀 ~ onSubmit ~ payload:", payload)
+      console.log("Submitting payload:", payload);
 
-
-
-    try {
-      const url = isEdit
+      // Send to JSON Server
+      const url = isEdit 
         ? `http://localhost:5001/vendors/${editVendor.id}`
         : "http://localhost:5001/vendors";
+      
       const method = isEdit ? "PUT" : "POST";
 
-      const res = await fetch(url, {
+      const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify(payload)
       });
 
-      if (!res.ok) throw new Error("Failed to save vendor");
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
+      }
 
-      await res.json();
+      const result = await response.json();
+      console.log("Success:", result);
 
-      toast.success(isEdit ? "Vendor Updated" : "Vendor Created");
+      // Show success message
+      toast.success(isEdit ? "Vendor updated successfully!" : "Vendor created successfully!");
 
-      // Reset form to default after submit (both edit & add)
-      handleCloseModal()
-      reset(defaultFormValues);
-      setOpen(false);
-      onSuccess?.();
-    } catch (err) {
-      console.error("Error saving vendor:", err);
-      toast.error(err.message || "Something went wrong");
+      // Close modal and refresh data
+      if (onSuccess) onSuccess();
+      handleCloseModal();
+      
+    } catch (error) {
+      console.error("Error saving vendor:", error);
+      toast.error(error.message || "Failed to save vendor");
     }
   };
 
-  /* ---------- FILTER PRODUCTS BASED ON SELECTED GROUPS ---------- */
-  const selectedGroupIds = selectedGroups.map(g => Number(g.value));
-  // console.log("🚀 ~ VendorForm ~ selectedGroupIds:", selectedGroupIds)
-  // console.log("🚀 ~ VendorForm ~ products:", products)
-
-
-  const groupBasedProducts = products.filter(product => {
-    // console.log("🚀 ~ VendorForm ~ product:", product)
-    // console.log("Sdfs",product.productGroupId)
-    return selectedGroupIds.includes(Number(product.productGroupId));
-  });
-
-  // console.log("🚀 ~ VendorForm ~ groupBasedProducts:", groupBasedProducts)
-
-  const filteredProducts = groupBasedProducts.map(product => ({
-    value: product.id,
-    label: product.productName,
-  }));
-  // console.log("🚀 ~ VendorForm ~ filteredProducts:", filteredProducts)
-
-
-
-
-  // console.log("🚀 ~ VendorForm ~ filteredProducts:", filteredProducts)
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto space-y-8">
+    <>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* BASIC DETAILS */}
-      <div className="bg-white rounded-xl shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">🥇 Vendor Basic Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label className={labelClass}>Vendor Name *</label>
-            <input {...register("vendorName", { required: "Vendor Name is required" })} className={inputClass} />
-            {errors.vendorName && <p className="text-red-500">{errors.vendorName.message}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>GSTIN Number *</label>
-            <input {...register("gstin", { required: "GSTIN is required" })} className={inputClass} />
-            {errors.gstin && <p className="text-red-500">{errors.gstin.message}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>Contact Person *</label>
-            <input {...register("contactPerson", { required: "Contact Person is required" })} className={inputClass} />
-            {errors.contactPerson && <p className="text-red-500">{errors.contactPerson.message}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>Authorized Signature *</label>
-            <input {...register("authorizedSignature", { required: "Authorized Signature is required" })} className={inputClass} />
-            {errors.authorizedSignature && <p className="text-red-500">{errors.authorizedSignature.message}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>Phone Number *</label>
-            <input {...register("phone", { required: "Phone number is required" })} className={inputClass} />
-            {errors.phone && <p className="text-red-500">{errors.phone.message}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>Email Address *</label>
-            <input {...register("email", { required: "Email is required" })} className={inputClass} />
-            {errors.email && <p className="text-red-500">{errors.email.message}</p>}
-          </div>
+      <div className="bg-white rounded-xl border p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">🥇 Vendor Basic Details</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { name: "vendorName", label: "Vendor Name *", type: "text" },
+            { name: "gstin", label: "GSTIN Number *", type: "text" },
+            { name: "contactPerson", label: "Contact Person *", type: "text" },
+            { name: "authorizedSignature", label: "Authorized Signature *", type: "text" },
+            { name: "phone", label: "Phone Number *", type: "tel" },
+            { name: "email", label: "Email Address *", type: "email" }
+          ].map((field) => (
+            <div key={field.name}>
+              <label className={labelClass}>{field.label}</label>
+              <input
+                type={field.type}
+                {...register(field.name, { required: `${field.label.replace(' *', '')} is required` })}
+                className={inputClass}
+                disabled={isSubmitting}
+              />
+              {errors[field.name] && (
+                <p className="mt-1 text-sm text-red-600">{errors[field.name].message}</p>
+              )}
+            </div>
+          ))}
         </div>
         <div className="mt-4">
           <label className={labelClass}>Vendor Address *</label>
-          <textarea {...register("address", { required: "Address is required" })} rows="3" className={inputClass} />
-          {errors.address && <p className="text-red-500">{errors.address.message}</p>}
+          <textarea
+            {...register("address", { required: "Address is required" })}
+            rows="3"
+            className={inputClass}
+            disabled={isSubmitting}
+          />
+          {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>}
         </div>
       </div>
 
       {/* BANK DETAILS */}
-      <div className="bg-white rounded-xl shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">🥈 Bank Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label className={labelClass}>Bank Name *</label>
-            <input {...register("bankName", { required: "Bank Name is required" })} className={inputClass} />
-            {errors.bankName && <p className="text-red-500">{errors.bankName.message}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>Account Number *</label>
-            <input {...register("accountNumber", { required: "Account Number is required" })} className={inputClass} />
-            {errors.accountNumber && <p className="text-red-500">{errors.accountNumber.message}</p>}
-          </div>
+      <div className="bg-white rounded-xl border p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">🥈 Bank Details</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { name: "bankName", label: "Bank Name *", type: "text" },
+            { name: "accountNumber", label: "Account Number *", type: "text" },
+            { name: "micr", label: "MICR Code *", type: "text" },
+            { name: "rtgs", label: "RTGS Code *", type: "text" },
+            { name: "neft", label: "NEFT Code *", type: "text" }
+          ].map((field) => (
+            <div key={field.name}>
+              <label className={labelClass}>{field.label}</label>
+              <input
+                type={field.type}
+                {...register(field.name, { required: `${field.label.replace(' *', '')} is required` })}
+                className={inputClass}
+                disabled={isSubmitting}
+              />
+              {errors[field.name] && (
+                <p className="mt-1 text-sm text-red-600">{errors[field.name].message}</p>
+              )}
+            </div>
+          ))}
           <div>
             <label className={labelClass}>Account Type *</label>
-            <select {...register("accountType", { required: "Account Type is required" })} className={inputClass}>
-              <option value="">Select</option>
+            <select
+              {...register("accountType", { required: "Account Type is required" })}
+              className={inputClass}
+              disabled={isSubmitting}
+            >
+              <option value="">Select Account Type</option>
               <option value="saving">Saving</option>
               <option value="current">Current</option>
             </select>
-            {errors.accountType && <p className="text-red-500">{errors.accountType.message}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>MICR Code *</label>
-            <input {...register("micr", { required: "MICR Code is required" })} className={inputClass} />
-            {errors.micr && <p className="text-red-500">{errors.micr.message}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>RTGS Code *</label>
-            <input {...register("rtgs", { required: "RTGS Code is required" })} className={inputClass} />
-            {errors.rtgs && <p className="text-red-500">{errors.rtgs.message}</p>}
-          </div>
-          <div>
-            <label className={labelClass}>NEFT Code *</label>
-            <input {...register("neft", { required: "NEFT Code is required" })} className={inputClass} />
-            {errors.neft && <p className="text-red-500">{errors.neft.message}</p>}
+            {errors.accountType && <p className="mt-1 text-sm text-red-600">{errors.accountType.message}</p>}
           </div>
         </div>
       </div>
 
-      {/* PRODUCT GROUP & PRODUCTS */}
-      <div className="bg-white rounded-xl shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">📦 Product Group & Products</h2>
+      {/* PRODUCTS */}
+      <div className="bg-white rounded-xl border p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">📦 Product Group & Products</h2>
         <div className="space-y-4">
           <div>
             <label className={labelClass}>Product Group *</label>
@@ -393,10 +332,18 @@ export default function VendorForm({ editVendor, onSuccess, setOpen, handleClose
               control={control}
               rules={{ required: "Product Group is required" }}
               render={({ field }) => (
-                <Select {...field} isMulti options={productGroups} />
+                <Select
+                  {...field}
+                  isMulti
+                  options={productGroups}
+                  isLoading={loading}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  isDisabled={isSubmitting}
+                />
               )}
             />
-            {errors.productGroups && <p className="text-red-500">{errors.productGroups.message}</p>}
+            {errors.productGroups && <p className="mt-1 text-sm text-red-600">{errors.productGroups.message}</p>}
           </div>
           <div>
             <label className={labelClass}>Select Products *</label>
@@ -405,57 +352,77 @@ export default function VendorForm({ editVendor, onSuccess, setOpen, handleClose
               control={control}
               rules={{ required: "Products are required" }}
               render={({ field }) => (
-                <Select {...field} isMulti options={filteredProducts} />
-              )}
-            />
-            {errors.products && <p className="text-red-500">{errors.products.message}</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* STATUS (EDIT ONLY) */}
-      {isEdit && (
-        <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">📊 Vendor Status</h2>
-            <span className="text-xs bg-gray-100 px-3 py-1 rounded-full">Edit Mode</span>
-          </div>
-
-          <div>
-            <label className={labelClass}>Current Status *</label>
-            <Controller
-              name="status"
-              control={control}
-              rules={{ required: "Status is required" }}
-              render={({ field }) => (
                 <Select
-                  options={STATUS_OPTIONS}
-                  value={mapStatusToOption(field.value)}
-                  onChange={(option) => field.onChange(option.value)}
-                  className="mt-1"
+                  {...field}
+                  isMulti
+                  options={filteredProducts}
+                  isLoading={loading}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  isDisabled={isSubmitting || selectedGroups.length === 0}
+                  placeholder={selectedGroups.length === 0 ? "Select product groups first" : "Select products"}
                 />
               )}
             />
-
-            {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
-          </div>
-
-          <div className="text-sm text-gray-600 mt-4 pt-4 border-t border-gray-200">
-            <p className="font-medium mb-2">Status Information:</p>
-            <div className="space-y-1">
-              <p>• <span className="text-green-600 font-medium">Active:</span> Vendor can receive orders and payments</p>
-              <p>• <span className="text-yellow-600 font-medium">Inactive:</span> Vendor temporarily paused</p>
-              <p>• <span className="text-red-600 font-medium">Blacklisted:</span> Vendor permanently blocked</p>
-            </div>
+            {errors.products && <p className="mt-1 text-sm text-red-600">{errors.products.message}</p>}
           </div>
         </div>
-      )}
+      </div>
 
-      <div className="flex justify-end">
-        <button type="submit" className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors">
-          {isEdit ? "Update Vendor" : "Create Vendor"}
+      {/* STATUS */}
+      <div className="bg-white rounded-xl border p-6">
+        <h2 className="text-lg font-semibold mb-4 text-gray-800">📊 Vendor Status</h2>
+        <div>
+          <label className={labelClass}>Status *</label>
+          <Controller
+            name="status"
+            control={control}
+            rules={{ required: "Status is required" }}
+            render={({ field }) => (
+              <Select
+                options={STATUS_OPTIONS}
+                value={mapStatusToOption(field.value)}
+                onChange={(option) => field.onChange(option.value)}
+                className="react-select-container"
+                classNamePrefix="react-select"
+                isDisabled={isSubmitting}
+              />
+            )}
+          />
+          {errors.status && <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>}
+        </div>
+      </div>
+
+      {/* SUBMIT BUTTON */}
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <button
+          type="button"
+          onClick={handleCloseModal}
+          className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          disabled={isSubmitting}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? (
+            <span className="flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              {isEdit ? "Updating..." : "Creating..."}
+            </span>
+          ) : (
+            isEdit ? "Update Vendor" : "Create Vendor"
+          )}
         </button>
       </div>
     </form>
+    <DevTool control={control} />
+    </>
   );
 }

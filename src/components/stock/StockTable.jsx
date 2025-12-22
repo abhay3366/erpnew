@@ -522,7 +522,8 @@ const StockTable = ({
                             <option value="all">All Vendors</option>
                             {getAvailableVendors().map(vendor => (
                                 <option key={vendor.id} value={vendor.id}>
-                                    {vendor.name || `Vendor ${vendor.id}`}
+                                    {/* {vendor.name || `Vendor ${vendor.id}`} */}
+                                     <DataFetcher type="vendor" id={vendor.id} />
                                 </option>
                             ))}
                         </select>
@@ -642,7 +643,7 @@ const StockTable = ({
                                             onClick={() => showSerials(stock.id)}
                                             className="mt-2 px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                                         >
-                                            View Serial Details
+                                          For update &  View  Details
                                         </button>
                                     )}
                                 </td>
