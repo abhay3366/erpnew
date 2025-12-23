@@ -10,12 +10,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Home, Search, GitBranch, Package, Plus, Filter, X, View } from "lucide-react"
-import { ProductTable } from "@/components/products/ProductTable"
+import { ArrowLeft, Home, Search, GitBranch, Package, Plus, Filter, X, View, Eye, Edit, Trash2, FileText, Hash, Calendar, Type, CheckCircle, XCircle, ChevronDown, MoreHorizontal } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Separator } from "@/components/ui/separator"
 
 export default function CreateProductGroup() {
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
+  const [fieldMastersData, setFieldMastersData] = useState([])
   const [formOpen, setFormOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [treeOpen, setTreeOpen] = useState(false)
@@ -74,9 +81,10 @@ export default function CreateProductGroup() {
   const fetchCategoriesAndProducts = async () => {
     try {
       setLoading(true)
-      const [categoriesResponse, productsResponse] = await Promise.all([
+      const [categoriesResponse, productsResponse, fieldMastersResponse] = await Promise.all([
         fetch('http://localhost:5001/categories'),
-        fetch('http://localhost:5001/products')
+        fetch('http://localhost:5001/products'),
+        fetch('http://localhost:5001/fieldMasters')
       ])
 
       if (!categoriesResponse.ok || !productsResponse.ok) {
@@ -85,6 +93,7 @@ export default function CreateProductGroup() {
 
       const categoriesData = await categoriesResponse.json()
       const productsData = await productsResponse.json()
+      const fieldMastersData = await fieldMastersResponse.json()
 
       // Handle different response formats for categories
       let categoriesList = []
@@ -114,6 +123,7 @@ export default function CreateProductGroup() {
       const normalizedCategories = deepNormalize(categoriesList)
       setCategories(normalizedCategories)
       setProducts(productsData || [])
+      setFieldMastersData(fieldMastersData || [])
 
       // Check for returnCategoryId after loading categories
       const returnCategoryId = searchParams.get('returnCategoryId')
@@ -131,6 +141,7 @@ export default function CreateProductGroup() {
       console.error('Error fetching data:', error)
       setCategories([])
       setProducts([])
+      setFieldMastersData([])
     } finally {
       setLoading(false)
     }
@@ -252,6 +263,139 @@ export default function CreateProductGroup() {
     return products.filter(product => product.productGroupId === currentParent.id)
   }
 
+  // Get field configurations for a product
+  const getFieldConfigurations = (product) => {
+    // If product has fieldConfigurations array, use it
+    if (product.fieldConfigurations && product.fieldConfigurations.length > 0) {
+      return product.fieldConfigurations
+    }
+    
+    // If product has selectedFieldIds, create fieldConfigurations from fieldMasters
+    if (product.selectedFieldIds && product.selectedFieldIds.length > 0 && fieldMastersData.length > 0) {
+      return product.selectedFieldIds.map(fieldId => {
+        const fieldMaster = fieldMastersData.find(fm => fm.id === fieldId)
+        return fieldMaster ? {
+          fieldId: fieldMaster.id,
+          key: fieldMaster.key,
+          label: fieldMaster.label,
+          type: fieldMaster.type,
+          isRequired: fieldMaster.isRequired || false,
+          applicableFor: fieldMaster.applicableFor || []
+        } : null
+      }).filter(field => field !== null)
+    }
+    
+    return []
+  }
+
+  // Function to get field icon based on type
+  const getFieldIcon = (type) => {
+    switch(type?.toLowerCase()) {
+      case 'text': return <FileText className="h-3 w-3" />
+      case 'number': return <Hash className="h-3 w-3" />
+      case 'date': return <Calendar className="h-3 w-3" />
+      default: return <Type className="h-3 w-3" />
+    }
+  }
+
+  // Function to render selected fields for a product with popup for more fields
+  const renderSelectedFields = (product) => {
+    const fieldConfigs = getFieldConfigurations(product)
+    
+    return (
+      <div className="space-y-2">
+        {/* Identifier Type Badge */}
+        <div className="flex items-center gap-2">
+          {/* <Badge variant={product.identifierType === "UNIQUE" ? "default" : "outline"} className="w-fit">
+            {product.identifierType === "UNIQUE" ? (
+              <CheckCircle className="h-3 w-3 mr-1" />
+            ) : (
+              <XCircle className="h-3 w-3 mr-1" />
+            )}
+            {product.identifierType}
+          </Badge>
+          {fieldConfigs.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {fieldConfigs.length} field(s)
+            </span>
+          )} */}
+        </div>
+        
+        {/* Selected Fields List - Show first 2 fields, rest in popup */}
+        {fieldConfigs.length > 0 ? (
+          <div className="space-y-1">
+            <div className="flex flex-wrap gap-1">
+              {fieldConfigs.slice(0, 2).map((field) => (
+                <div 
+                  key={field.fieldId} 
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-200 text-xs"
+                  title={`${field.label} (${field.type})`}
+                >
+                  {getFieldIcon(field.type)}
+                  <span className="truncate max-w-[70px]">{field.label}</span>
+                  {field.isRequired && (
+                    <span className="text-red-500 font-bold" title="Required">*</span>
+                  )}
+                </div>
+              ))}
+              
+              {/* More Fields Popup */}
+              {fieldConfigs.length > 2 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <MoreHorizontal className="h-3 w-3 mr-1" />
+                      +{fieldConfigs.length - 2} more
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-3" align="start">
+                    <div className="space-y-2">
+                      <div className="font-medium text-sm">All Selected Fields</div>
+                      <Separator />
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {fieldConfigs.map((field, index) => (
+                          <div 
+                            key={field.fieldId} 
+                            className="flex items-center justify-between p-2 hover:bg-muted/50 rounded"
+                          >
+                            <div className="flex items-center gap-2">
+                              {getFieldIcon(field.type)}
+                              <div>
+                                <div className="text-sm font-medium">{field.label}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {field.type} • {field.isRequired ? "Required" : "Optional"}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {index < 2 ? "Shown" : "Hidden"}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="text-xs text-muted-foreground pt-2 border-t">
+                        {fieldConfigs.length} fields selected for {product.identifierType}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-xs text-gray-500 italic">
+            No fields selected
+          </div>
+        )}
+      </div>
+    )
+  }
+
   // Get filtered products
   const getFilteredProductsForCurrentCategory = () => {
     const allProducts = getProductsForCurrentCategory()
@@ -265,10 +409,10 @@ export default function CreateProductGroup() {
         return false
       }
 
-      if (filterUniqueId === "yes" && !product.hasUniqueIdentifier) {
+      if (filterUniqueId === "yes" && product.identifierType !== "UNIQUE") {
         return false
       }
-      if (filterUniqueId === "no" && product.hasUniqueIdentifier) {
+      if (filterUniqueId === "no" && product.identifierType === "UNIQUE") {
         return false
       }
 
@@ -285,6 +429,22 @@ export default function CreateProductGroup() {
 
       return true
     })
+  }
+
+  // Get category name by ID
+  const getCategoryName = (categoryId) => {
+    const findCategory = (cats, id) => {
+      for (const cat of cats) {
+        if (cat.id === id) return cat.name
+        if (cat.children && cat.children.length > 0) {
+          const found = findCategory(cat.children, id)
+          if (found) return found
+        }
+      }
+      return "Unknown Category"
+    }
+    
+    return findCategory(categories, categoryId)
   }
 
   const handleCreate = async ({ name, productName }) => {
@@ -561,6 +721,21 @@ export default function CreateProductGroup() {
       .filter(Boolean))]
   }
 
+  // Handle product delete
+  const handleProductDelete = async (product) => {
+    try {
+      const response = await fetch(`http://localhost:5001/products/${product.id}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        await fetchCategoriesAndProducts() // Refresh data
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error)
+      alert("Failed to delete product")
+    }
+  }
+
   // Check if we are in a last category
   const inLastCategory = isInLastCategory()
   const currentParent = getCurrentParent()
@@ -773,25 +948,64 @@ export default function CreateProductGroup() {
               </div>
 
               {filteredProducts.length > 0 ? (
-                <ProductTable
-                  products={filteredProducts}
-                  categories={categories}
-                  onDelete={async (product) => {
-                    try {
-                      const response = await fetch(`http://localhost:5001/products/${product.id}`, {
-                        method: 'DELETE',
-                      })
-                      if (response.ok) {
-                        await fetchCategoriesAndProducts() // Refresh data
-                      }
-                    } catch (error) {
-                      console.error("Error deleting product:", error)
-                      alert("Failed to delete product")
-                    }
-                  }}
-                  showActions={true}
-                  compact={false}
-                />
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[200px]">Product</TableHead>
+                        <TableHead className="w-[150px]">Category</TableHead>
+                        <TableHead className="w-[100px]">Unit</TableHead>
+                        <TableHead className="w-[250px]">Unique ID Fields</TableHead>
+                        <TableHead className="w-[150px]">SKU</TableHead>
+                        <TableHead className="text-right w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredProducts.map((product) => (
+                        <TableRow key={product.id}>
+                          <TableCell>
+                            <div className="font-medium">{product.productName}</div>
+                            {/* <div className="text-xs text-muted-foreground mt-1">ID: {product.id}</div> */}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">{getCategoryName(product.productGroupId)}</div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{product.unit}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {renderSelectedFields(product)}
+                          </TableCell>
+                          <TableCell>
+                            <code className="text-sm">{product.sku}</code>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => window.open(`/products?edit=${product.id}`, '_blank')}
+                                title="Edit"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleProductDelete(product)}
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               ) : (
                 <div className="text-center py-12 border rounded-lg">
                   <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
