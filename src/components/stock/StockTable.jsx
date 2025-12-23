@@ -594,6 +594,9 @@ const StockTable = ({
                             Quantity
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Warehouse
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                             Vendor
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -659,7 +662,10 @@ const StockTable = ({
                                         {stock.quantity}
                                     </span>
                                 </td>
-                                
+                                   <td className="px-4 py-3">
+                                     {stock.fromWarehouse}
+                                </td>
+                                  
                                 <td className="px-4 py-3">
                                     <DataFetcher type="vendor" id={stock.vendorId} />
                                 </td>

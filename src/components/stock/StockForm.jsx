@@ -13,6 +13,7 @@ export default function AddStockPage() {
   const [products, setProducts] = useState([]);
   const [vendorProducts, setVendorProducts] = useState([]);
   const [stockExists, setStockExists] = useState(false);
+  const [warehouses, setWarehouses] = useState([]);
 
   const [rows, setRows] = useState([]);
 
@@ -53,14 +54,16 @@ export default function AddStockPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [vendorRes, productRes] = await Promise.all([
+        const [vendorRes, productRes,warehouseRes] = await Promise.all([
           fetch("http://localhost:5001/vendors"),
           fetch("http://localhost:5001/products"),
+           fetch("http://localhost:5001/warehouses")
         ]);
         setVendors(await vendorRes.json());
         setProducts(await productRes.json());
+         setWarehouses(await warehouseRes.json());
       } catch (err) {
-        console.error("Failed to fetch vendors/products", err);
+         console.error("Failed to fetch vendors/products/warehouses", err);
       }
     };
     fetchData();
@@ -71,6 +74,7 @@ export default function AddStockPage() {
     if (!selectedVendor) return;
 
     setValue("product", null);
+      setValue("warehouse", null);
     setRows([]);
     setErrors({});
     setValue("quantity", "");
@@ -176,11 +180,17 @@ export default function AddStockPage() {
     toast.error("This vendor already has stock for the selected product");
     return;
   }
+   if (!formData.warehouse) {
+      toast.error("Please select a warehouse");
+      return;
+    }
     if (isUnique && !validateRows()) return;
 
     const payload = {
       vendorId: formData.vendor.id,
       productId: formData.product.id,
+       warehouseId: formData.warehouse.id,
+      fromWarehouse: formData.warehouse.fromWarehouse,
       quantity: isUnique ? rows.length : Number(formData.quantity),
       warranty: formData.warranty,
       items: rows,
@@ -193,7 +203,7 @@ export default function AddStockPage() {
       body: JSON.stringify(payload),
     });
 
-    alert("Stock saved successfully");
+    toast.success("Stock saved successfully");
     reset();
     setRows([]);
     setErrors({});
@@ -205,7 +215,7 @@ export default function AddStockPage() {
       className="max-w-7xl mx-auto p-8 bg-white rounded-2xl shadow-lg"
     >
       {/* VENDOR + PRODUCT */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
             Vendor
@@ -251,6 +261,26 @@ export default function AddStockPage() {
 
         </div>
         
+         <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Warehouse
+          </label>
+          <Controller
+            name="warehouse"
+            control={control}
+            rules={{ required: true }}
+            render={({ field }) => (
+              <Select
+                {...field}
+                options={warehouses.filter(w => w.status === true)}
+                placeholder="Select Warehouse"
+                getOptionLabel={(w) => w.fromWarehouse}
+                getOptionValue={(w) => w.id}
+                isClearable
+              />
+            )}
+          />
+        </div>
       </div>
 
       {/* QUANTITY */}
