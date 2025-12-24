@@ -513,22 +513,22 @@ export default function CreateProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background md:w-[80vw mx-auto]">
       <main className="container mx-auto p-2">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              {isEditMode ? <Edit className="h-6 w-6" /> : <Package className="h-6 w-6" />}
+            <h1 className="text-lg font-bold flex items-center gap-2">
+              {isEditMode ? <Edit className="h-5 w-5" /> : <Package className="h-5 w-5" />}
               {isEditMode ? "Edit Product" : "Create Product"}
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {isEditMode ? "Update product information" : "Add new product to your inventory"}
             </p>
 
             {/* Edit mode info */}
             {isEditMode && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                <p className="text-sm text-blue-700">
+                <p className="text-xs text-blue-700">
                   <span className="font-medium">Editing Product ID:</span> {editingProductId}
                 </p>
               </div>
@@ -537,59 +537,58 @@ export default function CreateProductsPage() {
             {/* First product note */}
             {!isEditMode && markAsLastOnFirstProduct === 'true' && selectedCategory && !selectedCategory.allowItemEntry && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-300 rounded-md">
-                <p className="text-sm text-blue-700">
+                <p className="text-xs text-blue-700">
                   <span className="font-medium">Note:</span> This Product Group will be marked as a "Product Product Group" after you create the first product.
                 </p>
               </div>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" size="sm" onClick={handleCancel}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               {returnCategoryId || selectedCategory || productGroupIdFromUrl ? "Back to Product Group" : "Back"}
             </Button>
-            <Button variant="outline" onClick={navigateToFieldMasters}>
+            <Button variant="outline" size="sm" onClick={navigateToFieldMasters}>
               <Settings className="h-4 w-4 mr-2" />
               Manage Fields
             </Button>
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{isEditMode ? "Edit Product Information" : "Product Information"}</CardTitle>
+        <Card className="border">
+          <CardHeader className=" hidden">
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {/* Product Group Selection */}
               <div className="space-y-2">
-                <Label htmlFor="category" className="text-sm font-medium">
+                <Label htmlFor="category" className="text-xs font-medium">
                   Product Group *
                 </Label>
 
                 {isEditMode && selectedCategory ? (
-                  <div className="p-3 bg-blue-50 border border-blue-300 rounded-md">
-                    <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 border border-blue-300 rounded-md">
+                    <div className="flex items-center gap-2">
                       <div>
-                        <p className="font-medium text-blue-700">
+                        <p className="text-sm font-medium text-blue-700">
                           {selectedCategory.name}
                         </p>
-                        <p className="text-xs text-blue-600 mt-1">
+                        <p className="text-xs text-blue-600 mt-0.5">
                           Current Product Group for editing
                         </p>
                       </div>
                     </div>
                   </div>
                 ) : isCategoryLocked && selectedCategory ? (
-                  <div className="p-3 bg-green-50 border border-green-300 rounded-md">
-                    <div className="flex items-center gap-3">
-                      <Lock className="h-5 w-5 text-green-600" />
+                  <div className="p-2 bg-green-50 border border-green-300 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-green-600" />
                       <div>
-                        <p className="font-medium text-green-700">
+                        <p className="text-sm font-medium text-green-700">
                           {selectedCategory.name}
                         </p>
                         {categoryNameFromUrl && (
-                          <p className="text-xs text-green-600 mt-1">
+                          <p className="text-xs text-green-600 mt-0.5">
                             URL Product Group: {categoryNameFromUrl}
                           </p>
                         )}
@@ -597,14 +596,14 @@ export default function CreateProductsPage() {
                     </div>
                   </div>
                 ) : selectedCategory ? (
-                  <div className="flex items-center gap-2 p-3 bg-orange-100 border border-orange-300 rounded-lg">
+                  <div className="flex items-center gap-2 p-2 bg-orange-100 border border-orange-300 rounded">
                     <div className="flex-1">
-                      <p className="font-medium text-foreground">{selectedCategory.name}</p>
+                      <p className="text-sm font-medium text-foreground">{selectedCategory.name}</p>
                       {selectedCategory.path && (
                         <p className="text-xs text-muted-foreground">{selectedCategory.path}</p>
                       )}
                       {markAsLastOnFirstProduct === 'true' && !selectedCategory.allowItemEntry && (
-                        <p className="text-xs text-blue-600 mt-1">
+                        <p className="text-xs text-blue-600 mt-0.5">
                           ⓘ Will become Product Product Group after first product
                         </p>
                       )}
@@ -614,15 +613,15 @@ export default function CreateProductsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={clearCategory}
-                      className="h-8 w-8 p-0"
+                      className="h-6 w-6 p-0"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3" />
                     </Button>
                   </div>
                 ) : (
                   <div className="relative" ref={categoryContainerRef}>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                       <Input
                         ref={inputRef}
                         value={categorySearch}
@@ -632,16 +631,16 @@ export default function CreateProductsPage() {
                         }}
                         onFocus={() => setShowCategoryDropdown(true)}
                         placeholder={isEditMode ? "Select new Product Group (optional)" : "Search product Product Group..."}
-                        className="pl-9"
+                        className="pl-7 text-sm h-9"
                       />
                     </div>
                     {showCategoryDropdown && (
                       <div
                         ref={dropdownRef}
-                        className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                        className="absolute z-50 w-full mt-1 bg-background border rounded shadow-lg max-h-48 overflow-y-auto"
                       >
                         {filteredCategories.length === 0 ? (
-                          <div className="p-3 text-center text-muted-foreground text-sm">
+                          <div className="p-2 text-center text-muted-foreground text-xs">
                             {leafCategories.length === 0
                               ? "No Product with Product Entry enabled"
                               : "No matching Product"}
@@ -650,10 +649,10 @@ export default function CreateProductsPage() {
                           filteredCategories.map((cat) => (
                             <div
                               key={cat.id}
-                              className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
+                              className="p-2 hover:bg-muted cursor-pointer border-b last:border-b-0"
                               onClick={() => handleCategorySelect(cat)}
                             >
-                              <p className="font-medium text-foreground">{cat.name}</p>
+                              <p className="text-sm font-medium text-foreground">{cat.name}</p>
                               {cat.path && (
                                 <p className="text-xs text-muted-foreground">{cat.path}</p>
                               )}
@@ -666,49 +665,50 @@ export default function CreateProductsPage() {
                 )}
               </div>
 
-              {/* Product Name */}
-              <div className="space-y-2">
-                <Label htmlFor="productName" className="text-sm font-medium">
-                  Product Name *
-                </Label>
-                <Input
-                  id="productName"
-                  placeholder="Enter product name"
-                  value={formData.name}
-                  onChange={(e) => updateField("name", e.target.value)}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Product name must be unique across all categories
-                </p>
-              </div>
+              {/* Product Name and Unit in same row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Product Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="productName" className="text-xs font-medium">
+                    Product Name *
+                  </Label>
+                  <Input
+                    id="productName"
+                    placeholder="Enter product name"
+                    value={formData.name}
+                    onChange={(e) => updateField("name", e.target.value)}
+                    required
+                    className="text-sm h-9"
+                  />
+                </div>
 
-              {/* Unit Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="unit" className="text-sm font-medium">
-                  Unit *
-                </Label>
-                <Select value={formData.unit} onValueChange={(v) => updateField("unit", v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UNITS.map((unit) => (
-                      <SelectItem key={unit} value={unit}>
-                        {unit.charAt(0).toUpperCase() + unit.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Unit Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="unit" className="text-xs font-medium">
+                    Unit *
+                  </Label>
+                  <Select value={formData.unit} onValueChange={(v) => updateField("unit", v)}>
+                    <SelectTrigger className="text-sm h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNITS.map((unit) => (
+                        <SelectItem key={unit} value={unit} className="text-sm">
+                          {unit.charAt(0).toUpperCase() + unit.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Image URL */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="imageUrl" className="text-sm font-medium">
+                  <Label htmlFor="imageUrl" className="text-xs font-medium">
                     Image URL
                   </Label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -721,9 +721,9 @@ export default function CreateProductsPage() {
                       variant="outline"
                       size="sm"
                       onClick={triggerFileUpload}
-                      className="h-8"
+                      className="h-7 text-xs"
                     >
-                      <Upload className="h-4 w-4 mr-1" />
+                      <Upload className="h-3 w-3 mr-1" />
                       Upload
                     </Button>
                     {imagePreview && (
@@ -732,9 +732,9 @@ export default function CreateProductsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => setShowImagePreview(!showImagePreview)}
-                        className="h-8"
+                        className="h-7 text-xs"
                       >
-                        {showImagePreview ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
+                        {showImagePreview ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
                         {showImagePreview ? "Hide" : "Preview"}
                       </Button>
                     )}
@@ -746,30 +746,31 @@ export default function CreateProductsPage() {
                   value={formData.imageUrl}
                   onChange={(e) => updateField("imageUrl", e.target.value)}
                   onPaste={handleImagePaste}
+                  className="text-sm h-9"
                 />
                 <p className="text-xs text-muted-foreground">
                   Enter URL or paste image from clipboard or upload file
                 </p>
 
                 {showImagePreview && imagePreview && (
-                  <div className="mt-2 p-2 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Image Preview</span>
+                  <div className="mt-2 p-2 border rounded">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium">Image Preview</span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={clearImage}
-                        className="h-6 w-6 p-0"
+                        className="h-5 w-5 p-0"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3" />
                       </Button>
                     </div>
                     <div className="flex justify-center">
                       <img
                         src={imagePreview}
                         alt="Preview"
-                        className="max-h-40 max-w-full object-contain rounded"
+                        className="max-h-32 max-w-full object-contain rounded"
                         onError={(e) => {
                           e.target.onerror = null;
                           e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%23f3f4f6'/%3E%3Ctext x='50%' y='50%' font-family='Arial' font-size='14' fill='%236b7280' text-anchor='middle' dy='.3em'%3EInvalid Image URL%3C/text%3E%3C/svg%3E";
@@ -781,16 +782,16 @@ export default function CreateProductsPage() {
               </div>
 
               {/* FIELD CONFIGURATION SECTION */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Field Configuration</h3>
+                  <h3 className="text-sm font-semibold">Field Configuration</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Non-Unique Identifier */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between py-3 px-4 bg-green-50 rounded-lg border border-green-200">
-                      <Label className="cursor-pointer text-base font-medium">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
+                      <Label className="cursor-pointer text-sm font-medium">
                         Non-Serial Number Profile
                       </Label>
                       <Switch
@@ -806,14 +807,14 @@ export default function CreateProductsPage() {
                     </div>
 
                     {formData.identifierType === "NON_UNIQUE" && (
-                      <div className="space-y-3 pl-4 border-l-2 border-green-500">
+                      <div className="space-y-2 pl-3 border-l-2 border-green-500">
                         {getActiveFieldsByApplicableFor("NON_UNIQUE").length === 0 ? (
-                          <div className="p-3 text-center text-gray-500 bg-gray-50 rounded-lg">
-                            <p className="text-sm">No active fields available for Non-Unique Identifier</p>
-                            <p className="text-xs mt-1">
+                          <div className="p-2 text-center text-gray-500 bg-gray-50 rounded">
+                            <p className="text-xs">No active fields available for Non-Unique Identifier</p>
+                            <p className="text-xs mt-0.5">
                               Go to <Button
                                 variant="link"
-                                className="h-auto p-0 text-blue-600"
+                                className="h-auto p-0 text-blue-600 text-xs"
                                 onClick={navigateToFieldMasters}
                               >
                                 Field Masters
@@ -824,16 +825,17 @@ export default function CreateProductsPage() {
                           getActiveFieldsByApplicableFor("NON_UNIQUE").map(field => (
                             <div key={field.id} className="flex justify-between items-center p-1 hover:bg-gray-50 rounded">
                               <div className="flex items-center gap-2">
-                                <Label className="cursor-pointer">
+                                <Label className="cursor-pointer text-xs">
                                   {field.label}
                                   {field.isRequired && (
-                                    <span className="ml-1 text-red-500">*</span>
+                                    <span className="ml-0.5 text-red-500">*</span>
                                   )}
                                 </Label>
                               </div>
                               <Switch
                                 checked={formData.selectedFieldIds.includes(field.id)}
                                 onCheckedChange={(checked) => toggleField(field.id, checked)}
+                                className="scale-75"
                               />
                             </div>
                           ))
@@ -843,9 +845,9 @@ export default function CreateProductsPage() {
                   </div>
 
                   {/* Unique Identifier */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between py-3 px-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <Label className="cursor-pointer text-base font-medium">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-blue-50 rounded border border-blue-200">
+                      <Label className="cursor-pointer text-sm font-medium">
                         Serial Number Profile
                       </Label>
                       <Switch
@@ -861,14 +863,14 @@ export default function CreateProductsPage() {
                     </div>
 
                     {formData.identifierType === "UNIQUE" && (
-                      <div className="space-y-3 pl-4 border-l-2 border-blue-500">
+                      <div className="space-y-2 pl-3 border-l-2 border-blue-500">
                         {getActiveFieldsByApplicableFor("UNIQUE").length === 0 ? (
-                          <div className="p-3 text-center text-gray-500 bg-gray-50 rounded-lg">
-                            <p className="text-sm">No active fields available for Unique Identifier</p>
-                            <p className="text-xs mt-1">
+                          <div className="p-2 text-center text-gray-500 bg-gray-50 rounded">
+                            <p className="text-xs">No active fields available for Unique Identifier</p>
+                            <p className="text-xs mt-0.5">
                               Go to <Button
                                 variant="link"
-                                className="h-auto p-0 text-blue-600"
+                                className="h-auto p-0 text-blue-600 text-xs"
                                 onClick={navigateToFieldMasters}
                               >
                                 Field Masters
@@ -879,16 +881,17 @@ export default function CreateProductsPage() {
                           getActiveFieldsByApplicableFor("UNIQUE").map(field => (
                             <div key={field.id} className="flex justify-between items-center p-1 hover:bg-gray-50 rounded">
                               <div className="flex items-center gap-2">
-                                <Label className="cursor-pointer">
+                                <Label className="cursor-pointer text-xs">
                                   {field.label}
                                   {field.isRequired && (
-                                    <span className="ml-1 text-red-500">*</span>
+                                    <span className="ml-0.5 text-red-500">*</span>
                                   )}
                                 </Label>
                               </div>
                               <Switch
                                 checked={formData.selectedFieldIds.includes(field.id)}
                                 onCheckedChange={(checked) => toggleField(field.id, checked)}
+                                className="scale-75"
                               />
                             </div>
                           ))
@@ -900,26 +903,26 @@ export default function CreateProductsPage() {
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 pt-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleCancel}
-                  className="flex-1"
+                  className="flex-1 text-sm h-9"
                   disabled={saving}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-sm h-9"
                   disabled={!formData.name.trim() || !formData.productGroupId || saving}
                 >
                   {saving ? (
                     "Saving..."
                   ) : isEditMode ? (
                     <>
-                      <Save className="h-4 w-4 mr-2" />
+                      <Save className="h-3 w-3 mr-1" />
                       Update Product
                     </>
                   ) : markAsLastOnFirstProduct === 'true' && !selectedCategory?.allowItemEntry ? (

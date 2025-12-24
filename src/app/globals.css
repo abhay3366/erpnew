@@ -2,7 +2,11 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
-
+body,html{
+  max-width: 1600px;
+  margin: 0 auto;
+  border: 1px solid #000;
+}
 @theme {
   --font-*: initial;
   --font-outfit: Outfit, sans-serif;

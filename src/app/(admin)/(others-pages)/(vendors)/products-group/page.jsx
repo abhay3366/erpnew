@@ -755,39 +755,34 @@ export default function CreateProductGroup() {
                   Product Group
                 </span>
               )}
-              {isInsideSingleCategory && !inLastCategory && (
-                <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                  Single Product Group
-                </span>
-              )}
             </h1>
             {inLastCategory ? (
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600 mt-1 text-[0.7em]">
                 ✓ This is a Product Group. You can add and manage products here.
               </p>
             ) : isInsideSingleCategory ? (
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600 mt-1 text-[0.7em]">
                 ✓ You are inside a single Product Group. You can mark it as a Product Group to add Products.
               </p>
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={ViewProductFn} className="bg-blue-600 hover:bg-blue-700">
-              <View className="h-4 w-4 mr-2" />
+            <Button onClick={ViewProductFn} className="bg-blue-600 hover:bg-blue-700 text-[0.7em]">
+              <View className="h-3 w-3 mr-1" />
               View All Products
             </Button>
-            <Button onClick={() => setSearchOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-              <Search className="h-4 w-4 mr-2" />
+            <Button onClick={() => setSearchOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-[0.7em]">
+              <Search className="h-3 w-3 mr-1" />
               Search
             </Button>
-            <Button onClick={() => setTreeOpen(true)} className="bg-purple-600 hover:bg-purple-700">
-              <GitBranch className="h-4 w-4 mr-2" />
+            <Button onClick={() => setTreeOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-[0.7em]">
+              <GitBranch className="h-3 w-3 mr-1" />
               Tree Structure
             </Button>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg border p-4 mb-4">
+        <div className="bg-card rounded-lg border p-2 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => handleBreadcrumbClick(-1)}
@@ -796,7 +791,7 @@ export default function CreateProductGroup() {
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
             >
-              <Home className="h-4 w-4" />
+              <Home className="h-3 w-3" />
               Home
             </button>
             {currentPath.map((item, index) => (
@@ -804,7 +799,7 @@ export default function CreateProductGroup() {
                 <span className="text-muted-foreground">/</span>
                 <button
                   onClick={() => handleBreadcrumbClick(index)}
-                  className={`px-2 py-1 rounded-md text-sm font-medium transition-colors ${index === currentPath.length - 1
+                  className={`px-2 py-1 rounded-md text-[0.7em] font-medium transition-colors ${index === currentPath.length - 1
                     ? inLastCategory ? "bg-green-100 text-green-800" :
                       isInsideSingleCategory ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-700"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -819,7 +814,7 @@ export default function CreateProductGroup() {
 
         <div className="flex items-center gap-2 mb-4">
           {currentPath.length > 0 && (
-            <Button variant="secondary" onClick={handleBack}>
+            <Button variant="secondary" className="text-[0.7em]" onClick={handleBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
@@ -827,8 +822,8 @@ export default function CreateProductGroup() {
 
           {/* Create Product Group Button - Show when not in last Product Group and not inside a single leaf Product Group */}
           {!inLastCategory && (
-            <Button onClick={handleAddRoot} className="bg-primary hover:bg-primary/90">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={handleAddRoot} className="bg-primary hover:bg-primary/90 text-[0.7em]">
+              <Plus className="h-3 w-3 mr-2" />
               Create Product Group
             </Button>
           )}
@@ -837,7 +832,7 @@ export default function CreateProductGroup() {
           {shouldShowAddItemButton && (
             <Button
               onClick={handleAddProductDirectly}
-              className="bg-green-600 hover:bg-green-700 ml-auto"
+              className="bg-green-600 hover:bg-green-700 ml-auto text-[0.7em]"
               variant="default"
               title="Add product to this Product Group"
             >

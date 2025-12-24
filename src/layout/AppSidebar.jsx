@@ -44,8 +44,8 @@ const navItems = [
     name: "Products",
     icon: <VendorIcon className=" w-5" />,
     subItems: [
-      { name: "Product Group", path: "/products-group", pro: false },
       { name: "Field Master", path: "/fieldmaster", pro: false },
+      { name: "Product Group", path: "/products-group", pro: false },
       { name: "Create Product", path: "/products", pro: false },
       { name: "View Product", path: "/product-table", pro: false },
     ],
@@ -318,7 +318,7 @@ const AppSidebar = () => {
 
   return (
     <aside
-      className={`fixed flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
+      className={`fixed flex flex-col lg:mt-0 top-0 px-5  bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
         ${
           isExpanded || isMobileOpen
             ? "w-[220px]"

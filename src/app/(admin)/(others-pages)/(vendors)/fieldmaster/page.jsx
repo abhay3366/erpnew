@@ -552,13 +552,13 @@ export default function FieldMastersPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
-          <Card className="w-full h-14 justify-center p-1">
+          <Card className="w-full h-12 justify-center p-1">
             <CardContent className="p-2 flex gap-3 items-center">
               <div className="text-sm text-muted-foreground">Total Fields :</div>
               <div className="font-bold">{fieldMasters.length}</div>
             </CardContent>
           </Card>
-          <Card className="w-full h-14 justify-center p-1">
+          <Card className="w-full h-12 justify-center p-1">
             <CardContent className="p-2 flex gap-3 items-center">
               <div className="text-sm text-muted-foreground">Available :</div>
               <div className="font-bold text-green-600">
@@ -566,7 +566,7 @@ export default function FieldMastersPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="w-full h-14 justify-center p-1">
+          <Card className="w-full h-12 justify-center p-1">
             <CardContent className="p-2 flex gap-3 items-center">
               <div className="text-sm text-muted-foreground">Unavailable :</div>
               <div className="font-bold text-yellow-600">
@@ -574,7 +574,7 @@ export default function FieldMastersPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="w-full h-14 justify-center p-1">
+          <Card className="w-full h-12 justify-center p-1">
             <CardContent className="p-2 flex gap-3 items-center">
               <div className="text-sm text-muted-foreground">Unique Fields :</div>
               <div className="font-bold">
@@ -585,8 +585,8 @@ export default function FieldMastersPage() {
         </div>
 
         {/* Search and Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
+        <Card className="mb-6 h-18 justify-center">
+          <CardContent className="p-2">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
@@ -707,8 +707,8 @@ export default function FieldMastersPage() {
                                 <Badge
                                   variant="outline"
                                   className={`${statusOption?.variant === "success"
-                                      ? "bg-green-50 text-green-700 border-green-200"
-                                      : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
                                     }`}
                                 >
                                   {statusOption?.icon && <statusOption.icon className="h-3 w-3 mr-1" />}
@@ -852,8 +852,8 @@ export default function FieldMastersPage() {
                             <Badge
                               variant="outline"
                               className={`text-xs ${statusOption?.variant === "success"
-                                  ? "bg-green-50 text-green-700"
-                                  : "bg-yellow-50 text-yellow-700"
+                                ? "bg-green-50 text-green-700"
+                                : "bg-yellow-50 text-yellow-700"
                                 }`}
                             >
                               {statusOption?.label}
@@ -962,12 +962,12 @@ export default function FieldMastersPage() {
 
         {/* Create/Edit Field Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogContent className="md:min-w-[60vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="-mt-2">
                 {isEditMode ? "Edit Field" : "Create New Field"}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className=" hidden">
                 {isEditMode
                   ? "Update the field details. Note: Some validations may apply when changing field properties."
                   : "Create a new dynamic field. Field key and label must be unique."}
@@ -975,238 +975,286 @@ export default function FieldMastersPage() {
             </DialogHeader>
 
             <form onSubmit={handleFormSubmit}>
-              <div className="space-y-4 py-4">
-                {validationErrors.key && (
-                  <Alert variant="destructive" className="py-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      {validationErrors.key}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {validationErrors.label && (
-                  <Alert variant="destructive" className="py-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      {validationErrors.label}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {validationErrors.applicableFor && (
-                  <Alert variant="destructive" className="py-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      {validationErrors.applicableFor}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="label">Field Label *</Label>
-                  <Input
-                    id="label"
-                    placeholder="e.g., Serial Number"
-                    value={formData.label}
-                    onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
-                    required
-                    className={validationErrors.label ? "border-red-500" : ""}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Unique label for the field
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="key">Field Key *</Label>
-                  <Input
-                    id="key"
-                    placeholder="e.g., serial_no"
-                    value={formData.key}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      key: e.target.value.toLowerCase().replace(/\s+/g, '_')
-                    }))}
-                    required
-                    className={validationErrors.key ? "border-red-500" : ""}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Unique key (auto-converted to snake_case, only letters, numbers and underscores)
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="type">Field Type *</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        type: value,
-                        validations: {}, // Reset validations when type changes
-                        defaultValue: "",
-                        options: []
-                      }))
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FIELD_TYPES.map(type => {
-                        const Icon = type.icon
-                        return (
-                          <SelectItem key={type.value} value={type.value} className="flex items-center gap-2">
-                            <Icon className="h-4 w-4" />
-                            {type.label}
-                          </SelectItem>
-                        )
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Placeholder */}
-                <div className="space-y-2">
-                  <Label htmlFor="placeholder">Placeholder Text</Label>
-                  <Input
-                    id="placeholder"
-                    placeholder="e.g., Enter serial number..."
-                    value={formData.placeholder}
-                    onChange={(e) => setFormData(prev => ({ ...prev, placeholder: e.target.value }))}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Hint text to show in the input field
-                  </p>
-                </div>
-
-                {/* Select Field Options */}
-                {formData.type === "select" && (
-                  <div className="space-y-2">
-                    <Label>Select Options *</Label>
+              <div className="space-y-4 py-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Left Column - Basic Info */}
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Enter an option"
-                          value={optionsInput}
-                          onChange={(e) => setOptionsInput(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption())}
-                          className={validationErrors.options ? "border-red-500" : ""}
-                        />
-                        <Button type="button" onClick={handleAddOption}>
-                          <PlusCircle className="h-4 w-4 mr-1" />
-                          Add
-                        </Button>
-                      </div>
+                      <Label htmlFor="label">Field Label *</Label>
+                      <Input
+                        id="label"
+                        placeholder="e.g., Serial Number"
+                        value={formData.label}
+                        onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
+                        required
+                        className={validationErrors.label ? "border-red-500" : ""}
+                      />
+                      {validationErrors.label && (
+                        <p className="text-xs text-red-500">{validationErrors.label}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Unique label for the field
+                      </p>
+                    </div>
 
-                      {formData.options.length > 0 && (
-                        <div className="border rounded-md p-3">
-                          <Label className="text-sm font-medium mb-2 block">Added Options:</Label>
-                          <div className="space-y-2 max-h-32 overflow-y-auto">
-                            {formData.options.map((option, index) => (
-                              <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                <span>{option}</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveOption(index)}
-                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                >
-                                  <MinusCircle className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {formData.options.length} option(s) added
-                          </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="key">Field Key *</Label>
+                      <Input
+                        id="key"
+                        placeholder="e.g., serial_no"
+                        value={formData.key}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          key: e.target.value.toLowerCase().replace(/\s+/g, '_')
+                        }))}
+                        required
+                        className={validationErrors.key ? "border-red-500" : ""}
+                      />
+                      {validationErrors.key && (
+                        <p className="text-xs text-red-500">{validationErrors.key}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Unique key (auto-converted to snake_case)
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="type">Field Type *</Label>
+                      <Select
+                        value={formData.type}
+                        onValueChange={(value) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            type: value,
+                            validations: {},
+                            defaultValue: "",
+                            options: []
+                          }))
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FIELD_TYPES.map(type => {
+                            const Icon = type.icon
+                            return (
+                              <SelectItem key={type.value} value={type.value} className="flex items-center gap-2">
+                                <Icon className="h-4 w-4" />
+                                {type.label}
+                              </SelectItem>
+                            )
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Applicable For *</Label>
+                      <div className="flex items-center gap-4 w-fit">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="unique"
+                            checked={formData.applicableFor.includes("UNIQUE")}
+                            onChange={(e) => handleApplicableForChange("UNIQUE")}
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor="unique" className="cursor-pointer text-nowrap">
+                            Serial Number Profile
+                          </Label>
                         </div>
+
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="nonUnique"
+                            checked={formData.applicableFor.includes("NON_UNIQUE")}
+                            onChange={(e) => handleApplicableForChange("NON_UNIQUE")}
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor="nonUnique" className="cursor-pointer text-nowrap">
+                            Non-Serial Number Profile
+                          </Label>
+                        </div>
+                      </div>
+                      {validationErrors.applicableFor && (
+                        <p className="text-xs text-red-500">{validationErrors.applicableFor}</p>
                       )}
                     </div>
-                    {validationErrors.options && (
-                      <p className="text-xs text-red-500">{validationErrors.options}</p>
+                  </div>
+
+                  {/* Right Column - Advanced Options */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="placeholder">Placeholder Text</Label>
+                      <Input
+                        id="placeholder"
+                        placeholder="e.g., Enter serial number..."
+                        value={formData.placeholder}
+                        onChange={(e) => setFormData(prev => ({ ...prev, placeholder: e.target.value }))}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Hint text to show in the input field
+                      </p>
+                    </div>
+
+                    {/* Select Field Options */}
+                    {formData.type === "select" && (
+                      <div className="space-y-2">
+                        <Label>Select Options *</Label>
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter an option"
+                              value={optionsInput}
+                              onChange={(e) => setOptionsInput(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOption())}
+                              className={validationErrors.options ? "border-red-500" : ""}
+                            />
+                            <Button type="button" onClick={handleAddOption} className="whitespace-nowrap">
+                              <PlusCircle className="h-4 w-4 mr-1" />
+                              Add
+                            </Button>
+                          </div>
+
+                          {formData.options.length > 0 && (
+                            <div className="border rounded-md p-2">
+                              <Label className="text-sm font-medium mb-2 block">Added Options:</Label>
+                              <div className="space-y-1 max-h-24 overflow-y-auto">
+                                {formData.options.map((option, index) => (
+                                  <div key={index} className="flex justify-between items-center p-1 bg-gray-50 rounded">
+                                    <span className="text-sm">{option}</span>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleRemoveOption(index)}
+                                      className="h-5 w-5 p-0 text-red-500 hover:text-red-700"
+                                    >
+                                      <MinusCircle className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {formData.options.length} option(s) added
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        {validationErrors.options && (
+                          <p className="text-xs text-red-500">{validationErrors.options}</p>
+                        )}
+
+                        {/* Select Default Value */}
+                        {formData.options.length > 0 && (
+                          <div className="space-y-2 mt-2">
+                            <Label>Default Value</Label>
+                            <Select
+                              value={formData.defaultValue || "none"}
+                              onValueChange={(value) =>
+                                setFormData(prev => ({
+                                  ...prev,
+                                  defaultValue: value === "none" ? "" : value
+                                }))
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select default value" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                {formData.options.map((option, index) => (
+                                  <SelectItem key={index} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
                     )}
 
-                    {/* Select Default Value - FIXED */}
-                    {formData.options.length > 0 && (
+                    {/* Checkbox Default Value */}
+                    {formData.type === "checkbox" && (
                       <div className="space-y-2">
                         <Label>Default Value</Label>
-                        <Select
-                          value={formData.defaultValue || "none"}
-                          onValueChange={(value) =>
-                            setFormData(prev => ({
-                              ...prev,
-                              defaultValue: value === "none" ? "" : value
-                            }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select default value" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {formData.options.map((option, index) => (
-                              <SelectItem key={index} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex flex-col space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              id="defaultTrue"
+                              checked={formData.defaultValue === true}
+                              onChange={() => setFormData(prev => ({ ...prev, defaultValue: true }))}
+                              className="h-3 w-3"
+                            />
+                            <Label htmlFor="defaultTrue" className="cursor-pointer text-sm">
+                              Checked (Yes/True)
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              id="defaultFalse"
+                              checked={formData.defaultValue === false}
+                              onChange={() => setFormData(prev => ({ ...prev, defaultValue: false }))}
+                              className="h-3 w-3"
+                            />
+                            <Label htmlFor="defaultFalse" className="cursor-pointer text-sm">
+                              Unchecked (No/False)
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              id="defaultNone"
+                              checked={formData.defaultValue === ""}
+                              onChange={() => setFormData(prev => ({ ...prev, defaultValue: "" }))}
+                              className="h-3 w-3"
+                            />
+                            <Label htmlFor="defaultNone" className="cursor-pointer text-sm">
+                              No Default Value
+                            </Label>
+                          </div>
+                        </div>
                       </div>
                     )}
-                  </div>
-                )}
 
-                {/* Checkbox Default Value */}
-                {formData.type === "checkbox" && (
-                  <div className="space-y-2">
-                    <Label>Default Value</Label>
-                    <div className="flex flex-col space-y-2">
+                    {/* Field Settings */}
+                    <div className="space-y-3 pt-2">
                       <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="defaultTrue"
-                          checked={formData.defaultValue === true}
-                          onChange={() => setFormData(prev => ({ ...prev, defaultValue: true }))}
-                          className="h-4 w-4"
+                        <Switch
+                          checked={formData.isRequired}
+                          onCheckedChange={(checked) =>
+                            setFormData(prev => ({ ...prev, isRequired: checked }))
+                          }
                         />
-                        <Label htmlFor="defaultTrue" className="cursor-pointer">
-                          Checked (Yes/True)
+                        <Label className="cursor-pointer">Required Field</Label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={formData.status}
+                          onCheckedChange={(checked) =>
+                            setFormData(prev => ({ ...prev, status: checked }))
+                          }
+                        />
+                        <Label className="cursor-pointer">
+                          {formData.status ? "Field is Available" : "Field is Unavailable"}
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="defaultFalse"
-                          checked={formData.defaultValue === false}
-                          onChange={() => setFormData(prev => ({ ...prev, defaultValue: false }))}
-                          className="h-4 w-4"
-                        />
-                        <Label htmlFor="defaultFalse" className="cursor-pointer">
-                          Unchecked (No/False)
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="defaultNone"
-                          checked={formData.defaultValue === ""}
-                          onChange={() => setFormData(prev => ({ ...prev, defaultValue: "" }))}
-                          className="h-4 w-4"
-                        />
-                        <Label htmlFor="defaultNone" className="cursor-pointer">
-                          No Default Value
-                        </Label>
-                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Unavailable fields won't appear in product forms
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
 
-                {/* Field Validations */}
+                {/* Field Validations - Full Width */}
                 {getValidationOptions().length > 0 && (
-                  <div className="space-y-3 border rounded-lg p-3">
+                  <div className="space-y-3 border rounded-lg p-2 mt-3">
                     <div className="flex items-center justify-between">
                       <Label className="text-sm font-medium">Field Validations</Label>
                       <Select
@@ -1230,7 +1278,7 @@ export default function FieldMastersPage() {
                     </div>
 
                     {Object.keys(formData.validations).length > 0 && (
-                      <div className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {Object.entries(formData.validations).map(([key, value]) => (
                           <div key={key} className="flex items-center gap-2">
                             <div className="flex-1">
@@ -1267,73 +1315,9 @@ export default function FieldMastersPage() {
                     )}
                   </div>
                 )}
-
-                <div className="space-y-2">
-                  <Label>Applicable For *</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="unique"
-                        checked={formData.applicableFor.includes("UNIQUE")}
-                        onChange={(e) => handleApplicableForChange("UNIQUE")}
-                        className="h-4 w-4"
-                      />
-                      <Label htmlFor="unique" className="cursor-pointer">
-                        Unique Identifier
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="nonUnique"
-                        checked={formData.applicableFor.includes("NON_UNIQUE")}
-                        onChange={(e) => handleApplicableForChange("NON_UNIQUE")}
-                        className="h-4 w-4"
-                      />
-                      <Label htmlFor="nonUnique" className="cursor-pointer">
-                        Non-Unique Identifier
-                      </Label>
-                    </div>
-                  </div>
-                  {validationErrors.applicableFor && (
-                    <p className="text-xs text-red-500">{validationErrors.applicableFor}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Note: A field with same key/label cannot exist in overlapping categories
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.isRequired}
-                      onCheckedChange={(checked) =>
-                        setFormData(prev => ({ ...prev, isRequired: checked }))
-                      }
-                    />
-                    <Label className="cursor-pointer">Required Field</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.status}
-                      onCheckedChange={(checked) =>
-                        setFormData(prev => ({ ...prev, status: checked }))
-                      }
-                    />
-                    <Label className="cursor-pointer">
-                      {formData.status ? "Field is Available" : "Field is Unavailable"}
-                    </Label>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Unavailable fields won't appear in product forms
-                  </p>
-                </div>
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="mt-4">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>

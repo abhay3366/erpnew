@@ -491,7 +491,7 @@ export function CategoryTable({
         </div>
       )}
 
-      {/* MODAL FOR READ MORE - Opens in center of screen */}
+      {/* MODAL FOR READ MORE - Opens in center of screen
       <Dialog open={!!selectedCategoryForModal} onOpenChange={(open) => !open && setSelectedCategoryForModal(null)}>
         <DialogContent className="sm:max-w-md max-h-[70vh] overflow-hidden flex flex-col">
           <DialogHeader>
@@ -545,7 +545,7 @@ export function CategoryTable({
             </div>
           )}
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   )
 }
