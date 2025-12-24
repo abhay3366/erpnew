@@ -429,15 +429,6 @@ export default function CreateProductsPage() {
       return
     }
 
-    // Get field configurations with isRequired
-    const fieldConfigurations = getSelectedFieldDetails().map(field => ({
-      fieldId: field.id,
-      key: field.key,
-      label: field.label,
-      type: field.type,
-      isRequired: field.isRequired || false
-    }))
-
     const productData = {
       id: isEditMode ? editingProductId : `P${Date.now()}`,
       productGroupId: formData.productGroupId,
@@ -447,7 +438,6 @@ export default function CreateProductsPage() {
       image: formData.imageUrl,
       identifierType: formData.identifierType,
       selectedFieldIds: formData.selectedFieldIds,
-      fieldConfigurations: fieldConfigurations,
       createdAt: isEditMode ? new Date().toISOString() : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isActive: true
@@ -801,7 +791,7 @@ export default function CreateProductsPage() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between py-3 px-4 bg-green-50 rounded-lg border border-green-200">
                       <Label className="cursor-pointer text-base font-medium">
-                        Non-Unique Identifier
+                        Non-Serial Number Profile
                       </Label>
                       <Switch
                         checked={formData.identifierType === "NON_UNIQUE"}
@@ -856,7 +846,7 @@ export default function CreateProductsPage() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between py-3 px-4 bg-blue-50 rounded-lg border border-blue-200">
                       <Label className="cursor-pointer text-base font-medium">
-                        Unique Identifier
+                        Serial Number Profile
                       </Label>
                       <Switch
                         checked={formData.identifierType === "UNIQUE"}

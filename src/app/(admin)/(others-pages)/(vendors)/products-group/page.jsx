@@ -304,22 +304,6 @@ export default function CreateProductGroup() {
     
     return (
       <div className="space-y-2">
-        {/* Identifier Type Badge */}
-        <div className="flex items-center gap-2">
-          {/* <Badge variant={product.identifierType === "UNIQUE" ? "default" : "outline"} className="w-fit">
-            {product.identifierType === "UNIQUE" ? (
-              <CheckCircle className="h-3 w-3 mr-1" />
-            ) : (
-              <XCircle className="h-3 w-3 mr-1" />
-            )}
-            {product.identifierType}
-          </Badge>
-          {fieldConfigs.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {fieldConfigs.length} field(s)
-            </span>
-          )} */}
-        </div>
         
         {/* Selected Fields List - Show first 2 fields, rest in popup */}
         {fieldConfigs.length > 0 ? (
@@ -985,7 +969,7 @@ export default function CreateProductGroup() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={() => window.open(`/products?edit=${product.id}`, '_blank')}
+                                onClick={() => window.open(`/products?edit=${product.id}`)}
                                 title="Edit"
                               >
                                 <Edit className="h-4 w-4" />
