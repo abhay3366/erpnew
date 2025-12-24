@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Package, Search, X, Lock, Save } from "lucide-react"
+import { ArrowLeft, Package, Search, X, Lock, Save, Upload, Eye, EyeOff, Settings, Edit } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 const UNITS = ["pieces", "meter", "liter", "kg"]
 
-export default function ProductsCreatePage() {
+export default function CreateProductsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -21,50 +22,37 @@ export default function ProductsCreatePage() {
     productGroupId: "",
     unit: "pieces",
     imageUrl: "",
-    hasUniqueIdentifier: false,
-    hasSerialNo: false,
-    hasMacAddress: false,
-    hasWarranty: false,
+    identifierType: null,
+    selectedFieldIds: []
   })
 
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
+  const [fieldMasters, setFieldMasters] = useState([])
   const [categorySearch, setCategorySearch] = useState("")
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [isCategoryLocked, setIsCategoryLocked] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [imagePreview, setImagePreview] = useState("")
+  const [showImagePreview, setShowImagePreview] = useState(false)
 
-  // Edit mode states
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingProductId, setEditingProductId] = useState("")
 
-  // Refs
   const dropdownRef = useRef(null)
   const inputRef = useRef(null)
   const categoryContainerRef = useRef(null)
+  const fileInputRef = useRef(null)
 
-  // Get URL parameters
-  const categoryIdFromUrl = searchParams.get('productGroupId')
+  // URL parameters
+  const editId = searchParams.get('edit')
+  const productGroupIdFromUrl = searchParams.get('productGroupId')
   const categoryNameFromUrl = searchParams.get('categoryName')
   const markAsLastOnFirstProduct = searchParams.get('markAsLastOnFirstProduct')
-  const autoMarkLast = searchParams.get('autoMarkLast')
-  const returnCategoryId = searchParams.get('returnCategoryId') // New parameter
+  const returnCategoryId = searchParams.get('returnCategoryId')
 
-  // Check if edit mode
-  const editParam = searchParams.get('edit')
-  const productIdParam = searchParams.get('productId')
-  const productNameParam = searchParams.get('productName')
-  const productGroupIdParam = searchParams.get('productGroupId')
-  const unitParam = searchParams.get('unit')
-  const imageUrlParam = searchParams.get('imageUrl')
-  const hasUniqueIdentifierParam = searchParams.get('hasUniqueIdentifier')
-  const hasSerialNoParam = searchParams.get('hasSerialNo')
-  const hasMacAddressParam = searchParams.get('hasMacAddress')
-  const hasWarrantyParam = searchParams.get('hasWarranty')
-
-  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -87,57 +75,47 @@ export default function ProductsCreatePage() {
   }, [showCategoryDropdown])
 
   useEffect(() => {
-    fetchData()
-
-    if (editParam === 'true' && productIdParam) {
-      setIsEditMode(true)
-      setEditingProductId(productIdParam)
-
-      setFormData({
-        name: productNameParam || "",
-        productGroupId: productGroupIdParam || "",
-        unit: unitParam || "pieces",
-        imageUrl: imageUrlParam || "",
-        hasUniqueIdentifier: hasUniqueIdentifierParam === 'true',
-        hasSerialNo: hasSerialNoParam === 'true',
-        hasMacAddress: hasMacAddressParam === 'true',
-        hasWarranty: hasWarrantyParam === 'true',
-      })
-
-      if (productGroupIdParam) {
-        setCategorySearch(`Editing product category: ${productGroupIdParam}`)
-      }
+    if (formData.imageUrl) {
+      setImagePreview(formData.imageUrl)
     }
+  }, [formData.imageUrl])
+
+  useEffect(() => {
+    fetchData()
   }, [])
+
+  // Load existing product data if edit mode
+  useEffect(() => {
+    if (editId && !loading) {
+      loadExistingProductData(editId)
+    }
+  }, [editId, loading])
 
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [categoriesResponse, productsResponse] = await Promise.all([
-        fetch('http://localhost:5001/categories'),
-        fetch('http://localhost:5001/products')
-      ])
 
-      if (!categoriesResponse.ok) {
-        throw new Error(`HTTP error! status: ${categoriesResponse.status}`)
-      }
+      const [categoriesResponse, productsResponse, fieldMastersResponse] = await Promise.all([
+        fetch('http://localhost:5001/categories'),
+        fetch('http://localhost:5001/products'),
+        fetch('http://localhost:5001/fieldMasters')
+      ])
 
       const categoriesData = await categoriesResponse.json()
       const productsData = productsResponse.ok ? await productsResponse.json() : []
+      const fieldMastersData = fieldMastersResponse.ok ? await fieldMastersResponse.json() : []
 
       let categoriesList = []
-      if (Array.isArray(categoriesData)) {
-        categoriesList = categoriesData
-      } else if (categoriesData && categoriesData.list) {
+      if (categoriesData && categoriesData.list) {
         categoriesList = categoriesData.list
+      } else if (Array.isArray(categoriesData)) {
+        categoriesList = categoriesData
       }
 
       const normalizeCategories = (cats) => {
         if (!Array.isArray(cats)) return []
-
         return cats.map(cat => {
           if (!cat) return null
-
           return {
             id: cat.id || String(Date.now()),
             name: cat.name || "",
@@ -152,24 +130,18 @@ export default function ProductsCreatePage() {
       setCategories(normalizedCategories)
       setProducts(Array.isArray(productsData) ? productsData : [])
 
-      if (normalizedCategories.length > 0 && categoryIdFromUrl) {
-        const category = findCategoryById(normalizedCategories, categoryIdFromUrl)
+      // Filter only active field masters
+      const activeFieldMasters = Array.isArray(fieldMastersData)
+        ? fieldMastersData.filter(field => field.isActive !== false) // Show only active fields (default to true if undefined)
+        : []
+      setFieldMasters(activeFieldMasters)
 
+      // Auto-select category from URL
+      if (productGroupIdFromUrl && normalizedCategories.length > 0) {
+        const category = findCategoryById(normalizedCategories, productGroupIdFromUrl)
         if (category) {
           handleCategorySelect(category)
           setIsCategoryLocked(true)
-
-          if (autoMarkLast === 'true' && !category.allowItemEntry) {
-            handleAutoMarkAsLastCategory(category)
-          }
-        }
-      }
-
-      if (isEditMode && normalizedCategories.length > 0 && formData.productGroupId) {
-        const category = findCategoryById(normalizedCategories, formData.productGroupId)
-        if (category) {
-          setSelectedCategory(category)
-          setCategorySearch(category.name)
         }
       }
 
@@ -180,35 +152,72 @@ export default function ProductsCreatePage() {
     }
   }
 
+  // Get only active fields filtered by applicableFor
+  const getActiveFieldsByApplicableFor = (applicableForType) => {
+    return fieldMasters.filter(field => {
+      // Check if field is active (default to true if not specified)
+      const isFieldActive = field.isActive !== false
+
+      // Check if field has applicableFor and includes the requested type
+      const hasApplicableFor = field.applicableFor &&
+        Array.isArray(field.applicableFor) &&
+        field.applicableFor.includes(applicableForType)
+
+      return isFieldActive && hasApplicableFor
+    })
+  }
+
+  // Load existing product data for edit
+  const loadExistingProductData = async (productId) => {
+    try {
+      setIsEditMode(true)
+      setEditingProductId(productId)
+
+      const response = await fetch(`http://localhost:5001/products/${productId}`)
+      if (!response.ok) throw new Error("Failed to fetch product")
+
+      const existingProduct = await response.json()
+
+      console.log("📝 Editing product:", existingProduct)
+
+      // Set form data
+      setFormData({
+        name: existingProduct.productName || "",
+        productGroupId: existingProduct.productGroupId || "",
+        unit: existingProduct.unit || "pieces",
+        imageUrl: existingProduct.image || "",
+        identifierType: existingProduct.identifierType || null,
+        selectedFieldIds: existingProduct.selectedFieldIds || []
+      })
+
+      // Select category
+      if (existingProduct.productGroupId && categories.length > 0) {
+        const category = findCategoryById(categories, existingProduct.productGroupId)
+        if (category) {
+          setSelectedCategory(category)
+          setCategorySearch(category.name)
+        }
+      }
+
+    } catch (error) {
+      console.error("Error loading product data:", error)
+      alert("Failed to load product data")
+    }
+  }
+
   const checkProductDuplicateAnywhere = (productName, excludeProductId = null) => {
     if (!productName) return false
 
     const normalizedProductName = productName.trim().toLowerCase()
 
     return products.some(product => {
-      if (excludeProductId && (product.id === excludeProductId || product._id === excludeProductId)) {
+      if (excludeProductId && product.id === excludeProductId) {
         return false
       }
 
-      const existingProductName = (product.productName || product.name || "").trim().toLowerCase()
+      const existingProductName = (product.productName || "").trim().toLowerCase()
       return existingProductName === normalizedProductName
     })
-  }
-
-  const findCategoryById = (cats, id) => {
-    if (!cats || !Array.isArray(cats)) return null
-
-    for (const cat of cats) {
-      if (String(cat.id) === String(id)) {
-        return cat
-      }
-
-      if (cat.children && Array.isArray(cat.children)) {
-        const found = findCategoryById(cat.children, id)
-        if (found) return found
-      }
-    }
-    return null
   }
 
   const handleAutoMarkAsLastCategory = async (category) => {
@@ -254,14 +263,31 @@ export default function ProductsCreatePage() {
     }
   }
 
+  const getSelectedFieldDetails = () => {
+    return fieldMasters.filter(field =>
+      formData.selectedFieldIds.includes(field.id)
+    )
+  }
+
+  const findCategoryById = (cats, id) => {
+    if (!cats || !Array.isArray(cats)) return null
+    for (const cat of cats) {
+      if (String(cat.id) === String(id)) {
+        return cat
+      }
+      if (cat.children && Array.isArray(cat.children)) {
+        const found = findCategoryById(cat.children, id)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
   const getLeafCategories = (cats = []) => {
     let result = []
-
     const traverse = (category, path = []) => {
       if (!category) return
-
       const newPath = [...path, category.name]
-
       if (category.allowItemEntry) {
         result.push({
           ...category,
@@ -269,21 +295,17 @@ export default function ProductsCreatePage() {
           level: path.length
         })
       }
-
       if (category.children && Array.isArray(category.children)) {
         category.children.forEach(child => traverse(child, newPath))
       }
     }
-
     if (Array.isArray(cats)) {
       cats.forEach(cat => traverse(cat))
     }
-
     return result
   }
 
   const leafCategories = getLeafCategories(categories)
-
   const filteredCategories = categorySearch.trim()
     ? leafCategories.filter(
       (cat) =>
@@ -321,21 +343,66 @@ export default function ProductsCreatePage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  // Navigate back to categories page with the same category
+  const handleImagePaste = (e) => {
+    const items = (e.clipboardData || window.clipboardData).items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const blob = items[i].getAsFile();
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          setFormData(prev => ({ ...prev, imageUrl: event.target.result }))
+        };
+        reader.readAsDataURL(blob);
+        break;
+      }
+    }
+  }
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        setFormData(prev => ({ ...prev, imageUrl: event.target.result }))
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  }
+
+  const clearImage = () => {
+    setFormData(prev => ({ ...prev, imageUrl: "" }))
+    setImagePreview("")
+  }
+
   const navigateBackToCategories = () => {
-    // If we have returnCategoryId, use it
     if (returnCategoryId) {
       router.push(`/products-group?returnCategoryId=${returnCategoryId}`)
     } else if (selectedCategory) {
-      // Otherwise use current selected category
       router.push(`/products-group?returnCategoryId=${selectedCategory.id}`)
-    } else if (categoryIdFromUrl) {
-      // Or use category from URL
-      router.push(`/products-group?returnCategoryId=${categoryIdFromUrl}`)
+    } else if (productGroupIdFromUrl) {
+      router.push(`/products-group?returnCategoryId=${productGroupIdFromUrl}`)
     } else {
-      // Fallback to home
       router.push('/products-group')
     }
+  }
+
+  const toggleField = (fieldId, checked) => {
+    setFormData(prev => {
+      let newSelectedIds
+      if (checked) {
+        newSelectedIds = [...prev.selectedFieldIds, fieldId]
+      } else {
+        newSelectedIds = prev.selectedFieldIds.filter(id => id !== fieldId)
+      }
+      return {
+        ...prev,
+        selectedFieldIds: newSelectedIds
+      }
+    })
   }
 
   const handleSubmit = async (e) => {
@@ -363,90 +430,48 @@ export default function ProductsCreatePage() {
     }
 
     const productData = {
-      id: isEditMode ? editingProductId : Date.now().toString(),
+      id: isEditMode ? editingProductId : `P${Date.now()}`,
       productGroupId: formData.productGroupId,
       productName: formData.name.trim(),
       unit: formData.unit,
       sku: isEditMode ? `SKU-${editingProductId}` : `SKU-${Date.now()}`,
       image: formData.imageUrl,
-      hasUniqueIdentifier: formData.hasUniqueIdentifier,
-      hasSerialNo: formData.hasSerialNo,
-      hasMacAddress: formData.hasMacAddress,
-      hasWarranty: formData.hasWarranty,
-      createdAt: isEditMode ? new Date().toISOString() : new Date().toISOString()
+      identifierType: formData.identifierType,
+      selectedFieldIds: formData.selectedFieldIds,
+      createdAt: isEditMode ? new Date().toISOString() : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isActive: true
     }
+
+    console.log("💾 Saving product data:", productData)
 
     try {
       setSaving(true)
 
       if (isEditMode) {
-        // EDIT MODE
-        try {
-          const putResponse = await fetch(`http://localhost:5001/products/${editingProductId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(productData),
-          })
+        const response = await fetch(`http://localhost:5001/products/${editingProductId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(productData),
+        })
 
-          if (putResponse.ok) {
-            alert("✅ Product updated successfully!")
-            navigateBackToCategories()
-            return
-          }
-        } catch (error) {
-          console.error("Error updating product:", error)
-        }
-
-        // Fallback method
-        try {
-          const getResponse = await fetch('http://localhost:5001/products')
-          
-          if (!getResponse.ok) {
-            throw new Error(`Failed to fetch products: ${getResponse.status}`)
-          }
-
-          const allProducts = await getResponse.json()
-
-          const updatedProducts = allProducts.map(product => {
-            if (product.id === editingProductId || product._id === editingProductId) {
-              return productData
-            }
-            return product
-          })
-
-          const saveResponse = await fetch('http://localhost:5001/products', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updatedProducts),
-          })
-
-          if (saveResponse.ok) {
-            alert("✅ Product updated successfully!")
-            navigateBackToCategories()
-          } else {
-            throw new Error(`Failed to save: ${saveResponse.status}`)
-          }
-        } catch (finalError) {
-          console.error('Final error:', finalError)
-          alert(`❌ Failed to update product: ${finalError.message}`)
+        if (response.ok) {
+          alert("✅ Product updated successfully!")
+          navigateBackToCategories()
+        } else {
+          throw new Error(`Failed to update: ${response.status}`)
         }
       } else {
-        // CREATE MODE
         const response = await fetch('http://localhost:5001/products', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(productData),
         })
 
         if (response.ok) {
           console.log("Product created successfully")
 
+          // Mark category as last on first product
           if (markAsLastOnFirstProduct === 'true' && selectedCategory && !selectedCategory.allowItemEntry) {
             console.log("Marking category as last on first product")
             await handleAutoMarkAsLastCategory(selectedCategory)
@@ -455,7 +480,8 @@ export default function ProductsCreatePage() {
           alert("✅ Product created successfully!")
           navigateBackToCategories()
         } else {
-          alert("Failed to create product")
+          const errorText = await response.text()
+          throw new Error(`Failed to create: ${response.status} - ${errorText}`)
         }
       }
     } catch (error) {
@@ -470,12 +496,16 @@ export default function ProductsCreatePage() {
     navigateBackToCategories()
   }
 
+  const navigateToFieldMasters = () => {
+    router.push('/fieldmaster')
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <main className="container mx-auto p-6">
           <div className="flex justify-center items-center h-64">
-            <p>Loading product...</p>
+            <p>Loading...</p>
           </div>
         </main>
       </div>
@@ -488,13 +518,14 @@ export default function ProductsCreatePage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Package className="h-6 w-6" />
+              {isEditMode ? <Edit className="h-6 w-6" /> : <Package className="h-6 w-6" />}
               {isEditMode ? "Edit Product" : "Create Product"}
             </h1>
             <p className="text-muted-foreground mt-1">
               {isEditMode ? "Update product information" : "Add new product to your inventory"}
             </p>
 
+            {/* Edit mode info */}
             {isEditMode && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-700">
@@ -503,6 +534,7 @@ export default function ProductsCreatePage() {
               </div>
             )}
 
+            {/* First product note */}
             {!isEditMode && markAsLastOnFirstProduct === 'true' && selectedCategory && !selectedCategory.allowItemEntry && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-300 rounded-md">
                 <p className="text-sm text-blue-700">
@@ -511,10 +543,16 @@ export default function ProductsCreatePage() {
               </div>
             )}
           </div>
-          <Button variant="outline" onClick={handleCancel}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {returnCategoryId || selectedCategory || categoryIdFromUrl ? "Back to Product Group" : "Back"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleCancel}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {returnCategoryId || selectedCategory || productGroupIdFromUrl ? "Back to Product Group" : "Back"}
+            </Button>
+            <Button variant="outline" onClick={navigateToFieldMasters}>
+              <Settings className="h-4 w-4 mr-2" />
+              Manage Fields
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -523,9 +561,10 @@ export default function ProductsCreatePage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Product Group Selection */}
               <div className="space-y-2">
                 <Label htmlFor="category" className="text-sm font-medium">
-                   Product Group *
+                  Product Group *
                 </Label>
 
                 {isEditMode && selectedCategory ? (
@@ -627,6 +666,7 @@ export default function ProductsCreatePage() {
                 )}
               </div>
 
+              {/* Product Name */}
               <div className="space-y-2">
                 <Label htmlFor="productName" className="text-sm font-medium">
                   Product Name *
@@ -643,6 +683,7 @@ export default function ProductsCreatePage() {
                 </p>
               </div>
 
+              {/* Unit Selection */}
               <div className="space-y-2">
                 <Label htmlFor="unit" className="text-sm font-medium">
                   Unit *
@@ -661,71 +702,204 @@ export default function ProductsCreatePage() {
                 </Select>
               </div>
 
+              {/* Image URL */}
               <div className="space-y-2">
-                <Label htmlFor="imageUrl" className="text-sm font-medium">
-                  Image URL
-                </Label>
-                <Input
-                  id="imageUrl"
-                  placeholder="https://..."
-                  value={formData.imageUrl}
-                  onChange={(e) => updateField("imageUrl", e.target.value)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg">
-                <Label htmlFor="uniqueIdentifier" className="cursor-pointer">
-                  Unique Identifier
-                </Label>
-                <Switch
-                  id="uniqueIdentifier"
-                  checked={formData.hasUniqueIdentifier}
-                  onCheckedChange={(v) => {
-                    updateField("hasUniqueIdentifier", v)
-                    if (!v) {
-                      updateField("hasSerialNo", false)
-                      updateField("hasMacAddress", false)
-                      updateField("hasWarranty", false)
-                    }
-                  }}
-                />
-              </div>
-
-              {formData.hasUniqueIdentifier && (
-                <div className="space-y-3 pl-4 border-l-2 border-primary bg-primary/5 p-4 rounded-r-lg">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="serialNo" className="cursor-pointer">
-                      Has Serial Number
-                    </Label>
-                    <Switch
-                      id="serialNo"
-                      checked={formData.hasSerialNo}
-                      onCheckedChange={(v) => updateField("hasSerialNo", v)}
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="imageUrl" className="text-sm font-medium">
+                    Image URL
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept="image/*"
+                      className="hidden"
                     />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="macAddress" className="cursor-pointer">
-                      Has MAC Address
-                    </Label>
-                    <Switch
-                      id="macAddress"
-                      checked={formData.hasMacAddress}
-                      onCheckedChange={(v) => updateField("hasMacAddress", v)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="warranty" className="cursor-pointer">
-                      Has Warranty
-                    </Label>
-                    <Switch
-                      id="warranty"
-                      checked={formData.hasWarranty}
-                      onCheckedChange={(v) => updateField("hasWarranty", v)}
-                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={triggerFileUpload}
+                      className="h-8"
+                    >
+                      <Upload className="h-4 w-4 mr-1" />
+                      Upload
+                    </Button>
+                    {imagePreview && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowImagePreview(!showImagePreview)}
+                        className="h-8"
+                      >
+                        {showImagePreview ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
+                        {showImagePreview ? "Hide" : "Preview"}
+                      </Button>
+                    )}
                   </div>
                 </div>
-              )}
+                <Input
+                  id="imageUrl"
+                  placeholder="https://... or paste image"
+                  value={formData.imageUrl}
+                  onChange={(e) => updateField("imageUrl", e.target.value)}
+                  onPaste={handleImagePaste}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter URL or paste image from clipboard or upload file
+                </p>
 
+                {showImagePreview && imagePreview && (
+                  <div className="mt-2 p-2 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Image Preview</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearImage}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex justify-center">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="max-h-40 max-w-full object-contain rounded"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150' viewBox='0 0 200 150'%3E%3Crect width='200' height='150' fill='%23f3f4f6'/%3E%3Ctext x='50%' y='50%' font-family='Arial' font-size='14' fill='%236b7280' text-anchor='middle' dy='.3em'%3EInvalid Image URL%3C/text%3E%3C/svg%3E";
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* FIELD CONFIGURATION SECTION */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Field Configuration</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Non-Unique Identifier */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between py-3 px-4 bg-green-50 rounded-lg border border-green-200">
+                      <Label className="cursor-pointer text-base font-medium">
+                        Non-Serial Number Profile
+                      </Label>
+                      <Switch
+                        checked={formData.identifierType === "NON_UNIQUE"}
+                        onCheckedChange={(checked) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            identifierType: checked ? "NON_UNIQUE" : null,
+                            selectedFieldIds: []
+                          }))
+                        }}
+                      />
+                    </div>
+
+                    {formData.identifierType === "NON_UNIQUE" && (
+                      <div className="space-y-3 pl-4 border-l-2 border-green-500">
+                        {getActiveFieldsByApplicableFor("NON_UNIQUE").length === 0 ? (
+                          <div className="p-3 text-center text-gray-500 bg-gray-50 rounded-lg">
+                            <p className="text-sm">No active fields available for Non-Unique Identifier</p>
+                            <p className="text-xs mt-1">
+                              Go to <Button
+                                variant="link"
+                                className="h-auto p-0 text-blue-600"
+                                onClick={navigateToFieldMasters}
+                              >
+                                Field Masters
+                              </Button> to create or activate fields
+                            </p>
+                          </div>
+                        ) : (
+                          getActiveFieldsByApplicableFor("NON_UNIQUE").map(field => (
+                            <div key={field.id} className="flex justify-between items-center p-1 hover:bg-gray-50 rounded">
+                              <div className="flex items-center gap-2">
+                                <Label className="cursor-pointer">
+                                  {field.label}
+                                  {field.isRequired && (
+                                    <span className="ml-1 text-red-500">*</span>
+                                  )}
+                                </Label>
+                              </div>
+                              <Switch
+                                checked={formData.selectedFieldIds.includes(field.id)}
+                                onCheckedChange={(checked) => toggleField(field.id, checked)}
+                              />
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Unique Identifier */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between py-3 px-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <Label className="cursor-pointer text-base font-medium">
+                        Serial Number Profile
+                      </Label>
+                      <Switch
+                        checked={formData.identifierType === "UNIQUE"}
+                        onCheckedChange={(checked) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            identifierType: checked ? "UNIQUE" : null,
+                            selectedFieldIds: []
+                          }))
+                        }}
+                      />
+                    </div>
+
+                    {formData.identifierType === "UNIQUE" && (
+                      <div className="space-y-3 pl-4 border-l-2 border-blue-500">
+                        {getActiveFieldsByApplicableFor("UNIQUE").length === 0 ? (
+                          <div className="p-3 text-center text-gray-500 bg-gray-50 rounded-lg">
+                            <p className="text-sm">No active fields available for Unique Identifier</p>
+                            <p className="text-xs mt-1">
+                              Go to <Button
+                                variant="link"
+                                className="h-auto p-0 text-blue-600"
+                                onClick={navigateToFieldMasters}
+                              >
+                                Field Masters
+                              </Button> to create or activate fields
+                            </p>
+                          </div>
+                        ) : (
+                          getActiveFieldsByApplicableFor("UNIQUE").map(field => (
+                            <div key={field.id} className="flex justify-between items-center p-1 hover:bg-gray-50 rounded">
+                              <div className="flex items-center gap-2">
+                                <Label className="cursor-pointer">
+                                  {field.label}
+                                  {field.isRequired && (
+                                    <span className="ml-1 text-red-500">*</span>
+                                  )}
+                                </Label>
+                              </div>
+                              <Switch
+                                checked={formData.selectedFieldIds.includes(field.id)}
+                                onCheckedChange={(checked) => toggleField(field.id, checked)}
+                              />
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
               <div className="flex gap-4 pt-4">
                 <Button
                   type="button"

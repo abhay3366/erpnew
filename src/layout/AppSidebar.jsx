@@ -45,6 +45,7 @@ const navItems = [
     icon: <VendorIcon className=" w-5" />,
     subItems: [
       { name: "Product Group", path: "/products-group", pro: false },
+      { name: "Field Master", path: "/fieldmaster", pro: false },
       { name: "Create Product", path: "/products", pro: false },
       { name: "View Product", path: "/product-table", pro: false },
     ],

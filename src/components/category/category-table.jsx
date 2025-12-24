@@ -2,7 +2,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ChevronRight, Folder, Package, Lock, MoreHorizontal } from "lucide-react"
+import { Edit, Trash2, ChevronRight, Folder, Package, Lock, MoreHorizontal, Eye, Hash, FileText, Calendar, Type, CheckCircle, XCircle, ChevronDown } from "lucide-react"
 import { cn } from "../lib/utils"
 import { useState, useEffect, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Separator } from "@/components/ui/separator"
 
 export function CategoryTable({
   categories,
@@ -130,10 +136,20 @@ export function CategoryTable({
     return allSubCats
   }
 
-  // Handle Read More click - opens modal in center
+  // Handle Read More click - opens popover
   const handleReadMoreClick = (category, e) => {
     e.stopPropagation()
     setSelectedCategoryForModal(category)
+  }
+
+  // Function to get field icon based on type
+  const getFieldIcon = (type) => {
+    switch(type?.toLowerCase()) {
+      case 'text': return <FileText className="h-3 w-3" />
+      case 'number': return <Hash className="h-3 w-3" />
+      case 'date': return <Calendar className="h-3 w-3" />
+      default: return <Type className="h-3 w-3" />
+    }
   }
 
   if (!categories?.length) {
@@ -228,16 +244,77 @@ export function CategoryTable({
                         {category.children?.length || 0} sub-Product Group
                       </span>
                       {hasSubCategories && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 hover:bg-muted hover:text-primary"
-                          onClick={(e) => handleReadMoreClick(category, e)}
-                          title="View all sub-Product Group"
-                          onMouseEnter={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-3 w-3" />
-                        </Button>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 hover:bg-muted hover:text-primary"
+                              onClick={(e) => e.stopPropagation()}
+                              title="View all sub-Product Group"
+                              onMouseEnter={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-3 w-3" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-72 p-3" align="start">
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-sm">
+                                  Sub-Product Group
+                                </h4>
+                                <Badge variant="outline" className="text-xs">
+                                  {category.children.length} total
+                                </Badge>
+                              </div>
+                              <Separator />
+                              <div className="space-y-2 max-h-60 overflow-y-auto">
+                                {category.children.map((subCat) => (
+                                  <div
+                                    key={subCat.id}
+                                    className="p-2 hover:bg-muted/50 rounded cursor-pointer flex items-center justify-between"
+                                    onClick={() => {
+                                      onNavigate(subCat)
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {subCat.allowItemEntry ? (
+                                        <Package className="h-3 w-3 text-green-600" />
+                                      ) : (
+                                        <Folder className="h-3 w-3 text-muted-foreground" />
+                                      )}
+                                      <span className="text-sm">{subCat.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {subCat.allowItemEntry ? (
+                                        <Badge variant="secondary" className="text-xs px-1">
+                                          Last
+                                        </Badge>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">
+                                          {subCat.children?.length || 0} sub
+                                        </span>
+                                      )}
+                                      <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="pt-2 border-t">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full text-xs"
+                                  onClick={() => {
+                                    setSelectedCategoryForModal(category)
+                                  }}
+                                >
+                                  View All Nested Sub-Product Group →
+                                </Button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       )}
                     </div>
                   )}
@@ -346,17 +423,69 @@ export function CategoryTable({
               </div>
             ))}
             <div className="pt-2 border-t mt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-xs"
-                onClick={() => {
-                  setSelectedCategoryForModal(hoveredCategory)
-                  setHoveredCategory(null)
-                }}
-              >
-                View All Nested Sub-Product Group →
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedCategoryForModal(hoveredCategory)
+                      setHoveredCategory(null)
+                    }}
+                  >
+                    View All Nested Sub-Product Group →
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="start">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm">
+                        All Nested Sub-Product Group
+                      </h4>
+                      <Badge variant="outline" className="text-xs">
+                        {getAllSubCategories(hoveredCategory)?.length || 0} total
+                      </Badge>
+                    </div>
+                    <Separator />
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {getAllSubCategories(hoveredCategory).map((subCat) => (
+                        <div
+                          key={subCat.id}
+                          className="p-2 hover:bg-muted/50 rounded cursor-pointer flex items-center justify-between"
+                          onClick={() => {
+                            onNavigate(subCat)
+                            setHoveredCategory(null)
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={`ml-${subCat.level * 2}`}></div>
+                            {subCat.isProductCategory ? (
+                              <Package className="h-3 w-3 text-green-600" />
+                            ) : (
+                              <Folder className="h-3 w-3 text-muted-foreground" />
+                            )}
+                            <span className="text-sm">{subCat.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {subCat.isProductCategory ? (
+                              <Badge variant="secondary" className="text-xs px-1">
+                                Last
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                {subCat.children?.length || 0} sub
+                              </span>
+                            )}
+                            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </div>
@@ -389,6 +518,12 @@ export function CategoryTable({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        <div style={{ marginLeft: `${subCat.level * 16}px` }}></div>
+                        {subCat.isProductCategory ? (
+                          <Package className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <Folder className="h-3 w-3 text-muted-foreground" />
+                        )}
                         <span className="font-medium">{subCat.name}</span>
                       </div>
                       <div className="flex items-center gap-2">
