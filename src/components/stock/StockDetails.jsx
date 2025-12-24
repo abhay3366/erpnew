@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DataFetcher from '../DataFetcher';
 
-const API_URL = 'http://localhost:5001/stocks';
+const API_URL = 'http://localhost:5001';
+const PRODUCTS_API = `${API_URL}/products`;
+const FIELD_MASTER_API = `${API_URL}/fieldMasters`;
 
 // ====================== Sub-Components ======================
 
@@ -33,40 +34,11 @@ const BackButton = ({ onClick, className = "", children }) => (
   </button>
 );
 
-const StockHeader = ({ stock, vendorId, productId }) => (
-  <div className="bg-white rounded-lg shadow p-6">
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800">Stock Details</h2>
-      </div>
-      <div className="text-left md:text-right flex items-center gap-1">
-        <p className="text-sm text-gray-500">Vendor ID :</p>
-        <p className="text-lg font-semibold"><DataFetcher type="vendor" id={vendorId} /></p>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <p className="text-sm text-gray-500">Product ID</p>
-        <p className="font-medium text-gray-800"><DataFetcher type="product" id={productId} /> </p>
-      </div>
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <p className="text-sm text-gray-500">Total Items</p>
-        <p className="font-medium text-gray-800">{stock.quantity}</p>
-      </div>
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <p className="text-sm text-gray-500">Items Displayed</p>
-        <p className="font-medium text-gray-800">{stock.items?.length || 0}</p>
-      </div>
-    </div>
-  </div>
-);
-
 const SearchBar = ({ searchTerm, onSearchChange }) => (
   <div className="relative">
     <input
       type="text"
-      placeholder="Search by serial, MAC, or warranty..."
+      placeholder="Search items..."
       value={searchTerm}
       onChange={(e) => onSearchChange(e.target.value)}
       className="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -94,96 +66,6 @@ const ItemsCount = ({ filteredItems, searchTerm }) => (
       {searchTerm && ` for "${searchTerm}"`}
     </p>
   </div>
-);
-
-const ItemsTable = ({
-  currentItems,
-  currentPage,
-  itemsPerPage,
-  onEdit,
-  onDelete
-}) => (
-  <div className="bg-white rounded-lg shadow overflow-scroll">
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              S.No
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Serial Number
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              MAC Address
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Warranty
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {currentItems.length === 0 ? (
-            <tr>
-              <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                No items found
-              </td>
-            </tr>
-          ) : (
-            currentItems.map((item, index) => (
-              <ItemRow
-                key={item.id}
-                item={item}
-                index={index}
-                currentPage={currentPage}
-                itemsPerPage={itemsPerPage}
-                onEdit={onEdit}
-                onDelete={onDelete}
-              />
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
-
-const ItemRow = ({ item, index, currentPage, itemsPerPage, onEdit, onDelete }) => (
-  <tr className="hover:bg-gray-50 transition-colors">
-    <td className="px-6 py-4 whitespace-nowrap">
-      <div className="text-sm text-gray-900">
-        {(currentPage - 1) * itemsPerPage + index + 1}
-      </div>
-    </td>
-    <td className="px-6 py-4 whitespace-nowrap">
-      <div className="text-sm font-medium text-gray-900">{item.serialNo}</div>
-    </td>
-    <td className="px-6 py-4 whitespace-nowrap">
-      <div className="text-sm text-gray-900">{item.macAddress || '-'}</div>
-    </td>
-    <td className="px-6 py-4 whitespace-nowrap">
-      <div className="text-sm text-gray-900">{item.warranty || '-'}</div>
-    </td>
-    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-      <div className="flex gap-2">
-        <button
-          onClick={() => onEdit(item)}
-          className="text-blue-600 hover:text-blue-900 px-3 py-1 border border-blue-600 rounded hover:bg-blue-50 transition-colors"
-        >
-          Edit
-        </button>
-        <button
-          onClick={() => onDelete(item.id)}
-          className="text-red-600 hover:text-red-900 px-3 py-1 border border-red-600 rounded hover:bg-red-50 transition-colors"
-        >
-          Delete
-        </button>
-      </div>
-    </td>
-  </tr>
 );
 
 const Pagination = ({
@@ -246,212 +128,71 @@ const Pagination = ({
   );
 };
 
-const AddItemsModal = ({
-  isOpen,
-  onClose,
-  batchRows,
-  errors,
-  duplicateErrors,
-  onInputChange,
-  onAddRow,
-  onRemoveRow,
-  onBatchSizeChange,
-  onSubmit,
-  onClearAll
+const BatchRow = ({ 
+  index, 
+  row, 
+  errors, 
+  duplicateError, 
+  onInputChange, 
+  onRemove, 
+  totalRows,
+  dynamicFields 
 }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed  inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full my-8  ">
-        <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Add Multiple Items
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="px-6 py-4">
-          {/* Batch size buttons */}
-          <div className="mb-6">
-            <p className="text-sm font-medium text-gray-700 mb-2">Add Rows in Batch:</p>
-            <div className="flex gap-2">
-              {[10, 20, 30].map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => onBatchSizeChange(size)}
-                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-                >
-                  {size} Row{size > 1 ? 's' : ''}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Row count and actions */}
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-600">
-              Total Rows: <span className="font-semibold">{batchRows.length}</span>
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onAddRow}
-                className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add 1 Row
-              </button>
-              <button
-                type="button"
-                onClick={onClearAll}
-                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-              >
-                Clear All
-              </button>
-            </div>
-          </div>
-
-          {/* Batch items form */}
-          <div className="overflow-y-scroll max-h-[400px]">
-            <table className="min-w-full divide-y divide-gray-200 ">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    #
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Serial Number *
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    MAC Address *
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Warranty
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {batchRows.map((row, index) => (
-                  <BatchRow
-                    key={index}
-                    index={index}
-                    row={row}
-                    errors={errors[index] || {}}
-                    duplicateError={duplicateErrors[index]}
-                    onInputChange={(field, value) => onInputChange(index, field, value)}
-                    onRemove={() => onRemoveRow(index)}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Error messages */}
-          {Object.keys(errors).length > 0 && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
-              <p className="text-sm text-red-600">
-                Please fix the validation errors before submitting.
-              </p>
-            </div>
-          )}
-
-          {duplicateErrors.some(error => error) && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-              <p className="text-sm text-yellow-600">
-                Some items have duplicate serial numbers or MAC addresses. Please check and correct them.
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="px-6 py-4 border-t flex justify-end space-x-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onSubmit}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            disabled={batchRows.length === 0}
-          >
-            Add All Items ({batchRows.length})
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-const BatchRow = ({ index, row, errors, duplicateError, onInputChange, onRemove, totalRows }) => {
   const rowNumber = index + 1;
 
   return (
-    <tr className={`${duplicateError ? 'bg-red-50' : ''} ${errors.serialNo || errors.macAddress ? 'bg-yellow-50' : ''}`}>
+    <tr className={`${duplicateError ? 'bg-red-50' : ''} ${Object.keys(errors).length > 0 ? 'bg-yellow-50' : ''}`}>
       <td className="px-4 py-3 whitespace-nowrap">
         <div className="text-sm font-medium text-gray-900">{rowNumber}</div>
       </td>
-      <td className="px-4 py-3">
-        <div>
-          <input
-            type="text"
-            value={row.serialNo}
-            onChange={(e) => onInputChange('serialNo', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${errors.serialNo ? 'border-red-500' : 'border-gray-300'
-              }`}
-            placeholder="Enter serial number"
-          />
-          {errors.serialNo && (
-            <p className="mt-1 text-xs text-red-600">{errors.serialNo}</p>
-          )}
-          {duplicateError?.includes('Serial number') && (
-            <p className="mt-1 text-xs text-red-600">{duplicateError}</p>
-          )}
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <div>
-          <input
-            type="text"
-            value={row.macAddress}
-            onChange={(e) => onInputChange('macAddress', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${errors.macAddress ? 'border-red-500' : 'border-gray-300'
-              }`}
-            placeholder="Enter MAC address"
-          />
-          {errors.macAddress && (
-            <p className="mt-1 text-xs text-red-600">{errors.macAddress}</p>
-          )}
-          {duplicateError?.includes('MAC address') && (
-            <p className="mt-1 text-xs text-red-600">{duplicateError}</p>
-          )}
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <input
-          type="text"
-          value={row.warranty}
-          onChange={(e) => onInputChange('warranty', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-          placeholder="Enter warranty"
-        />
-      </td>
+      
+      {/* Dynamic Fields based on fieldMasters */}
+      {dynamicFields.map((field) => (
+        <td key={field.id} className="px-4 py-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">
+              {field.label} {field.isRequired && '*'}
+            </label>
+            
+            {field.type === 'select' ? (
+              <select
+                value={row[field.key] || ''}
+                onChange={(e) => onInputChange(field.key, e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                  errors[field.key] ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Select {field.label}</option>
+                {field.options?.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type={field.type === 'number' ? 'number' : 'text'}
+                value={row[field.key] || ''}
+                onChange={(e) => onInputChange(field.key, e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                  errors[field.key] ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder={field.placeholder || `Enter ${field.label}`}
+                min={field.validations?.minValue}
+                maxLength={field.validations?.maxLength}
+              />
+            )}
+            
+            {errors[field.key] && (
+              <p className="mt-1 text-xs text-red-600">{errors[field.key]}</p>
+            )}
+            {duplicateError?.includes(field.label) && (
+              <p className="mt-1 text-xs text-red-600">{duplicateError}</p>
+            )}
+          </div>
+        </td>
+      ))}
+      
       <td className="px-4 py-3 whitespace-nowrap">
         <button
           type="button"
@@ -468,6 +209,170 @@ const BatchRow = ({ index, row, errors, duplicateError, onInputChange, onRemove,
   );
 };
 
+const AddItemsModal = ({
+  isOpen,
+  onClose,
+  batchRows,
+  errors,
+  duplicateErrors,
+  onInputChange,
+  onAddRow,
+  onRemoveRow,
+  onBatchSizeChange,
+  onSubmit,
+  onClearAll,
+  dynamicFields,
+  loadingFields
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full my-8">
+        <div className="px-6 py-4 border-b flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Add Multiple Items
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="px-6 py-4">
+          {loadingFields ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="text-gray-600">Loading fields...</div>
+            </div>
+          ) : dynamicFields.length === 0 ? (
+            <div className="text-center py-8 text-red-600">
+              No dynamic fields configured for this product
+            </div>
+          ) : (
+            <>
+              {/* Batch size buttons */}
+              <div className="mb-6">
+                <p className="text-sm font-medium text-gray-700 mb-2">Add Rows in Batch:</p>
+                <div className="flex gap-2">
+                  {[10, 20, 30].map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => onBatchSizeChange(size)}
+                      className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                    >
+                      {size} Row{size > 1 ? 's' : ''}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Row count and actions */}
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-gray-600">
+                  Total Rows: <span className="font-semibold">{batchRows.length}</span>
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={onAddRow}
+                    className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add 1 Row
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClearAll}
+                    className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+
+              {/* Batch items form */}
+              <div className="overflow-y-scroll max-h-[400px]">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        #
+                      </th>
+                      {dynamicFields.map(field => (
+                        <th key={field.id} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {field.label} {field.isRequired && '*'}
+                        </th>
+                      ))}
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {batchRows.map((row, index) => (
+                      <BatchRow
+                        key={index}
+                        index={index}
+                        row={row}
+                        errors={errors[index] || {}}
+                        duplicateError={duplicateErrors[index]}
+                        onInputChange={(fieldKey, value) => onInputChange(index, fieldKey, value)}
+                        onRemove={() => onRemoveRow(index)}
+                        totalRows={batchRows.length}
+                        dynamicFields={dynamicFields}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Error messages */}
+              {Object.keys(errors).length > 0 && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
+                  <p className="text-sm text-red-600">
+                    Please fix the validation errors before submitting.
+                  </p>
+                </div>
+              )}
+
+              {duplicateErrors.some(error => error) && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                  <p className="text-sm text-yellow-600">
+                    Some items have duplicate values. Please check and correct them.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            disabled={batchRows.length === 0 || dynamicFields.length === 0}
+          >
+            Add All Items ({batchRows.length})
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EditItemModal = ({
   isOpen,
   onClose,
@@ -476,7 +381,8 @@ const EditItemModal = ({
   errors,
   duplicateError,
   onInputChange,
-  onSubmit
+  onSubmit,
+  dynamicFields
 }) => {
   if (!isOpen) return null;
 
@@ -503,55 +409,48 @@ const EditItemModal = ({
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Serial Number *
-              </label>
-              <input
-                type="text"
-                name="serialNo"
-                value={formData.serialNo}
-                onChange={onInputChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${errors.serialNo ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                placeholder="Enter serial number"
-              />
-              {errors.serialNo && (
-                <p className="mt-1 text-sm text-red-600">{errors.serialNo}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                MAC Address *
-              </label>
-              <input
-                type="text"
-                name="macAddress"
-                value={formData.macAddress}
-                onChange={onInputChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${errors.macAddress ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                placeholder="Enter MAC address"
-              />
-              {errors.macAddress && (
-                <p className="mt-1 text-sm text-red-600">{errors.macAddress}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Warranty
-              </label>
-              <input
-                type="text"
-                name="warranty"
-                value={formData.warranty}
-                onChange={onInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                placeholder="Enter warranty information"
-              />
-            </div>
+            {dynamicFields.map((field) => (
+              <div key={field.id}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {field.label} {field.isRequired && '*'}
+                </label>
+                
+                {field.type === 'select' ? (
+                  <select
+                    name={field.key}
+                    value={formData[field.key] || ''}
+                    onChange={onInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      errors[field.key] ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select {field.label}</option>
+                    {field.options?.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={field.type === 'number' ? 'number' : 'text'}
+                    name={field.key}
+                    value={formData[field.key] || ''}
+                    onChange={onInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      errors[field.key] ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder={field.placeholder || `Enter ${field.label}`}
+                    min={field.validations?.minValue}
+                    maxLength={field.validations?.maxLength}
+                  />
+                )}
+                
+                {errors[field.key] && (
+                  <p className="mt-1 text-sm text-red-600">{errors[field.key]}</p>
+                )}
+              </div>
+            ))}
           </div>
 
           <div className="px-6 py-4 border-t flex justify-end space-x-3">
@@ -586,6 +485,10 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // New states for dynamic fields
+  const [dynamicFields, setDynamicFields] = useState([]);
+  const [loadingFields, setLoadingFields] = useState(false);
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -595,18 +498,12 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
   const [editingItem, setEditingItem] = useState(null);
 
   // Batch adding state
-  const [batchRows, setBatchRows] = useState([
-    { serialNo: '', macAddress: '', warranty: '' }
-  ]);
+  const [batchRows, setBatchRows] = useState([]);
   const [batchErrors, setBatchErrors] = useState({});
   const [batchDuplicateErrors, setBatchDuplicateErrors] = useState([]);
 
   // Single edit state
-  const [editFormData, setEditFormData] = useState({
-    serialNo: '',
-    macAddress: '',
-    warranty: ''
-  });
+  const [editFormData, setEditFormData] = useState({});
   const [editErrors, setEditErrors] = useState({});
   const [editDuplicateError, setEditDuplicateError] = useState('');
 
@@ -620,19 +517,58 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
     router.back();
   };
 
+  // Fetch dynamic fields based on product
+  const fetchDynamicFields = async (productId) => {
+    if (!productId) return;
+    
+    setLoadingFields(true);
+    try {
+      // Fetch product details
+      const productResponse = await fetch(`${PRODUCTS_API}/${productId}`);
+      if (!productResponse.ok) throw new Error('Failed to fetch product');
+      const productData = await productResponse.json();
+      
+      // Fetch all field masters
+      const fieldsResponse = await fetch(FIELD_MASTER_API);
+      if (!fieldsResponse.ok) throw new Error('Failed to fetch field masters');
+      const allFields = await fieldsResponse.json();
+      
+      // Filter fields based on selectedFieldIds
+      const filteredFields = allFields.filter(field => 
+        productData.selectedFieldIds.includes(field.id)
+      );
+      
+      setDynamicFields(filteredFields);
+      
+      // Initialize batch rows with these fields
+      initializeBatchRows(filteredFields);
+      
+    } catch (error) {
+      console.error('Error fetching dynamic fields:', error);
+    } finally {
+      setLoadingFields(false);
+    }
+  };
+
   // Fetch stock details by ID
   const fetchStockDetails = async () => {
     if (!id) return;
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/${id}`);
+      const response = await fetch(`${API_URL}/stocks/${id}`);
       if (!response.ok) throw new Error('Failed to fetch stock');
       const stockData = await response.json();
 
       setStock(stockData);
       setItems(stockData.items || []);
       setFilteredItems(stockData.items || []);
+      
+      // Fetch dynamic fields after stock is loaded
+      if (stockData.productId) {
+        await fetchDynamicFields(stockData.productId);
+      }
+      
     } catch (error) {
       console.error('Error fetching stock:', error);
     } finally {
@@ -647,28 +583,36 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
   // Filter and search functionality
   useEffect(() => {
     const filtered = items.filter(item => {
-      return (
-        (item.serialNo && item.serialNo.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.macAddress && item.macAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (item.warranty && item.warranty.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+      const searchLower = searchTerm.toLowerCase();
+      return dynamicFields.some(field => {
+        const value = item[field.key];
+        return value && value.toString().toLowerCase().includes(searchLower);
+      });
     });
     setFilteredItems(filtered);
     setCurrentPage(1);
-  }, [searchTerm, items]);
+  }, [searchTerm, items, dynamicFields]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
-  // ==================== Batch Adding Functions ====================
+  // ==================== Initialize Batch Rows with Dynamic Fields ====================
 
-  // Initialize batch rows
-  const initializeBatchRows = (count = 1) => {
-    const rows = Array(count).fill(null).map(() => ({
-      serialNo: '',
-      macAddress: '',
-      warranty: ''
-    }));
+  const initializeBatchRows = (fields, count = 1) => {
+    if (!fields || fields.length === 0) return;
+    
+    const initialRow = {};
+    fields.forEach(field => {
+      if (field.defaultValue) {
+        initialRow[field.key] = field.defaultValue;
+      } else if (field.type === 'select' && field.options && field.options.length > 0) {
+        initialRow[field.key] = field.options[0];
+      } else {
+        initialRow[field.key] = '';
+      }
+    });
+    
+    const rows = Array(count).fill(null).map(() => ({ ...initialRow }));
     setBatchRows(rows);
     setBatchErrors({});
     setBatchDuplicateErrors(Array(count).fill(''));
@@ -676,12 +620,23 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
 
   // Handle batch size change
   const handleBatchSizeChange = (size) => {
-    initializeBatchRows(size);
+    initializeBatchRows(dynamicFields, size);
   };
 
   // Add a single row
   const handleAddRow = () => {
-    setBatchRows(prev => [...prev, { serialNo: '', macAddress: '', warranty: '' }]);
+    const newRow = {};
+    dynamicFields.forEach(field => {
+      if (field.defaultValue) {
+        newRow[field.key] = field.defaultValue;
+      } else if (field.type === 'select' && field.options && field.options.length > 0) {
+        newRow[field.key] = field.options[0];
+      } else {
+        newRow[field.key] = '';
+      }
+    });
+    
+    setBatchRows(prev => [...prev, newRow]);
     setBatchDuplicateErrors(prev => [...prev, '']);
   };
 
@@ -706,16 +661,16 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
   };
 
   // Handle input change for batch rows
-  const handleBatchInputChange = (index, field, value) => {
+  const handleBatchInputChange = (index, fieldKey, value) => {
     const newRows = [...batchRows];
-    newRows[index][field] = value;
+    newRows[index][fieldKey] = value;
     setBatchRows(newRows);
 
     // Clear error for this field
     setBatchErrors(prev => {
       const newErrors = { ...prev };
-      if (newErrors[index] && newErrors[index][field]) {
-        delete newErrors[index][field];
+      if (newErrors[index] && newErrors[index][fieldKey]) {
+        delete newErrors[index][fieldKey];
         if (Object.keys(newErrors[index]).length === 0) {
           delete newErrors[index];
         }
@@ -739,15 +694,31 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
     batchRows.forEach((row, index) => {
       const rowErrors = {};
 
-      if (!row.serialNo.trim()) {
-        rowErrors.serialNo = 'Serial number is required';
-        isValid = false;
-      }
-
-      if (!row.macAddress.trim()) {
-        rowErrors.macAddress = 'MAC address is required';
-        isValid = false;
-      }
+      dynamicFields.forEach(field => {
+        if (field.isRequired && !row[field.key]?.toString().trim()) {
+          rowErrors[field.key] = `${field.label} is required`;
+          isValid = false;
+        }
+        
+        // Additional validations
+        if (row[field.key] && field.validations) {
+          if (field.validations.minLength && row[field.key].length < field.validations.minLength) {
+            rowErrors[field.key] = `${field.label} must be at least ${field.validations.minLength} characters`;
+            isValid = false;
+          }
+          
+          if (field.validations.maxLength && row[field.key].length > field.validations.maxLength) {
+            rowErrors[field.key] = `${field.label} must be at most ${field.validations.maxLength} characters`;
+            isValid = false;
+          }
+          
+          if (field.type === 'number' && field.validations.minValue && 
+              parseFloat(row[field.key]) < field.validations.minValue) {
+            rowErrors[field.key] = `${field.label} must be at least ${field.validations.minValue}`;
+            isValid = false;
+          }
+        }
+      });
 
       if (Object.keys(rowErrors).length > 0) {
         newErrors[index] = rowErrors;
@@ -763,34 +734,33 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
     const newDuplicateErrors = Array(batchRows.length).fill('');
     let hasDuplicates = false;
 
-    // Check duplicates within batch
-    batchRows.forEach((row, index) => {
-      if (!row.serialNo && !row.macAddress) return;
+    // Get unique identifier fields (like serialno, macaddress)
+    const uniqueFields = dynamicFields.filter(field => 
+      field.key === 'serialno' || field.key === 'macaddress'
+    );
 
+    batchRows.forEach((row, index) => {
       // Check against other batch rows
       batchRows.forEach((otherRow, otherIndex) => {
         if (index !== otherIndex) {
-          if (row.serialNo && otherRow.serialNo && row.serialNo === otherRow.serialNo) {
-            newDuplicateErrors[index] = `Serial number "${row.serialNo}" is duplicate`;
-            hasDuplicates = true;
-          }
-          if (row.macAddress && otherRow.macAddress && row.macAddress === otherRow.macAddress) {
-            newDuplicateErrors[index] = `MAC address "${row.macAddress}" is duplicate`;
-            hasDuplicates = true;
-          }
+          uniqueFields.forEach(field => {
+            if (row[field.key] && otherRow[field.key] && 
+                row[field.key] === otherRow[field.key]) {
+              newDuplicateErrors[index] = `${field.label} "${row[field.key]}" is duplicate`;
+              hasDuplicates = true;
+            }
+          });
         }
       });
 
       // Check against existing items
       items.forEach(item => {
-        if (row.serialNo && item.serialNo === row.serialNo) {
-          newDuplicateErrors[index] = `Serial number "${row.serialNo}" already exists`;
-          hasDuplicates = true;
-        }
-        if (row.macAddress && item.macAddress === row.macAddress) {
-          newDuplicateErrors[index] = `MAC address "${row.macAddress}" already exists`;
-          hasDuplicates = true;
-        }
+        uniqueFields.forEach(field => {
+          if (row[field.key] && item[field.key] === row[field.key]) {
+            newDuplicateErrors[index] = `${field.label} "${row[field.key]}" already exists`;
+            hasDuplicates = true;
+          }
+        });
       });
     });
 
@@ -800,13 +770,17 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
 
   // Clear all batch rows
   const handleClearAll = () => {
-    initializeBatchRows(1);
+    initializeBatchRows(dynamicFields, 1);
   };
 
   // Submit batch items
   const handleBatchSubmit = async () => {
     // Filter out empty rows
-    const validRows = batchRows.filter(row => row.serialNo.trim() && row.macAddress.trim());
+    const validRows = batchRows.filter(row => {
+      return dynamicFields.every(field => 
+        !field.isRequired || row[field.key]?.toString().trim()
+      );
+    });
 
     if (validRows.length === 0) {
       alert('Please enter at least one valid item');
@@ -819,9 +793,7 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
     try {
       const newItems = validRows.map(row => ({
         id: Date.now() + Math.random(),
-        serialNo: row.serialNo,
-        macAddress: row.macAddress,
-        warranty: row.warranty,
+        ...row,
         vendorId: stock.vendorId,
         productId: stock.productId
       }));
@@ -833,7 +805,7 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
         quantity: updatedItems.length
       };
 
-      const response = await fetch(`${API_URL}/${id}`, {
+      const response = await fetch(`${API_URL}/stocks/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -844,7 +816,7 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
       if (response.ok) {
         await fetchStockDetails();
         setIsAddModalOpen(false);
-        initializeBatchRows(1);
+        initializeBatchRows(dynamicFields, 1);
         alert(`Successfully added ${newItems.length} item${newItems.length !== 1 ? 's' : ''}`);
       }
     } catch (error) {
@@ -858,11 +830,14 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
   // Open edit modal
   const handleEdit = (item) => {
     setEditingItem(item);
-    setEditFormData({
-      serialNo: item.serialNo,
-      macAddress: item.macAddress,
-      warranty: item.warranty || ''
+    
+    // Prepare form data with all dynamic fields
+    const formData = {};
+    dynamicFields.forEach(field => {
+      formData[field.key] = item[field.key] || '';
     });
+    
+    setEditFormData(formData);
     setEditErrors({});
     setEditDuplicateError('');
     setIsEditModalOpen(true);
@@ -877,25 +852,25 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
     }));
 
     // Clear duplicate error when user starts typing
-    if (editDuplicateError && (name === 'serialNo' || name === 'macAddress')) {
-      setEditDuplicateError('');
-    }
+    setEditDuplicateError('');
   };
 
   // Check for duplicate in edit
-  const checkEditDuplicate = (serialNo, macAddress) => {
+  const checkEditDuplicate = (itemData) => {
+    const uniqueFields = dynamicFields.filter(field => 
+      field.key === 'serialno' || field.key === 'macaddress'
+    );
+    
     let duplicateError = '';
 
     items.forEach(item => {
       if (editingItem && item.id === editingItem.id) return;
 
-      if (serialNo && item.serialNo === serialNo) {
-        duplicateError = `Serial number "${serialNo}" already exists`;
-      }
-
-      if (macAddress && item.macAddress === macAddress) {
-        duplicateError = `MAC address "${macAddress}" already exists`;
-      }
+      uniqueFields.forEach(field => {
+        if (itemData[field.key] && item[field.key] === itemData[field.key]) {
+          duplicateError = `${field.label} "${itemData[field.key]}" already exists`;
+        }
+      });
     });
 
     return duplicateError;
@@ -905,10 +880,29 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
   const validateEditForm = () => {
     const newErrors = {};
 
-    if (!editFormData.serialNo.trim()) newErrors.serialNo = 'Serial number is required';
-    if (!editFormData.macAddress.trim()) newErrors.macAddress = 'MAC address is required';
+    dynamicFields.forEach(field => {
+      if (field.isRequired && !editFormData[field.key]?.toString().trim()) {
+        newErrors[field.key] = `${field.label} is required`;
+      }
+      
+      // Additional validations
+      if (editFormData[field.key] && field.validations) {
+        if (field.validations.minLength && editFormData[field.key].length < field.validations.minLength) {
+          newErrors[field.key] = `${field.label} must be at least ${field.validations.minLength} characters`;
+        }
+        
+        if (field.validations.maxLength && editFormData[field.key].length > field.validations.maxLength) {
+          newErrors[field.key] = `${field.label} must be at most ${field.validations.maxLength} characters`;
+        }
+        
+        if (field.type === 'number' && field.validations.minValue && 
+            parseFloat(editFormData[field.key]) < field.validations.minValue) {
+          newErrors[field.key] = `${field.label} must be at least ${field.validations.minValue}`;
+        }
+      }
+    });
 
-    const duplicateError = checkEditDuplicate(editFormData.serialNo, editFormData.macAddress);
+    const duplicateError = checkEditDuplicate(editFormData);
     if (duplicateError) {
       setEditDuplicateError(duplicateError);
       return false;
@@ -934,7 +928,7 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
         quantity: updatedItems.length
       };
 
-      const response = await fetch(`${API_URL}/${id}`, {
+      const response = await fetch(`${API_URL}/stocks/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -966,7 +960,7 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
         quantity: updatedItems.length
       };
 
-      const response = await fetch(`${API_URL}/${id}`, {
+      const response = await fetch(`${API_URL}/stocks/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -984,21 +978,24 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
 
   // Open add modal
   const handleAddNew = () => {
-    initializeBatchRows(1);
+    if (dynamicFields.length === 0) {
+      alert('No dynamic fields found for this product');
+      return;
+    }
     setIsAddModalOpen(true);
   };
 
   // Close add modal
   const closeAddModal = () => {
     setIsAddModalOpen(false);
-    initializeBatchRows(1);
+    initializeBatchRows(dynamicFields, 1);
   };
 
   // Close edit modal
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setEditingItem(null);
-    setEditFormData({ serialNo: '', macAddress: '', warranty: '' });
+    setEditFormData({});
     setEditErrors({});
     setEditDuplicateError('');
   };
@@ -1007,6 +1004,130 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
+
+  // StockHeader Component
+  const StockHeader = ({ stock, vendorId, productId }) => {
+    const productFields = dynamicFields.map(field => field.label).join(', ');
+    
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Stock Details</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Fields: {productFields || 'Loading...'}
+            </p>
+          </div>
+          <div className="text-left md:text-right">
+            <p className="text-sm text-gray-500">Product: {stock?.productName || ''}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Product ID</p>
+            <p className="font-medium text-gray-800">{productId}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Total Items</p>
+            <p className="font-medium text-gray-800">{stock?.quantity || 0}</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm text-gray-500">Items Displayed</p>
+            <p className="font-medium text-gray-800">{stock?.items?.length || 0}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ItemsTable Component
+  const ItemsTable = ({
+    currentItems,
+    currentPage,
+    itemsPerPage,
+    onEdit,
+    onDelete,
+    dynamicFields
+  }) => (
+    <div className="bg-white rounded-lg shadow overflow-scroll">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                S.No
+              </th>
+              {dynamicFields.map(field => (
+                <th key={field.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {field.label}
+                </th>
+              ))}
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {currentItems.length === 0 ? (
+              <tr>
+                <td colSpan={dynamicFields.length + 2} className="px-6 py-12 text-center text-gray-500">
+                  No items found
+                </td>
+              </tr>
+            ) : (
+              currentItems.map((item, index) => (
+                <ItemRow
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  currentPage={currentPage}
+                  itemsPerPage={itemsPerPage}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  dynamicFields={dynamicFields}
+                />
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // ItemRow Component
+  const ItemRow = ({ item, index, currentPage, itemsPerPage, onEdit, onDelete, dynamicFields }) => (
+    <tr className="hover:bg-gray-50 transition-colors">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-900">
+          {(currentPage - 1) * itemsPerPage + index + 1}
+        </div>
+      </td>
+      {dynamicFields.map(field => (
+        <td key={field.id} className="px-6 py-4 whitespace-nowrap">
+          <div className="text-sm font-medium text-gray-900">
+            {item[field.key] || '-'}
+          </div>
+        </td>
+      ))}
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <div className="flex gap-2">
+          <button
+            onClick={() => onEdit(item)}
+            className="text-blue-600 hover:text-blue-900 px-3 py-1 border border-blue-600 rounded hover:bg-blue-50 transition-colors"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(item.id)}
+            className="text-red-600 hover:text-red-900 px-3 py-1 border border-red-600 rounded hover:bg-red-50 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
 
   // Loading and error states
   if (loading) return <LoadingState />;
@@ -1052,6 +1173,7 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
             <button
               onClick={handleAddNew}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+              disabled={dynamicFields.length === 0}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -1074,6 +1196,7 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
           itemsPerPage={itemsPerPage}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          dynamicFields={dynamicFields}
         />
 
         {/* Pagination */}
@@ -1100,6 +1223,8 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
           onBatchSizeChange={handleBatchSizeChange}
           onSubmit={handleBatchSubmit}
           onClearAll={handleClearAll}
+          dynamicFields={dynamicFields}
+          loadingFields={loadingFields}
         />
 
         {/* Modal for Editing */}
@@ -1112,6 +1237,7 @@ const StockDetails = ({ currentSerialsIdProduct }) => {
           duplicateError={editDuplicateError}
           onInputChange={handleEditInputChange}
           onSubmit={handleEditSubmit}
+          dynamicFields={dynamicFields}
         />
       </div>
     </div>
