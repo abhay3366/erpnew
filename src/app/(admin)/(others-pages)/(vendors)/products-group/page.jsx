@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Home, Search, GitBranch, Package, Plus, Filter, X, View, Eye, Edit, Trash2, FileText, Hash, Calendar, Type, CheckCircle, XCircle, ChevronDown, MoreHorizontal } from "lucide-react"
+import { ArrowLeft, Home, Search, GitBranch, Package, Plus, Filter, X, View, Eye, Edit, Trash2, FileText, Hash, Calendar, Type, CheckCircle, XCircle, ChevronDown, MoreHorizontal, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Popover,
@@ -35,6 +35,10 @@ export default function CreateProductGroup() {
   const [productSearchQuery, setProductSearchQuery] = useState("")
   const [filterUnit, setFilterUnit] = useState("all")
   const [filterUniqueId, setFilterUniqueId] = useState("all")
+  
+  // Pagination state for products
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -415,6 +419,35 @@ export default function CreateProductGroup() {
     })
   }
 
+  // Pagination calculations for products
+  const getPaginatedProducts = () => {
+    const allFilteredProducts = getFilteredProductsForCurrentCategory()
+    const totalPages = Math.ceil(allFilteredProducts.length / itemsPerPage)
+    const indexOfLastItem = currentPage * itemsPerPage
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage
+    const currentProducts = allFilteredProducts.slice(indexOfFirstItem, indexOfLastItem)
+    
+    return {
+      currentProducts,
+      totalPages,
+      indexOfFirstItem,
+      indexOfLastItem,
+      totalProducts: allFilteredProducts.length
+    }
+  }
+
+  // Pagination handlers for products
+  const goToPage = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= getPaginatedProducts().totalPages) {
+      setCurrentPage(pageNumber)
+    }
+  }
+  
+  const goToFirstPage = () => goToPage(1)
+  const goToLastPage = () => goToPage(getPaginatedProducts().totalPages)
+  const goToPreviousPage = () => goToPage(currentPage - 1)
+  const goToNextPage = () => goToPage(currentPage + 1)
+
   // Get category name by ID
   const getCategoryName = (categoryId) => {
     const findCategory = (cats, id) => {
@@ -695,6 +728,7 @@ export default function CreateProductGroup() {
     setProductSearchQuery("")
     setFilterUnit("all")
     setFilterUniqueId("all")
+    setCurrentPage(1) // Reset to first page when clearing filters
   }
 
   // Get unique units for current category products
@@ -725,7 +759,7 @@ export default function CreateProductGroup() {
   const currentParent = getCurrentParent()
   const currentCategories = getCurrentCategories()
   const currentProducts = getProductsForCurrentCategory()
-  const filteredProducts = getFilteredProductsForCurrentCategory()
+  const { currentProducts: paginatedProducts, totalPages, indexOfFirstItem, indexOfLastItem, totalProducts } = getPaginatedProducts()
   const uniqueUnits = getUniqueUnitsForCurrentProducts()
   const shouldShowAddItemButton = shouldShowAddItem()
   const isCurrentParentLeafNode = currentParent && (!currentParent.children || currentParent.children.length === 0)
@@ -854,7 +888,7 @@ export default function CreateProductGroup() {
                 </div>
                 <div className="flex items-center gap-4">
                   <Badge variant="outline">
-                    {filteredProducts.length} of {currentProducts.length} Products
+                    {totalProducts} of {currentProducts.length} Products
                   </Badge>
                   <Button
                     variant="ghost"
@@ -912,79 +946,185 @@ export default function CreateProductGroup() {
                   Clear Filters
                 </Button>
               </div>
-
-              <div className="text-sm text-muted-foreground">
-                Showing {filteredProducts.length} of {currentProducts.length} products in "{currentParent.name}"
+              
+              {/* Items per page selector */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Items per page:</span>
+                  <Select 
+                    value={itemsPerPage.toString()} 
+                    onValueChange={(value) => {
+                      setItemsPerPage(parseInt(value))
+                      setCurrentPage(1)
+                    }}
+                  >
+                    <SelectTrigger className="w-[80px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </div>
               </div>
             </div>
 
             {/* Products Table */}
-            <div className="bg-card rounded-lg border p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">
-                  Products in "{currentParent.name}"
-                </h2>
-              </div>
+            <div className="bg-card rounded-lg border">
+  
 
-              {filteredProducts.length > 0 ? (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[200px]">Product</TableHead>
-                        <TableHead className="w-[150px]">Category</TableHead>
-                        <TableHead className="w-[100px]">Unit</TableHead>
-                        <TableHead className="w-[250px]">Unique ID Fields</TableHead>
-                        <TableHead className="w-[150px]">SKU</TableHead>
-                        <TableHead className="text-right w-[100px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredProducts.map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell>
-                            <div className="font-medium">{product.productName}</div>
-                            {/* <div className="text-xs text-muted-foreground mt-1">ID: {product.id}</div> */}
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">{getCategoryName(product.productGroupId)}</div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{product.unit}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            {renderSelectedFields(product)}
-                          </TableCell>
-                          <TableCell>
-                            <code className="text-sm">{product.sku}</code>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => window.open(`/products?edit=${product.id}`)}
-                                title="Edit"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => handleProductDelete(product)}
-                                title="Delete"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
+              {paginatedProducts.length > 0 ? (
+                <>
+                  <div className="rounded-md border mb-4">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[200px]">Product</TableHead>
+                          <TableHead className="w-[150px]">Category</TableHead>
+                          <TableHead className="w-[100px]">Unit</TableHead>
+                          <TableHead className="w-[250px]">Unique ID Fields</TableHead>
+                          <TableHead className="w-[150px]">SKU</TableHead>
+                          <TableHead className="text-right w-[100px]">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedProducts.map((product) => (
+                          <TableRow key={product.id}>
+                            <TableCell>
+                              <div className="font-medium">{product.productName}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">{getCategoryName(product.productGroupId)}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{product.unit}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              {renderSelectedFields(product)}
+                            </TableCell>
+                            <TableCell>
+                              <code className="text-sm">{product.sku}</code>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => window.open(`/products?edit=${product.id}`)}
+                                  title="Edit"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => handleProductDelete(product)}
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalProducts > itemsPerPage && (
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-t pt-4">
+                      {/* Page info */}
+                      <div className="text-sm text-muted-foreground p-4">
+                        Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, totalProducts)} of {totalProducts} products
+                      </div>
+
+                      {/* Pagination buttons */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={goToFirstPage}
+                          disabled={currentPage === 1}
+                          title="First page"
+                          className="h-8 w-8"
+                        >
+                          <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={goToPreviousPage}
+                          disabled={currentPage === 1}
+                          title="Previous page"
+                          className="h-8 w-8"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+
+                        {/* Page numbers */}
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNumber
+                            if (totalPages <= 5) {
+                              pageNumber = i + 1
+                            } else if (currentPage <= 3) {
+                              pageNumber = i + 1
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNumber = totalPages - 4 + i
+                            } else {
+                              pageNumber = currentPage - 2 + i
+                            }
+
+                            if (pageNumber > totalPages) return null
+
+                            return (
+                              <Button
+                                key={pageNumber}
+                                variant={currentPage === pageNumber ? "default" : "outline"}
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => goToPage(pageNumber)}
+                              >
+                                {pageNumber}
+                              </Button>
+                            )
+                          })}
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={goToNextPage}
+                          disabled={currentPage === totalPages}
+                          title="Next page"
+                          className="h-8 w-8"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={goToLastPage}
+                          disabled={currentPage === totalPages}
+                          title="Last page"
+                          className="h-8 w-8"
+                        >
+                          <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="text-center py-12 border rounded-lg">
                   <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />

@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Package, Search, Filter, Plus, Eye, Edit, Trash2, FileText, Hash, Calendar, Type, CheckCircle, XCircle, MoreHorizontal, ChevronDown } from "lucide-react"
+import { Package, Search, Filter, Plus, Eye, Edit, Trash2, FileText, Hash, Calendar, Type, CheckCircle, XCircle, MoreHorizontal, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -26,6 +26,10 @@ export default function ProductTableHomePage() {
   const [filterCategory, setFilterCategory] = useState("all")
   const [filterUnit, setFilterUnit] = useState("all")
   const [filterUniqueId, setFilterUniqueId] = useState("all")
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   useEffect(() => {
     loadData()
@@ -122,22 +126,6 @@ export default function ProductTableHomePage() {
     
     return (
       <div className="space-y-2">
-        {/* Identifier Type Badge */}
-        {/* <div className="flex items-center gap-2">
-          <Badge variant={product.identifierType === "UNIQUE" ? "default" : "outline"} className="w-fit">
-            {product.identifierType === "UNIQUE" ? (
-              <CheckCircle className="h-3 w-3 mr-1" />
-            ) : (
-              <XCircle className="h-3 w-3 mr-1" />
-            )}
-            {product.identifierType}
-          </Badge>
-          {fieldConfigs.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {fieldConfigs.length} field(s)
-            </span>
-          )}
-        </div> */}
         
         {/* Selected Fields List - Show first 2 fields, rest in popup */}
         {fieldConfigs.length > 0 ? (
@@ -197,7 +185,7 @@ export default function ProductTableHomePage() {
                         ))}
                       </div>
                       <div className="text-xs text-muted-foreground pt-2 border-t">
-                        {fieldConfigs.length} fields selected for {product.identifierType}
+                        {fieldConfigs.length} fields selected for {product.identifierType === "UNIQUE" ? "Serial Product" : "Non-Serial Product"}
                       </div>
                     </div>
                   </PopoverContent>
@@ -289,6 +277,24 @@ export default function ProductTableHomePage() {
     return true
   })
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentProducts = filteredProducts.slice(indexOfFirstItem, indexOfLastItem)
+  
+  // Pagination handlers
+  const goToPage = (pageNumber) => {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber)
+    }
+  }
+  
+  const goToFirstPage = () => goToPage(1)
+  const goToLastPage = () => goToPage(totalPages)
+  const goToPreviousPage = () => goToPage(currentPage - 1)
+  const goToNextPage = () => goToPage(currentPage + 1)
+
   const handleDelete = async (product) => {
     if (confirm(`Delete product "${product.productName || product.name}"?`)) {
       try {
@@ -313,6 +319,7 @@ export default function ProductTableHomePage() {
     setFilterCategory("all")
     setFilterUnit("all")
     setFilterUniqueId("all")
+    setCurrentPage(1) // Reset to first page when clearing filters
   }
 
   const handleAddProduct = () => {
@@ -423,8 +430,8 @@ export default function ProductTableHomePage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Products</SelectItem>
-              <SelectItem value="yes">With Unique ID</SelectItem>
-              <SelectItem value="no">Without Unique ID</SelectItem>
+              <SelectItem value="yes">Serial Products</SelectItem>
+              <SelectItem value="no">Non-Serial Products</SelectItem>
             </SelectContent>
           </Select>
 
@@ -439,14 +446,14 @@ export default function ProductTableHomePage() {
       </div>
 
       {/* Products Table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border mb-4">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[200px]">Product</TableHead>
               <TableHead className="w-[150px]">Category</TableHead>
               <TableHead className="w-[100px]">Unit</TableHead>
-              <TableHead className="w-[250px]">Unique ID Fields</TableHead>
+              <TableHead className="w-[250px]">Field Configuration</TableHead>
               <TableHead className="w-[150px]">SKU</TableHead>
               <TableHead className="text-right w-[100px]">Actions</TableHead>
             </TableRow>
@@ -474,7 +481,7 @@ export default function ProductTableHomePage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredProducts.map((product) => (
+              currentProducts.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>
                     <div className="font-medium">{product.productName}</div>
@@ -522,6 +529,109 @@ export default function ProductTableHomePage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination Controls */}
+      {filteredProducts.length > 0 && (
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Items per page selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Items per page:</span>
+            <Select 
+              value={itemsPerPage.toString()} 
+              onValueChange={(value) => {
+                setItemsPerPage(parseInt(value))
+                setCurrentPage(1) // Reset to first page when changing items per page
+              }}
+            >
+              <SelectTrigger className="w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Page info */}
+          <div className="text-sm text-muted-foreground">
+            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredProducts.length)} of {filteredProducts.length} products
+          </div>
+
+          {/* Pagination buttons */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToFirstPage}
+              disabled={currentPage === 1}
+              title="First page"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+              title="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            {/* Page numbers */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNumber
+                if (totalPages <= 5) {
+                  pageNumber = i + 1
+                } else if (currentPage <= 3) {
+                  pageNumber = i + 1
+                } else if (currentPage >= totalPages - 2) {
+                  pageNumber = totalPages - 4 + i
+                } else {
+                  pageNumber = currentPage - 2 + i
+                }
+
+                if (pageNumber > totalPages) return null
+
+                return (
+                  <Button
+                    key={pageNumber}
+                    variant={currentPage === pageNumber ? "default" : "outline"}
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => goToPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </Button>
+                )
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+              title="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToLastPage}
+              disabled={currentPage === totalPages}
+              title="Last page"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

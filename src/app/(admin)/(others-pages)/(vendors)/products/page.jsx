@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Package, Search, X, Lock, Save, Upload, Eye, EyeOff, Settings, Edit } from "lucide-react"
+import { ArrowLeft, Package, Search, X, Lock, Save, Upload, Eye, EyeOff, Settings, Edit, AlertCircle, CheckCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const UNITS = ["pieces", "meter", "liter", "kg"]
 
@@ -37,6 +38,7 @@ export default function CreateProductsPage() {
   const [saving, setSaving] = useState(false)
   const [imagePreview, setImagePreview] = useState("")
   const [showImagePreview, setShowImagePreview] = useState(false)
+  const [validationError, setValidationError] = useState("")
 
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingProductId, setEditingProductId] = useState("")
@@ -132,7 +134,7 @@ export default function CreateProductsPage() {
 
       // Filter only active field masters
       const activeFieldMasters = Array.isArray(fieldMastersData)
-        ? fieldMastersData.filter(field => field.isActive !== false) // Show only active fields (default to true if undefined)
+        ? fieldMastersData.filter(field => field.isActive !== false)
         : []
       setFieldMasters(activeFieldMasters)
 
@@ -155,14 +157,10 @@ export default function CreateProductsPage() {
   // Get only active fields filtered by applicableFor
   const getActiveFieldsByApplicableFor = (applicableForType) => {
     return fieldMasters.filter(field => {
-      // Check if field is active (default to true if not specified)
       const isFieldActive = field.isActive !== false
-
-      // Check if field has applicableFor and includes the requested type
       const hasApplicableFor = field.applicableFor &&
         Array.isArray(field.applicableFor) &&
         field.applicableFor.includes(applicableForType)
-
       return isFieldActive && hasApplicableFor
     })
   }
@@ -205,19 +203,25 @@ export default function CreateProductsPage() {
     }
   }
 
+  // Simple duplicate check function
   const checkProductDuplicateAnywhere = (productName, excludeProductId = null) => {
     if (!productName) return false
 
-    const normalizedProductName = productName.trim().toLowerCase()
-
-    return products.some(product => {
+    const searchName = productName.toLowerCase().trim()
+    
+    for (const product of products) {
+      // Skip if editing current product
       if (excludeProductId && product.id === excludeProductId) {
-        return false
+        continue
       }
-
-      const existingProductName = (product.productName || "").trim().toLowerCase()
-      return existingProductName === normalizedProductName
-    })
+      
+      const existingName = (product.productName || "").toLowerCase().trim()
+      if (existingName === searchName) {
+        return true // Duplicate found
+      }
+    }
+    
+    return false // No duplicate
   }
 
   const handleAutoMarkAsLastCategory = async (category) => {
@@ -381,12 +385,6 @@ export default function CreateProductsPage() {
   const navigateBackToCategories = () => {
     if (returnCategoryId) {
       router.push(`/products-group?returnCategoryId=${returnCategoryId}`)
-    } else if (selectedCategory) {
-      router.push(`/products-group?returnCategoryId=${selectedCategory.id}`)
-    } else if (productGroupIdFromUrl) {
-      router.push(`/products-group?returnCategoryId=${productGroupIdFromUrl}`)
-    } else {
-      router.push('/products-group')
     }
   }
 
@@ -405,34 +403,57 @@ export default function CreateProductsPage() {
     })
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const validateForm = () => {
+    setValidationError("")
 
     if (!formData.name.trim()) {
-      alert("Please enter product name")
-      return
+      setValidationError("Please enter product name")
+      return false
     }
 
     if (!formData.productGroupId) {
-      alert("Please select a Product Group")
-      return
+      setValidationError("Please select a Product Group")
+      return false
     }
 
-    // Check for duplicate product
-    const isDuplicate = checkProductDuplicateAnywhere(
-      formData.name,
-      isEditMode ? editingProductId : null
-    )
+    // NEW: Check if product type is selected
+    if (!formData.identifierType) {
+      setValidationError("Please select a Profile Type (Non-Serial Number Profile or Serial Number Profile)")
+      return false
+    }
 
-    if (isDuplicate) {
-      alert(`❌ Product "${formData.name}" already exists in the system!\n\nYou cannot create a product with the same name anywhere.`)
-      return
+    // Simple duplicate check - same name anywhere
+    const productName = formData.name.trim().toLowerCase()
+    
+    // Check if any product already has this name
+    for (const product of products) {
+      // Skip the current product if we're editing
+      if (isEditMode && product.id === editingProductId) {
+        continue
+      }
+      
+      const existingName = (product.productName || "").trim().toLowerCase()
+      if (existingName === productName) {
+        setValidationError(`Product "${formData.name.trim()}" already exists! You cannot create a product with the same name.`)
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    // Validate form - duplicate check included here
+    if (!validateForm()) {
+      return // Stop if validation fails
     }
 
     const productData = {
       id: isEditMode ? editingProductId : `P${Date.now()}`,
       productGroupId: formData.productGroupId,
-      productName: formData.name.trim(),
+      productName: formData.name.trim(), // Trim here too
       unit: formData.unit,
       sku: isEditMode ? `SKU-${editingProductId}` : `SKU-${Date.now()}`,
       image: formData.imageUrl,
@@ -447,6 +468,18 @@ export default function CreateProductsPage() {
 
     try {
       setSaving(true)
+
+      // Final duplicate check before saving (just to be safe)
+      const isDuplicate = checkProductDuplicateAnywhere(
+        formData.name.trim(),
+        isEditMode ? editingProductId : null
+      )
+      
+      if (isDuplicate) {
+        setValidationError(`Cannot save: Product "${formData.name.trim()}" already exists!`)
+        setSaving(false)
+        return
+      }
 
       if (isEditMode) {
         const response = await fetch(`http://localhost:5001/products/${editingProductId}`, {
@@ -476,9 +509,19 @@ export default function CreateProductsPage() {
             console.log("Marking category as last on first product")
             await handleAutoMarkAsLastCategory(selectedCategory)
           }
-
+          
+          // Form को COMPLETELY reset करें
+          resetForm()
+          
           alert("✅ Product created successfully!")
-          navigateBackToCategories()
+          
+          // User को choice दें - नया create करें या back जाएँ
+          const shouldContinue = window.confirm("Product created successfully! Do you want to create another product?")
+          
+          if (!shouldContinue) {
+            navigateBackToCategories()
+          }
+          
         } else {
           const errorText = await response.text()
           throw new Error(`Failed to create: ${response.status} - ${errorText}`)
@@ -492,8 +535,22 @@ export default function CreateProductsPage() {
     }
   }
 
-  const handleCancel = () => {
-    navigateBackToCategories()
+  // Form reset function
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      productGroupId: "",
+      unit: "pieces",
+      imageUrl: "",
+      identifierType: null,
+      selectedFieldIds: []
+    })
+    
+    setSelectedCategory(null)
+    setCategorySearch("")
+    setImagePreview("")
+    setShowImagePreview(false)
+    setValidationError("")
   }
 
   const navigateToFieldMasters = () => {
@@ -513,9 +570,9 @@ export default function CreateProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background md:w-[80vw mx-auto]">
-      <main className="container mx-auto p-2">
-        <div className="flex items-center justify-between mb-2">
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto p-4">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-lg font-bold flex items-center gap-2">
               {isEditMode ? <Edit className="h-5 w-5" /> : <Package className="h-5 w-5" />}
@@ -544,10 +601,10 @@ export default function CreateProductsPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleCancel}>
+            {/* <Button variant="outline" size="sm" onClick={handleCancel}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               {returnCategoryId || selectedCategory || productGroupIdFromUrl ? "Back to Product Group" : "Back"}
-            </Button>
+            </Button> */}
             <Button variant="outline" size="sm" onClick={navigateToFieldMasters}>
               <Settings className="h-4 w-4 mr-2" />
               Manage Fields
@@ -556,9 +613,19 @@ export default function CreateProductsPage() {
         </div>
 
         <Card className="border">
-          <CardHeader className=" hidden">
+          <CardHeader className="hidden">
           </CardHeader>
           <CardContent>
+            {/* Validation Error Alert */}
+            {validationError && (
+              <Alert variant={validationError.includes("already exists") ? "destructive" : "default"} className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  {validationError}
+                </AlertDescription>
+              </Alert>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Product Group Selection */}
               <div className="space-y-2">
@@ -630,7 +697,7 @@ export default function CreateProductsPage() {
                           setShowCategoryDropdown(true)
                         }}
                         onFocus={() => setShowCategoryDropdown(true)}
-                        placeholder={isEditMode ? "Select new Product Group (optional)" : "Search product Product Group..."}
+                        placeholder={isEditMode ? "Select new Product Group (optional)" : "Search Product Group..."}
                         className="pl-7 text-sm h-9"
                       />
                     </div>
@@ -669,17 +736,45 @@ export default function CreateProductsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Product Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="productName" className="text-xs font-medium">
-                    Product Name *
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="productName" className="text-xs font-medium">
+                      Product Name *
+                    </Label>
+                    {formData.name.trim() && 
+                     checkProductDuplicateAnywhere(formData.name.trim(), isEditMode ? editingProductId : null) && (
+                      <Badge variant="destructive" className="text-xs">
+                        Duplicate!
+                      </Badge>
+                    )}
+                  </div>
                   <Input
                     id="productName"
                     placeholder="Enter product name"
                     value={formData.name}
-                    onChange={(e) => updateField("name", e.target.value)}
+                    onChange={(e) => {
+                      updateField("name", e.target.value)
+                      // Clear duplicate error if user starts typing
+                      if (validationError && validationError.includes("already exists")) {
+                        setValidationError("")
+                      }
+                    }}
                     required
-                    className="text-sm h-9"
+                    className={`text-sm h-9 ${
+                      formData.name.trim() && 
+                      checkProductDuplicateAnywhere(formData.name.trim(), isEditMode ? editingProductId : null) 
+                        ? "border-red-500" 
+                        : ""
+                    }`}
                   />
+                  
+                  {/* Show warning if duplicate name exists */}
+                  {formData.name.trim() && 
+                   checkProductDuplicateAnywhere(formData.name.trim(), isEditMode ? editingProductId : null) && (
+                    <div className="flex items-center gap-1 text-red-600 text-xs mt-1">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>This product name already exists in the system!</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Unit Selection */}
@@ -687,7 +782,10 @@ export default function CreateProductsPage() {
                   <Label htmlFor="unit" className="text-xs font-medium">
                     Unit *
                   </Label>
-                  <Select value={formData.unit} onValueChange={(v) => updateField("unit", v)}>
+                  <Select 
+                    value={formData.unit} 
+                    onValueChange={(v) => updateField("unit", v)}
+                  >
                     <SelectTrigger className="text-sm h-9">
                       <SelectValue />
                     </SelectTrigger>
@@ -784,25 +882,33 @@ export default function CreateProductsPage() {
               {/* FIELD CONFIGURATION SECTION */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold">Field Configuration</h3>
+                  <h3 className="text-sm font-semibold">Field Configuration *</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Non-Unique Identifier */}
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
+                    <div className={`flex items-center justify-between p-2 rounded border ${!formData.identifierType
+                        ? 'bg-yellow-50 border-yellow-300'
+                        : formData.identifierType === "NON_UNIQUE"
+                          ? 'bg-green-50 border-green-300'
+                          : 'bg-gray-50 border-gray-300'
+                      }`}>
                       <Label className="cursor-pointer text-sm font-medium">
                         Non-Serial Number Profile
                       </Label>
                       <Switch
                         checked={formData.identifierType === "NON_UNIQUE"}
                         onCheckedChange={(checked) => {
+                          const newType = checked ? "NON_UNIQUE" : null
                           setFormData(prev => ({
                             ...prev,
-                            identifierType: checked ? "NON_UNIQUE" : null,
+                            identifierType: newType,
                             selectedFieldIds: []
                           }))
+                          setValidationError("")
                         }}
+                        disabled={isEditMode && formData.identifierType !== "NON_UNIQUE"}
                       />
                     </div>
 
@@ -846,19 +952,27 @@ export default function CreateProductsPage() {
 
                   {/* Unique Identifier */}
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-blue-50 rounded border border-blue-200">
+                    <div className={`flex items-center justify-between p-2 rounded border ${!formData.identifierType
+                        ? 'bg-yellow-50 border-yellow-300'
+                        : formData.identifierType === "UNIQUE"
+                          ? 'bg-blue-50 border-blue-300'
+                          : 'bg-gray-50 border-gray-300'
+                      }`}>
                       <Label className="cursor-pointer text-sm font-medium">
                         Serial Number Profile
                       </Label>
                       <Switch
                         checked={formData.identifierType === "UNIQUE"}
                         onCheckedChange={(checked) => {
+                          const newType = checked ? "UNIQUE" : null
                           setFormData(prev => ({
                             ...prev,
-                            identifierType: checked ? "UNIQUE" : null,
+                            identifierType: newType,
                             selectedFieldIds: []
                           }))
+                          setValidationError("")
                         }}
+                        disabled={isEditMode && formData.identifierType !== "UNIQUE"}
                       />
                     </div>
 
@@ -903,20 +1017,11 @@ export default function CreateProductsPage() {
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex gap-3 pt-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  className="flex-1 text-sm h-9"
-                  disabled={saving}
-                >
-                  Cancel
-                </Button>
+              <div className="flex justify-end gap-3 pt-1">
                 <Button
                   type="submit"
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-sm h-9"
-                  disabled={!formData.name.trim() || !formData.productGroupId || saving}
+                  className=" bg-green-600 hover:bg-green-700 text-sm h-9 px-2"
+                  disabled={saving || (!formData.identifierType && !isEditMode)}
                 >
                   {saving ? (
                     "Saving..."
@@ -928,7 +1033,10 @@ export default function CreateProductsPage() {
                   ) : markAsLastOnFirstProduct === 'true' && !selectedCategory?.allowItemEntry ? (
                     "Create First Product & Mark Product Group"
                   ) : (
-                    "Create Product"
+                    <>
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Create Product
+                    </>
                   )}
                 </Button>
               </div>
