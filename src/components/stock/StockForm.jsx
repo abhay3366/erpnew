@@ -1,3 +1,4 @@
+// components/stock/StockForm.jsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,15 +7,19 @@ import Select from "react-select";
 import { MdAdd, MdDelete } from "react-icons/md";
 import toast from "react-hot-toast";
 
-export default function AddStockPage() {
+export default function StockForm({ 
+  open,
+  onClose,
+  stockId = null, // Pass stockId for edit mode
+  onSuccess 
+}) {
   const { control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
       selectedProducts: [],
       purchaseDate: "",
       billNo: "",
-      rate: "",
-      gst: null,
-      warehouse: null
+      warehouse: null,
+      vendor: null
     }
   });
 
@@ -23,26 +28,39 @@ export default function AddStockPage() {
   const [vendorProducts, setVendorProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [fieldMasters, setFieldMasters] = useState([]);
+  const [existingStock, setExistingStock] = useState(null);
 
   const [productRows, setProductRows] = useState({});
   const [productDynamicValues, setProductDynamicValues] = useState({});
+  const [productRates, setProductRates] = useState({});
+  const [productGSTs, setProductGSTs] = useState({});
   const [activeTab, setActiveTab] = useState(0);
 
+  const [rowError, setRowError] = useState();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
   const selectedVendor = watch("vendor");
-  const selectedProducts = watch("selectedProducts") || [];
+  const selectedProductsForm = watch("selectedProducts") || [];
   const watchPurchaseDate = watch("purchaseDate");
   const watchBillNo = watch("billNo");
-  const watchRate = watch("rate");
-  const watchGst = watch("gst");
   const watchWarehouse = watch("warehouse");
+
+  const isEditMode = !!stockId;
 
   // ✅ GST options
   const gstOptions = [
     { value: "5%", label: "5%" },
-    { value: "15%", label: "15%" },
+    { value: "12%", label: "12%" },
     { value: "18%", label: "18%" },
     { value: "28%", label: "28%" }
   ];
+
+  const isDuplicateValue = (rows, rowIndex, key, value) => {
+    return rows.some(
+      (r, index) => index !== rowIndex && r[key] === value
+    );
+  };
 
   /* ---------- FETCH DATA ---------- */
   useEffect(() => {
@@ -65,6 +83,104 @@ export default function AddStockPage() {
     fetchData();
   }, []);
 
+  /* ---------- LOAD EXISTING STOCK DATA FOR EDIT ---------- */
+  useEffect(() => {
+    const loadStockData = async () => {
+      if (!isEditMode || !stockId || vendors.length === 0 || products.length === 0) return;
+      
+      try {
+        setIsLoading(true);
+        const response = await fetch(`http://localhost:5001/stocks/${stockId}`);
+        if (!response.ok) throw new Error("Failed to fetch stock data");
+        
+        const stockData = await response.json();
+        setExistingStock(stockData);
+        
+        // Set vendor
+        const vendor = vendors.find(v => v.id === stockData.vendorId);
+        if (vendor) {
+          setValue("vendor", vendor);
+        }
+        
+        // Set warehouse
+        const warehouse = warehouses.find(w => w.id === stockData.warehouseId);
+        if (warehouse) {
+          setValue("warehouse", warehouse);
+        }
+        
+        // Set basic fields
+        setValue("purchaseDate", stockData.purchaseDate ? stockData.purchaseDate.split('T')[0] : "");
+        setValue("billNo", stockData.billNo || "");
+        
+        // Initialize product data structures
+        const stockProducts = stockData.products || [];
+        const newProductRows = {};
+        const newProductDynamicValues = {};
+        const newProductRates = {};
+        const newProductGSTs = {};
+        
+        stockProducts.forEach(product => {
+          const productId = product.productId || product.id;
+          
+          // For UNIQUE products, load items
+          if (product.identifierType === "UNIQUE") {
+            newProductRows[productId] = product.items || [];
+          }
+          
+          // For NON_UNIQUE products, load dynamicValues
+          if (product.identifierType === "NON_UNIQUE") {
+            newProductDynamicValues[productId] = product.dynamicValues || {};
+          }
+          
+          newProductRates[productId] = product.rate || 0;
+          newProductGSTs[productId] = gstOptions.find(g => g.value === product.gst) || null;
+        });
+        
+        setProductRows(newProductRows);
+        setProductDynamicValues(newProductDynamicValues);
+        setProductRates(newProductRates);
+        setProductGSTs(newProductGSTs);
+        
+        // Set selected products
+        const mappedProducts = stockProducts.map(product => {
+          const fullProduct = products.find(p => p.id === (product.productId || product.id));
+          return {
+            ...fullProduct,
+            ...product,
+            id: product.productId || product.id,
+            productId: product.productId || product.id
+          };
+        }).filter(p => p !== undefined);
+        
+        setValue("selectedProducts", mappedProducts);
+        setIsInitialized(true);
+        
+      } catch (error) {
+        console.error("Error loading stock data:", error);
+        toast.error("Failed to load stock data for editing");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadStockData();
+  }, [isEditMode, stockId, vendors, products, warehouses, setValue]);
+
+  /* ---------- RESET FORM WHEN MODAL CLOSES ---------- */
+  useEffect(() => {
+    if (!open) {
+      // Reset form when modal closes
+      reset();
+      setExistingStock(null);
+      setProductRows({});
+      setProductDynamicValues({});
+      setProductRates({});
+      setProductGSTs({});
+      setActiveTab(0);
+      setIsInitialized(false);
+    }
+  }, [open, reset]);
+
   /* ---------- VENDOR CHANGE ---------- */
   useEffect(() => {
     if (!selectedVendor) {
@@ -75,44 +191,62 @@ export default function AddStockPage() {
     const ids = selectedVendor.products?.map(p => p.id) || [];
     setVendorProducts(products.filter(p => ids.includes(p.id)));
 
-    // Reset products when vendor changes
-    setValue("selectedProducts", []);
-    setProductRows({});
-    setProductDynamicValues({});
-    setActiveTab(0);
-  }, [selectedVendor, products, setValue]);
+    // Reset products when vendor changes (only in create mode)
+    if (!isEditMode) {
+      setValue("selectedProducts", []);
+      setProductRows({});
+      setProductDynamicValues({});
+      setProductRates({});
+      setProductGSTs({});
+      setActiveTab(0);
+    }
+  }, [selectedVendor, products, setValue, isEditMode]);
 
   /* ---------- PRODUCTS SELECTION CHANGE ---------- */
   useEffect(() => {
     // Initialize data structures for selected products
     const newProductRows = { ...productRows };
     const newProductDynamicValues = { ...productDynamicValues };
+    const newProductRates = { ...productRates };
+    const newProductGSTs = { ...productGSTs };
 
-    selectedProducts.forEach(product => {
-      if (!newProductRows[product.id]) {
-        newProductRows[product.id] = [];
+    selectedProductsForm.forEach(product => {
+      const productId = product.id;
+      
+      if (!newProductRows[productId]) {
+        newProductRows[productId] = [];
       }
-      if (!newProductDynamicValues[product.id]) {
-        newProductDynamicValues[product.id] = {};
+      if (!newProductDynamicValues[productId]) {
+        newProductDynamicValues[productId] = {};
+      }
+      if (!newProductRates[productId]) {
+        newProductRates[productId] = product.rate || "";
+      }
+      if (!newProductGSTs[productId]) {
+        newProductGSTs[productId] = product.gst || null;
       }
     });
 
     // Remove data for deselected products
     Object.keys(newProductRows).forEach(productId => {
-      if (!selectedProducts.find(p => p.id === productId)) {
+      if (!selectedProductsForm.find(p => p.id === productId)) {
         delete newProductRows[productId];
         delete newProductDynamicValues[productId];
+        delete newProductRates[productId];
+        delete newProductGSTs[productId];
       }
     });
 
     setProductRows(newProductRows);
     setProductDynamicValues(newProductDynamicValues);
+    setProductRates(newProductRates);
+    setProductGSTs(newProductGSTs);
 
     // Reset to first tab if current tab doesn't exist
-    if (activeTab >= selectedProducts.length) {
+    if (activeTab >= selectedProductsForm.length) {
       setActiveTab(0);
     }
-  }, [selectedProducts]);
+  }, [selectedProductsForm]);
 
   /* ---------- GET DYNAMIC FIELDS FOR PRODUCT ---------- */
   const getDynamicFields = (product) => {
@@ -133,7 +267,7 @@ export default function AddStockPage() {
 
   /* ---------- ADD ROWS FOR UNIQUE PRODUCT ---------- */
   const addRowsToProduct = (productId, count) => {
-    const product = selectedProducts.find(p => p.id === productId);
+    const product = selectedProductsForm.find(p => p.id === productId);
     if (!product) return;
 
     const dynamicFields = getDynamicFields(product);
@@ -186,6 +320,22 @@ export default function AddStockPage() {
     }));
   };
 
+  /* ---------- UPDATE PRODUCT RATE ---------- */
+  const updateProductRate = (productId, value) => {
+    setProductRates(prev => ({
+      ...prev,
+      [productId]: value
+    }));
+  };
+
+  /* ---------- UPDATE PRODUCT GST ---------- */
+  const updateProductGST = (productId, value) => {
+    setProductGSTs(prev => ({
+      ...prev,
+      [productId]: value
+    }));
+  };
+
   /* ---------- VALIDATE FORM ---------- */
   const validateForm = () => {
     if (!selectedVendor) {
@@ -193,7 +343,7 @@ export default function AddStockPage() {
       return false;
     }
 
-    if (selectedProducts.length === 0) {
+    if (selectedProductsForm.length === 0) {
       toast.error("Please select at least one product");
       return false;
     }
@@ -213,18 +363,21 @@ export default function AddStockPage() {
       return false;
     }
 
-    if (!watchRate || Number(watchRate) <= 0) {
-      toast.error("Rate is required and must be greater than 0");
-      return false;
-    }
+    // Validate each product's rate and GST
+    for (const product of selectedProductsForm) {
+      const productRate = productRates[product.id];
+      const productGST = productGSTs[product.id];
 
-    if (!watchGst) {
-      toast.error("GST is required");
-      return false;
-    }
+      if (!productRate || Number(productRate) <= 0) {
+        toast.error(`Rate is required for ${product.productName} and must be greater than 0`);
+        return false;
+      }
 
-    // Validate each product
-    for (const product of selectedProducts) {
+      if (!productGST) {
+        toast.error(`GST is required for ${product.productName}`);
+        return false;
+      }
+
       const isUnique = product.identifierType === "UNIQUE";
 
       if (isUnique) {
@@ -240,7 +393,7 @@ export default function AddStockPage() {
   };
 
   /* ---------- SUBMIT FORM ---------- */
-  const onSubmit = async (formData) => {
+  const onSubmitForm = async (formData) => {
     if (!validateForm()) {
       return;
     }
@@ -252,73 +405,107 @@ export default function AddStockPage() {
       warehouseName: formData.warehouse.fromWarehouse,
       purchaseDate: formData.purchaseDate,
       billNo: formData.billNo,
-      rate: Number(formData.rate),
-      gst: formData.gst.value,
-      totalProducts: selectedProducts.length,
-      products: selectedProducts.map(product => {
+      totalProducts: selectedProductsForm.length,
+      products: selectedProductsForm.map(product => {
         const isUnique = product.identifierType === "UNIQUE";
         const rows = productRows[product.id] || [];
+        const productRate = productRates[product.id];
+        const productGST = productGSTs[product.id];
+        const dyn = productDynamicValues[product.id] || {};
+        const dynQty = dyn.quantity;
 
         return {
           productId: product.id,
           productName: product.productName,
           identifierType: product.identifierType,
-          quantity: isUnique ? rows.length : 1,
-          rate: Number(formData.rate),
-          gst: formData.gst.value,
+
+          // 🔑 quantity logic (FINAL)
+          ...(isUnique
+            ? { quantity: rows.length }
+            : dynQty
+              ? { quantity: Number(dynQty) }
+              : { quantity: product.quantity || 0 }),
+
+          rate: Number(productRate),
+          gst: productGST.value,
           items: isUnique ? rows : [],
-          dynamicValues: !isUnique ? (productDynamicValues[product.id] || {}) : {},
-          productData: {
-            rows: rows,
-            dynamicValues: productDynamicValues[product.id] || {}
-          },
-          createdAt: new Date().toISOString()
+          quantityAlert: 10,
+          dynamicValues: !isUnique ? dyn : {},
         };
       }),
-      createdAt: new Date().toLocaleString("en-IN"),
       status: "active"
     };
 
     try {
-      console.log("Submitting payload:", payload);
-
-      const response = await fetch("http://localhost:5001/stocks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      let response;
+      
+      if (isEditMode && stockId) {
+        // UPDATE existing stock
+        payload.id = stockId;
+        if (existingStock?.createdAt) {
+          payload.createdAt = existingStock.createdAt;
+        }
+        payload.updatedAt = new Date().toISOString();
+        
+        response = await fetch(`http://localhost:5001/stocks/${stockId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // CREATE new stock
+        payload.createdAt = new Date().toISOString();
+        
+        response = await fetch("http://localhost:5001/stocks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (response.ok) {
-        toast.success("Stock saved successfully!");
+        const savedData = await response.json();
+        toast.success(isEditMode ? "Stock updated successfully!" : "Stock saved successfully!");
+        
+        // Reset form
         reset();
         setProductRows({});
         setProductDynamicValues({});
+        setProductRates({});
+        setProductGSTs({});
         setActiveTab(0);
+        
+        // Close modal and notify parent
+        if (onClose) onClose();
+        if (onSuccess) onSuccess(savedData);
+        
       } else {
-        toast.error("Failed to save stock");
+        toast.error(isEditMode ? "Failed to update stock" : "Failed to save stock");
       }
 
     } catch (error) {
-      toast.error("Failed to save stock");
+      toast.error(isEditMode ? "Failed to update stock" : "Failed to save stock");
       console.error(error);
     }
   };
 
   /* ---------- RENDER PRODUCT TAB CONTENT ---------- */
   const renderProductTabContent = () => {
-    if (selectedProducts.length === 0) return null;
+    if (selectedProductsForm.length === 0) return null;
 
-    const product = selectedProducts[activeTab];
+    const product = selectedProductsForm[activeTab];
     const isUnique = product.identifierType === "UNIQUE";
     const isNonUnique = product.identifierType === "NON_UNIQUE";
     const dynamicFields = getDynamicFields(product);
     const rows = productRows[product.id] || [];
     const dynamicValues = productDynamicValues[product.id] || {};
+    const productRate = productRates[product.id] || "";
+    const productGST = productGSTs[product.id] || null;
 
     return (
       <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-        {/* Product Header */}
-        <div className="flex justify-between items-center mb-4">
+        {/* Product Header with Rate and GST */}
+        <div className="flex flex-wrap justify-between items-start mb-4 gap-3">
           <div>
             <h3 className="text-lg font-semibold text-gray-800">
               {product.productName}
@@ -327,16 +514,63 @@ export default function AddStockPage() {
               Type: <span className="font-medium">{product.identifierType}</span>
             </p>
           </div>
-          <div className="text-xs">
-            {isUnique ? (
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                {rows.length} items
-              </span>
-            ) : (
-              <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
-                Non-Unique
-              </span>
-            )}
+
+          {/* Rate and GST per product */}
+          <div className="flex flex-col md:flex-row gap-3">
+            {/* Rate Input */}
+            <div className="min-w-[150px]">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Rate (₹) for this product
+                <span className="text-red-500"> *</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={productRate}
+                onChange={(e) => updateProductRate(product.id, e.target.value)}
+                placeholder="0.00"
+                className="border border-gray-300 rounded px-2 py-1.5 w-full text-sm"
+              />
+              {(!productRate || Number(productRate) <= 0) && (
+                <p className="text-xs text-red-500 mt-1">Required & must be &gt; 0</p>
+              )}
+            </div>
+
+            {/* GST Select */}
+            <div className="min-w-[150px]">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                GST % for this product
+                <span className="text-red-500"> *</span>
+              </label>
+              <Select
+                options={gstOptions}
+                value={productGST}
+                onChange={(value) => updateProductGST(product.id, value)}
+                placeholder="Select GST"
+                className="text-sm"
+                classNamePrefix="select"
+              />
+              {!productGST && (
+                <p className="text-xs text-red-500 mt-1">Required</p>
+              )}
+            </div>
+
+            {/* Item Count Badge */}
+            <div className="min-w-[100px]">
+              <div className="text-xs text-gray-600 mb-1">Item Count</div>
+              {isUnique ? (
+                <div className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded text-center">
+                  <span className="font-medium text-sm">{rows.length}</span>
+                  <span className="text-xs ml-1">items</span>
+                </div>
+              ) : (
+                <div className="bg-green-100 text-green-800 px-3 py-1.5 rounded text-center">
+                  <span className="font-medium text-sm">1</span>
+                  <span className="text-xs ml-1">batch</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -442,7 +676,15 @@ export default function AddStockPage() {
                             <input
                               type={field.type}
                               value={row[field.key] || ""}
-                              onChange={(e) => updateRowField(product.id, i, field.key, e.target.value)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (isDuplicateValue(rows, i, field.key, val)) {
+                                  setRowError(`${field.label || field.key} must be unique`)
+                                  alert(`${field.label || field.key} must be unique`);
+                                  return;
+                                }
+                                updateRowField(product.id, i, field.key, val);
+                              }}
                               className="border border-gray-300 rounded px-2 py-1 w-full text-sm"
                               placeholder={field.placeholder}
                             />
@@ -492,337 +734,380 @@ export default function AddStockPage() {
 
   return (
     <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="max-w-7xl mx-auto p-2 bg-white rounded-lg shadow"
+      onSubmit={handleSubmit(onSubmitForm)}
+      className="max-w-7xl mx-auto p-4 bg-white"
     >
-      
-      {/* COMPACT FORM LAYOUT */}
-      <div>
-        
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-          {/* Vendor + Products in same row */}
-          <div className="col-span-1">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Vendor
-              <span className="text-red-500"> *</span>
-            </label>
-            <Controller
-              name="vendor"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  options={vendors}
-                  placeholder="Select Vendor"
-                  getOptionLabel={(v) => v.vendorName}
-                  getOptionValue={(v) => v.id}
-                  className="text-sm"
-                  classNamePrefix="select"
-                />
-              )}
-            />
-            {errors.vendor && (
-              <p className="text-xs text-red-500 mt-1">Required</p>
-            )}
-          </div>
-
-          {/* Products select - now next to vendor */}
-          <div className="col-span-1">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Products
-              <span className="text-red-500"> *</span>
-            </label>
-            <Controller
-              name="selectedProducts"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  options={vendorProducts}
-                  placeholder="Select Products"
-                  isMulti
-                  isDisabled={!selectedVendor}
-                  getOptionLabel={(p) => p.productName}
-                  getOptionValue={(p) => p.id}
-                  className="text-sm"
-                  classNamePrefix="select"
-                />
-              )}
-            />
-            {errors.selectedProducts && (
-              <p className="text-xs text-red-500 mt-1">Required</p>
-            )}
-          </div>
-
-          {/* Warehouse */}
-          <div className="col-span-1">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Warehouse
-              <span className="text-red-500"> *</span>
-            </label>
-            <Controller
-              name="warehouse"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  options={warehouses.filter(w => w.status === true)}
-                  placeholder="Select Warehouse"
-                  getOptionLabel={(w) => w.fromWarehouse}
-                  getOptionValue={(w) => w.id}
-                  className="text-sm"
-                  classNamePrefix="select"
-                  isClearable
-                />
-              )}
-            />
-            {errors.warehouse && (
-              <p className="text-xs text-red-500 mt-1">Required</p>
-            )}
-          </div>
-
-          {/* Purchase Date */}
-          <div className="col-span-1">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Purchase Date
-              <span className="text-red-500"> *</span>
-            </label>
-            <Controller
-              name="purchaseDate"
-              control={control}
-              rules={{ required: "Required" }}
-              render={({ field }) => (
-                <input
-                  {...field}
-                  type="date"
-                  className="border border-gray-300 rounded px-2 py-1.5 w-full text-sm"
-                />
-              )}
-            />
-            {errors.purchaseDate && (
-              <p className="text-xs text-red-500 mt-1">{errors.purchaseDate?.message}</p>
-            )}
-          </div>
+      {/* Loading State */}
+      {isLoading && isEditMode && (
+        <div className="text-center py-8">
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading stock data...</p>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Bill No */}
-          <div className="col-span-1">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Bill No
-              <span className="text-red-500"> *</span>
-            </label>
-            <Controller
-              name="billNo"
-              control={control}
-              rules={{
-                required: "Required",
-                minLength: { value: 3, message: "Min 3 chars" }
-              }}
-              render={({ field }) => (
-                <input
-                  {...field}
-                  type="text"
-                  placeholder="Bill Number"
-                  className="border border-gray-300 rounded px-2 py-1.5 w-full text-sm"
-                />
-              )}
-            />
-            {errors.billNo && (
-              <p className="text-xs text-red-500 mt-1">{errors.billNo?.message}</p>
-            )}
-          </div>
-
-          {/* Rate */}
-          <div className="col-span-1">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Rate (₹)
-              <span className="text-red-500"> *</span>
-            </label>
-            <Controller
-              name="rate"
-              control={control}
-              rules={{
-                required: "Required",
-                min: { value: 0.01, message: "Must be > 0" }
-              }}
-              render={({ field }) => (
-                <input
-                  {...field}
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  min="0.01"
-                  className="border border-gray-300 rounded px-2 py-1.5 w-full text-sm"
-                />
-              )}
-            />
-            {errors.rate && (
-              <p className="text-xs text-red-500 mt-1">{errors.rate?.message}</p>
-            )}
-          </div>
-
-          {/* GST */}
-          <div className="col-span-1">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              GST %
-              <span className="text-red-500"> *</span>
-            </label>
-            <Controller
-              name="gst"
-              control={control}
-              rules={{ required: "Required" }}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  options={gstOptions}
-                  placeholder="Select GST"
-                  className="text-sm"
-                  classNamePrefix="select"
-                />
-              )}
-            />
-            {errors.gst && (
-              <p className="text-xs text-red-500 mt-1">{errors.gst?.message}</p>
-            )}
-          </div>
-
-          {/* Selected Products Summary */}
-          <div className="col-span-1">
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Selected Products
-            </label>
-            <div className="border border-gray-300 rounded px-2 py-1.5 bg-gray-50 min-h-[38px]">
-              {selectedProducts.length > 0 ? (
-                <div className="text-xs">
-                  <span className="font-medium">{selectedProducts.length}</span> product(s) selected
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {selectedProducts.slice(0, 2).map((product, index) => (
-                      <span
-                        key={product.id}
-                        className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs"
-                      >
-                        {product.productName}
-                      </span>
-                    ))}
-                    {selectedProducts.length > 2 && (
-                      <span className="text-gray-500 text-xs">
-                        +{selectedProducts.length - 2} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <span className="text-gray-400 text-xs">No products selected</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* PRODUCT TABS SECTION - Only show when products selected */}
-      {selectedProducts.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center mb-3">
-            <h2 className="text-lg font-semibold text-gray-800">Product Details</h2>
-            <div className="ml-auto text-xs text-gray-600">
-              Product {activeTab + 1} of {selectedProducts.length}
-            </div>
-          </div>
-
-          {/* Compact Tab Navigation */}
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-0.5 overflow-x-auto" aria-label="Tabs">
-              {selectedProducts.map((product, index) => (
-                <button
-                  key={product.id}
-                  type="button"
-                  onClick={() => setActiveTab(index)}
-                  className={`
-                    px-3 py-2 text-xs font-medium rounded-t border-b-2 transition-all whitespace-nowrap
-                    ${activeTab === index
-                      ? 'bg-white border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                    }
-                  `}
-                >
-                  <div className="flex items-center">
-                    <span className={`w-5 h-5 flex items-center justify-center rounded text-xs mr-1.5 ${activeTab === index ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
-                      {index + 1}
-                    </span>
-                    <span className="truncate max-w-[120px]">{product.productName}</span>
-                    <span className="ml-1.5 text-xs px-1 py-0.5 rounded bg-gray-100">
-                      {product.identifierType === "UNIQUE" ? "U" : "NU"}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* Tab Content */}
-          {renderProductTabContent()}
-
-          {/* Tab Navigation Buttons */}
-          {selectedProducts.length > 1 && (
-            <div className="flex justify-between mt-4">
-              <button
-                type="button"
-                onClick={() => setActiveTab(prev => Math.max(0, prev - 1))}
-                disabled={activeTab === 0}
-                className={`px-3 py-1 rounded text-sm ${activeTab === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-              >
-                ← Previous
-              </button>
-
-              <div className="text-xs text-gray-600 flex items-center">
-                <span className="font-medium mr-1">{selectedProducts[activeTab]?.productName}</span>
-                ({activeTab + 1}/{selectedProducts.length})
+      {(!isLoading || !isEditMode) && (
+        <>
+          {/* Header for Edit Mode */}
+          {isEditMode && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span className="text-sm font-medium text-blue-800">Edit Mode - Stock ID: #{stockId}</span>
+                <span className="ml-auto text-xs text-gray-600">
+                  {existingStock?.createdAt ? `Created: ${new Date(existingStock.createdAt).toLocaleDateString('en-IN')}` : ''}
+                </span>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab(prev => Math.min(selectedProducts.length - 1, prev + 1))}
-                disabled={activeTab === selectedProducts.length - 1}
-                className={`px-3 py-1 rounded text-sm ${activeTab === selectedProducts.length - 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-              >
-                Next →
-              </button>
             </div>
           )}
 
-          {activeTab === selectedProducts.length - 1 && (
+          {/* COMPACT FORM LAYOUT */}
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              {/* Vendor */}
+              <div className="col-span-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Vendor
+                  <span className="text-red-500"> *</span>
+                </label>
+                <Controller
+                  name="vendor"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      options={vendors}
+                      placeholder="Select Vendor"
+                      getOptionLabel={(v) => v.vendorName}
+                      getOptionValue={(v) => v.id}
+                      className="text-sm"
+                      classNamePrefix="select"
+                      isDisabled={isEditMode} // Disable vendor change in edit mode
+                    />
+                  )}
+                />
+                {errors.vendor && (
+                  <p className="text-xs text-red-500 mt-1">Required</p>
+                )}
+              </div>
+
+              {/* Products select */}
+              <div className="col-span-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Products
+                  <span className="text-red-500"> *</span>
+                </label>
+                <Controller
+                  name="selectedProducts"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      options={vendorProducts}
+                      placeholder="Select Products"
+                      isMulti
+                      isDisabled={!selectedVendor}
+                      getOptionLabel={(p) => p.productName}
+                      getOptionValue={(p) => p.id}
+                      className="text-sm"
+                      classNamePrefix="select"
+                    />
+                  )}
+                />
+                {errors.selectedProducts && (
+                  <p className="text-xs text-red-500 mt-1">Required</p>
+                )}
+              </div>
+
+              {/* Warehouse */}
+              <div className="col-span-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Warehouse
+                  <span className="text-red-500"> *</span>
+                </label>
+                <Controller
+                  name="warehouse"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      options={warehouses.filter(w => w.status === true)}
+                      placeholder="Select Warehouse"
+                      getOptionLabel={(w) => w.fromWarehouse}
+                      getOptionValue={(w) => w.id}
+                      className="text-sm"
+                      classNamePrefix="select"
+                      isClearable
+                    />
+                  )}
+                />
+                {errors.warehouse && (
+                  <p className="text-xs text-red-500 mt-1">Required</p>
+                )}
+              </div>
+
+              {/* Purchase Date */}
+              <div className="col-span-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Purchase Date
+                  <span className="text-red-500"> *</span>
+                </label>
+                <Controller
+                  name="purchaseDate"
+                  control={control}
+                  rules={{ required: "Required" }}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="date"
+                      className="border border-gray-300 rounded px-2 py-1.5 w-full text-sm"
+                    />
+                  )}
+                />
+                {errors.purchaseDate && (
+                  <p className="text-xs text-red-500 mt-1">{errors.purchaseDate?.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Bill No */}
+              <div className="col-span-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Bill No
+                  <span className="text-red-500"> *</span>
+                </label>
+                <Controller
+                  name="billNo"
+                  control={control}
+                  rules={{
+                    required: "Required",
+                    minLength: { value: 3, message: "Min 3 chars" }
+                  }}
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="text"
+                      placeholder="Bill Number"
+                      className="border border-gray-300 rounded px-2 py-1.5 w-full text-sm"
+                    />
+                  )}
+                />
+                {errors.billNo && (
+                  <p className="text-xs text-red-500 mt-1">{errors.billNo?.message}</p>
+                )}
+              </div>
+
+              {/* Selected Products Summary */}
+              <div className="col-span-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Selected Products
+                </label>
+                <div className="border border-gray-300 rounded px-2 py-1.5 bg-gray-50 min-h-[38px]">
+                  {selectedProductsForm.length > 0 ? (
+                    <div className="text-xs">
+                      <span className="font-medium">{selectedProductsForm.length}</span> product(s) selected
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedProductsForm.slice(0, 2).map((product, index) => (
+                          <span
+                            key={product.id}
+                            className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs"
+                          >
+                            {product.productName}
+                          </span>
+                        ))}
+                        {selectedProductsForm.length > 2 && (
+                          <span className="text-gray-500 text-xs">
+                            +{selectedProductsForm.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 text-xs">No products selected</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Total Summary */}
+              <div className="col-span-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Rate & GST Summary
+                </label>
+                <div className="border border-gray-300 rounded px-2 py-1.5 bg-gray-50 min-h-[38px]">
+                  {selectedProductsForm.length > 0 ? (
+                    <div className="text-xs">
+                      <div className="flex justify-between">
+                        <span>Products:</span>
+                        <span className="font-medium">{selectedProductsForm.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Rate per product:</span>
+                        <span className="font-medium">Individual</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>GST per product:</span>
+                        <span className="font-medium">Individual</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 text-xs">Select products to see rates</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* PRODUCT TABS SECTION - Only show when products selected */}
+          {selectedProductsForm.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center mb-3">
+                <h2 className="text-lg font-semibold text-gray-800">Product Details</h2>
+                <div className="ml-auto text-xs text-gray-600">
+                  Product {activeTab + 1} of {selectedProductsForm.length}
+                </div>
+              </div>
+
+              {/* Compact Tab Navigation */}
+              <div className="border-b border-gray-200">
+                <nav className="flex space-x-0.5 overflow-x-auto" aria-label="Tabs">
+                  {selectedProductsForm.map((product, index) => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => setActiveTab(index)}
+                      className={`
+                        px-3 py-2 text-xs font-medium rounded-t border-b-2 transition-all whitespace-nowrap
+                        ${activeTab === index
+                          ? 'bg-white border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center">
+                        <span className={`w-5 h-5 flex items-center justify-center rounded text-xs mr-1.5 ${activeTab === index ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                          {index + 1}
+                        </span>
+                        <span className="truncate max-w-[120px]">{product.productName}</span>
+                        <span className="ml-1.5 text-xs px-1 py-0.5 rounded bg-gray-100">
+                          {product.identifierType === "UNIQUE" ? "U" : "NU"}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
+              {/* Tab Content */}
+              {renderProductTabContent()}
+
+              {/* Tab Navigation Buttons */}
+              {selectedProductsForm.length > 1 && (
+                <div className="flex justify-between mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(prev => Math.max(0, prev - 1))}
+                    disabled={activeTab === 0}
+                    className={`px-3 py-1 rounded text-sm ${activeTab === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                  >
+                    ← Previous
+                  </button>
+
+                  <div className="text-xs text-gray-600 flex items-center">
+                    <span className="font-medium mr-1">{selectedProductsForm[activeTab]?.productName}</span>
+                    ({activeTab + 1}/{selectedProductsForm.length})
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(prev => Math.min(selectedProductsForm.length - 1, prev + 1))}
+                    disabled={activeTab === selectedProductsForm.length - 1}
+                    className={`px-3 py-1 rounded text-sm ${activeTab === selectedProductsForm.length - 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+
+              {activeTab === selectedProductsForm.length - 1 && (
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-800">
+                        Ready to {isEditMode ? 'Update' : 'Save'}
+                      </h3>
+                      <p className="text-xs text-gray-600">
+                        {selectedProductsForm.length} product(s) will be {isEditMode ? 'updated' : 'saved'}
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                      >
+                        Cancel
+                      </button>
+                      
+                      <button
+                        type="submit"
+                        className={`px-6 py-2 rounded-lg font-medium shadow hover:shadow-md transition-all flex items-center ${
+                          isEditMode 
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                            : 'bg-green-600 hover:bg-green-700 text-white'
+                        }`}
+                      >
+                        {isEditMode ? 'Update Stock' : 'Save Stock'}
+                        <span className="ml-2 text-xs bg-white bg-opacity-30 px-2 py-0.5 rounded">
+                          {selectedProductsForm.length}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Show Save button if no products selected */}
+          {selectedProductsForm.length === 0 && (
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-800">
-                    Ready to Save
+                    Ready to {isEditMode ? 'Update' : 'Save'}
                   </h3>
                   <p className="text-xs text-gray-600">
-                    {selectedProducts.length} product(s) will be saved
+                    Please select at least one product
                   </p>
                 </div>
-
-                <button
-                  type="submit"
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium shadow hover:shadow-md transition-all"
-                >
-                  Save All Products
-                  <span className="ml-2 text-xs bg-green-700 px-2 py-0.5 rounded">
-                    {selectedProducts.length}
-                  </span>
-                </button>
+                
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                  
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-gray-400 text-white rounded-lg font-medium cursor-not-allowed"
+                    disabled={true}
+                  >
+                    {isEditMode ? 'Update' : 'Save'}
+                  </button>
+                </div>
               </div>
             </div>
           )}
-
-          {/* SAVE BUTTON - NOW ONLY APPEARS AFTER TABS (WHEN PRODUCTS SELECTED) */}
-
-        </div>
+        </>
       )}
     </form>
   );
