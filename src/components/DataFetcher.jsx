@@ -16,7 +16,7 @@ const DataFetcher = ({ type, id }) => {
       setError("");
 
       let apiUrl;
-      console.log("dsf",type)
+      // console.log("dsf",type)
         if (type === "product") {
           apiUrl = "http://localhost:5001/products";
         } else if (type === "fromWarehouse") {
@@ -53,7 +53,7 @@ const DataFetcher = ({ type, id }) => {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
   if (!item) return <div>{type} not found</div>;
- console.log("🚀 ~ DataFetcher ~ item:", item)
+//  console.log("🚀 ~ DataFetcher ~ item:", item)
   // Show name depending on type
   const name =
   type === "product" ? item.productName :
