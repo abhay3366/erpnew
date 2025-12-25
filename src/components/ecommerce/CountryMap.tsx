@@ -1,13 +1,20 @@
-import React from "react";
-import dynamic from "next/dynamic";
-import { worldMill } from "@react-jvectormap/world";
+"use client"
+
+import React from "react"
+import dynamic from "next/dynamic"
+import { worldMill } from "@react-jvectormap/world"
 
 const VectorMap = dynamic(
   () => import("@react-jvectormap/core").then((mod) => mod.VectorMap),
   { ssr: false }
-);
+)
 
-const CountryMap = ({ mapColor }) => {
+// ✅ Props type
+type CountryMapProps = {
+  mapColor?: string
+}
+
+const CountryMap: React.FC<CountryMapProps> = ({ mapColor }) => {
   return (
     <VectorMap
       map={worldMill}
@@ -15,14 +22,14 @@ const CountryMap = ({ mapColor }) => {
       markerStyle={{
         initial: {
           fill: "#465FFF",
-          r: 4, // Custom radius for markers
+          r: 4,
         },
       }}
       markersSelectable={true}
       markers={[
         {
           latLng: [37.2580397, -104.657039],
-          name: "United States",
+          name: "India",
           style: {
             fill: "#465FFF",
             borderWidth: 1,
@@ -33,12 +40,20 @@ const CountryMap = ({ mapColor }) => {
         {
           latLng: [20.7504374, 73.7276105],
           name: "India",
-          style: { fill: "#465FFF", borderWidth: 1, borderColor: "white" },
+          style: {
+            fill: "#465FFF",
+            borderWidth: 1,
+            borderColor: "white",
+          },
         },
         {
           latLng: [53.613, -11.6368],
           name: "United Kingdom",
-          style: { fill: "#465FFF", borderWidth: 1, borderColor: "white" },
+          style: {
+            fill: "#465FFF",
+            borderWidth: 1,
+            borderColor: "white",
+          },
         },
         {
           latLng: [-25.0304388, 115.2092761],
@@ -51,44 +66,36 @@ const CountryMap = ({ mapColor }) => {
           },
         },
       ]}
-      zoomOnScroll={false}
+      zoomOnScroll={true}
       zoomMax={12}
       zoomMin={1}
       zoomAnimate={true}
       zoomStep={1.5}
       regionStyle={{
         initial: {
-          fill: mapColor || "#D0D5DD",
+          fill: mapColor ?? "#D0D5DD",
           fillOpacity: 1,
           fontFamily: "Outfit",
           stroke: "none",
-          strokeWidth: 0,
-          strokeOpacity: 0,
         },
         hover: {
           fillOpacity: 0.7,
           cursor: "pointer",
-          fill: "#465fff",
-          stroke: "none",
+          fill: "#465FFF",
         },
         selected: {
           fill: "#465FFF",
         },
-        selectedHover: {},
       }}
       regionLabelStyle={{
         initial: {
           fill: "#35373e",
           fontWeight: 500,
           fontSize: "13px",
-          stroke: "none",
         },
-        hover: {},
-        selected: {},
-        selectedHover: {},
       }}
     />
-  );
-};
+  )
+}
 
-export default CountryMap;
+export default CountryMap

@@ -7,5 +7,7 @@ export const metadata: Metadata = {
 };
 
 export default function SignIn() {
-  return <SignInForm />;
+  return <div className="flex flex-col flex-1 justify-center items-center w-full">
+    <SignInForm />
+  </div>;
 }

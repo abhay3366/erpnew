@@ -9,13 +9,19 @@
 
 # testing
 /coverage
-
+/db.json
+db.json
 # next.js
 /.next/
 /out/
+/db.json
+db.json
 
 # production
 /build
+
+/db.json
+db.json
 
 # misc
 .DS_Store
