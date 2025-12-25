@@ -23,7 +23,7 @@ export default function AddStockPage() {
   const [vendorProducts, setVendorProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [fieldMasters, setFieldMasters] = useState([]);
-  
+
   const [productRows, setProductRows] = useState({});
   const [productDynamicValues, setProductDynamicValues] = useState({});
   const [activeTab, setActiveTab] = useState(0);
@@ -74,7 +74,7 @@ export default function AddStockPage() {
 
     const ids = selectedVendor.products?.map(p => p.id) || [];
     setVendorProducts(products.filter(p => ids.includes(p.id)));
-    
+
     // Reset products when vendor changes
     setValue("selectedProducts", []);
     setProductRows({});
@@ -107,7 +107,7 @@ export default function AddStockPage() {
 
     setProductRows(newProductRows);
     setProductDynamicValues(newProductDynamicValues);
-    
+
     // Reset to first tab if current tab doesn't exist
     if (activeTab >= selectedProducts.length) {
       setActiveTab(0);
@@ -117,11 +117,11 @@ export default function AddStockPage() {
   /* ---------- GET DYNAMIC FIELDS FOR PRODUCT ---------- */
   const getDynamicFields = (product) => {
     if (!product) return [];
-    
+
     const isUnique = product.identifierType === "UNIQUE";
     const isNonUnique = product.identifierType === "NON_UNIQUE";
-    
-    return fieldMasters.filter(field => 
+
+    return fieldMasters.filter(field =>
       field.status &&
       product.selectedFieldIds?.includes(field.id) &&
       (
@@ -137,7 +137,7 @@ export default function AddStockPage() {
     if (!product) return;
 
     const dynamicFields = getDynamicFields(product);
-    
+
     const newRows = Array.from({ length: count }, () => {
       const row = { id: Date.now() + Math.random() };
       dynamicFields.forEach(field => {
@@ -258,7 +258,7 @@ export default function AddStockPage() {
       products: selectedProducts.map(product => {
         const isUnique = product.identifierType === "UNIQUE";
         const rows = productRows[product.id] || [];
-        
+
         return {
           productId: product.id,
           productName: product.productName,
@@ -281,7 +281,7 @@ export default function AddStockPage() {
 
     try {
       console.log("Submitting payload:", payload);
-      
+
       const response = await fetch("http://localhost:5001/stocks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -297,7 +297,7 @@ export default function AddStockPage() {
       } else {
         toast.error("Failed to save stock");
       }
-      
+
     } catch (error) {
       toast.error("Failed to save stock");
       console.error(error);
@@ -307,7 +307,7 @@ export default function AddStockPage() {
   /* ---------- RENDER PRODUCT TAB CONTENT ---------- */
   const renderProductTabContent = () => {
     if (selectedProducts.length === 0) return null;
-    
+
     const product = selectedProducts[activeTab];
     const isUnique = product.identifierType === "UNIQUE";
     const isNonUnique = product.identifierType === "NON_UNIQUE";
@@ -479,7 +479,7 @@ export default function AddStockPage() {
             )}
           </>
         )}
-        
+
         {/* Message if no dynamic fields for non-unique product */}
         {isNonUnique && dynamicFields.length === 0 && (
           <div className="text-center py-4 bg-yellow-50 rounded border border-yellow-200 text-sm">
@@ -493,18 +493,13 @@ export default function AddStockPage() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="max-w-7xl mx-auto p-4 bg-white rounded-lg shadow"
+      className="max-w-7xl mx-auto p-2 bg-white rounded-lg shadow"
     >
-      {/* HEADER */}
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-800">Add Stock Purchase</h1>
-        <p className="text-gray-600 text-sm mt-1">Add multiple products with common purchase details</p>
-      </div>
-
+      
       {/* COMPACT FORM LAYOUT */}
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-3">Purchase Information</h2>
+      <div>
         
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           {/* Vendor + Products in same row */}
           <div className="col-span-1">
@@ -624,7 +619,7 @@ export default function AddStockPage() {
             <Controller
               name="billNo"
               control={control}
-              rules={{ 
+              rules={{
                 required: "Required",
                 minLength: { value: 3, message: "Min 3 chars" }
               }}
@@ -651,7 +646,7 @@ export default function AddStockPage() {
             <Controller
               name="rate"
               control={control}
-              rules={{ 
+              rules={{
                 required: "Required",
                 min: { value: 0.01, message: "Must be > 0" }
               }}
@@ -707,8 +702,8 @@ export default function AddStockPage() {
                   <span className="font-medium">{selectedProducts.length}</span> product(s) selected
                   <div className="flex flex-wrap gap-1 mt-1">
                     {selectedProducts.slice(0, 2).map((product, index) => (
-                      <span 
-                        key={product.id} 
+                      <span
+                        key={product.id}
                         className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs"
                       >
                         {product.productName}
@@ -783,12 +778,12 @@ export default function AddStockPage() {
               >
                 ← Previous
               </button>
-              
+
               <div className="text-xs text-gray-600 flex items-center">
                 <span className="font-medium mr-1">{selectedProducts[activeTab]?.productName}</span>
                 ({activeTab + 1}/{selectedProducts.length})
               </div>
-              
+
               <button
                 type="button"
                 onClick={() => setActiveTab(prev => Math.min(selectedProducts.length - 1, prev + 1))}
@@ -799,34 +794,34 @@ export default function AddStockPage() {
               </button>
             </div>
           )}
-          
-       {activeTab === selectedProducts.length - 1 && (
-  <div className="mt-6 pt-4 border-t border-gray-200">
-    <div className="flex justify-between items-center">
-      <div>
-        <h3 className="text-sm font-semibold text-gray-800">
-          Ready to Save
-        </h3>
-        <p className="text-xs text-gray-600">
-          {selectedProducts.length} product(s) will be saved
-        </p>
-      </div>
 
-      <button
-        type="submit"
-        className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium shadow hover:shadow-md transition-all"
-      >
-        Save All Products
-        <span className="ml-2 text-xs bg-green-700 px-2 py-0.5 rounded">
-          {selectedProducts.length}
-        </span>
-      </button>
-    </div>
-  </div>
-)}
+          {activeTab === selectedProducts.length - 1 && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-800">
+                    Ready to Save
+                  </h3>
+                  <p className="text-xs text-gray-600">
+                    {selectedProducts.length} product(s) will be saved
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium shadow hover:shadow-md transition-all"
+                >
+                  Save All Products
+                  <span className="ml-2 text-xs bg-green-700 px-2 py-0.5 rounded">
+                    {selectedProducts.length}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* SAVE BUTTON - NOW ONLY APPEARS AFTER TABS (WHEN PRODUCTS SELECTED) */}
-         
+
         </div>
       )}
     </form>
