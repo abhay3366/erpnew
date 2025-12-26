@@ -22,6 +22,39 @@ const StockPurchase = () => {
   const [rowHeights, setRowHeights] = useState({})
   const rowRefs = useRef({})
 
+  // Function to extract dynamic column headers from items
+  const getDynamicHeadersFromItems = (items) => {
+    if (!items || items.length === 0) return []
+    
+    const allHeaders = new Set()
+    
+    items.forEach(item => {
+      Object.keys(item).forEach(key => {
+        // Exclude id field
+        if (key !== 'id') {
+          allHeaders.add(key)
+        }
+      })
+    })
+    
+    return Array.from(allHeaders)
+  }
+
+  // Function to get dynamic headers from dynamicValues
+  const getDynamicHeadersFromDynamicValues = (dynamicValues) => {
+    if (!dynamicValues || Object.keys(dynamicValues).length === 0) return []
+    return Object.keys(dynamicValues)
+  }
+
+  // Function to format header name (capitalize, remove underscores)
+  const formatHeaderName = (header) => {
+    return header
+      .replace(/_/g, ' ')
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase())
+      .trim()
+  }
+
   useEffect(() => {
     fetchPurchaseOrders()
   }, [])
@@ -215,6 +248,73 @@ const StockPurchase = () => {
     }
     
     return buttons
+  }
+
+  // Render dynamic table headers for items
+  const renderDynamicHeadersForItems = (items) => {
+    const headers = getDynamicHeadersFromItems(items)
+    
+    if (headers.length === 0) {
+      return (
+        <tr>
+          <th colSpan={4} className="px-3 py-2 text-left text-xs font-bold text-purple-700 uppercase">
+            No additional details available
+          </th>
+        </tr>
+      )
+    }
+    
+    return headers.map((header, index) => (
+      <th key={index} className="px-3 py-2 text-left text-xs font-bold text-purple-700 uppercase">
+        {formatHeaderName(header)}
+      </th>
+    ))
+  }
+
+  // Render dynamic table cells for items
+  const renderDynamicCellsForItems = (item, headers) => {
+    return headers.map((header, index) => (
+      <td key={index} className="px-3 py-2 text-sm text-gray-900">
+        {item[header] || 'N/A'}
+      </td>
+    ))
+  }
+
+  // Render dynamic values section
+  const renderDynamicValues = (dynamicValues) => {
+    if (!dynamicValues || Object.keys(dynamicValues).length === 0) return null
+    
+    const headers = getDynamicHeadersFromDynamicValues(dynamicValues)
+    
+    return (
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <h5 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <Tag className="w-4 h-4 text-blue-600" /> Additional Details
+        </h5>
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gradient-to-r from-blue-50 to-cyan-50">
+              <tr>
+                {headers.map((header, index) => (
+                  <th key={index} className="px-3 py-2 text-left text-xs font-bold text-blue-700 uppercase">
+                    {formatHeaderName(header)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              <tr>
+                {headers.map((header, index) => (
+                  <td key={index} className="px-3 py-2 text-sm text-gray-900">
+                    {dynamicValues[header] || 'N/A'}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -425,7 +525,6 @@ const StockPurchase = () => {
                         >
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                             
                               <div>
                                 <div className="text-sm font-bold text-gray-900">
                                   {formatDate(order.purchaseDate)}
@@ -438,7 +537,6 @@ const StockPurchase = () => {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              
                               <span className={`text-sm font-bold ${expandedRows[order.id] ? 'text-purple-700' : 'text-blue-700'} bg-gradient-to-r from-purple-50 to-blue-50 px-3 py-1.5 rounded-lg border ${expandedRows[order.id] ? 'border-purple-200' : 'border-blue-200'}`}>
                                 {order.billNo}
                               </span>
@@ -446,7 +544,6 @@ const StockPurchase = () => {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                             
                               <div>
                                 <div className="text-sm font-bold text-gray-900">{order.vendorName}</div>
                                 <div className="text-xs text-gray-500">ID: {order.vendorId}</div>
@@ -455,13 +552,11 @@ const StockPurchase = () => {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              
                               <div className="text-sm font-bold text-gray-900">{order.warehouseName}</div>
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              
                               <div>
                                 <div className="text-sm font-bold text-gray-900">
                                   {order.totalProducts} items
@@ -471,7 +566,6 @@ const StockPurchase = () => {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              
                               <div className="text-sm font-bold text-emerald-700">
                                 ₹{orderTotal.total.toFixed(2)}
                               </div>
@@ -571,6 +665,9 @@ const StockPurchase = () => {
                                     <tbody className="divide-y divide-gray-200 bg-white">
                                       {order.products?.map((product, index) => {
                                         const productTotal = calculateProductTotal(product)
+                                        const dynamicHeaders = getDynamicHeadersFromItems(product.items)
+                                        const dynamicValueHeaders = getDynamicHeadersFromDynamicValues(product.dynamicValues)
+                                        
                                         return (
                                           <tr key={index} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-colors">
                                             <td className="px-3 py-2">
@@ -615,8 +712,7 @@ const StockPurchase = () => {
                                               </div>
                                             </td>
                                             <td className="px-3 py-2">
-                                              {(product.dynamicValues && Object.keys(product.dynamicValues).length > 0) || 
-                                               (product.identifierType === 'UNIQUE' && product.items?.length > 0) ? (
+                                              {(dynamicHeaders.length > 0 || dynamicValueHeaders.length > 0) ? (
                                                 <button 
                                                   className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
                                                   onClick={(e) => {
@@ -745,7 +841,7 @@ const StockPurchase = () => {
       {/* View Modal */}
       {isViewDialogOpen && selectedOrder && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-slideUp border-2 border-blue-200">
+          <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden animate-slideUp border-2 border-blue-200">
             {/* Header */}
             <div className=" p-4">
               <div className="flex justify-between items-center">
@@ -814,9 +910,12 @@ const StockPurchase = () => {
               </div>
 
               {/* Products */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {selectedOrder.products?.map((product, index) => {
                   const productTotal = calculateProductTotal(product)
+                  const dynamicHeaders = getDynamicHeadersFromItems(product.items)
+                  const dynamicValueHeaders = getDynamicHeadersFromDynamicValues(product.dynamicValues)
+                  
                   return (
                     <div key={index} className="bg-gradient-to-r from-white to-gray-50 border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-all shadow-sm">
                       <div className="flex justify-between items-start mb-4">
@@ -842,7 +941,7 @@ const StockPurchase = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                         <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                           <p className="text-xs text-gray-500 mb-1">Rate per unit</p>
                           <p className="text-lg font-bold text-gray-900">₹{product.rate?.toFixed(2)}</p>
@@ -861,6 +960,7 @@ const StockPurchase = () => {
                         </div>
                       </div>
 
+                      {/* Dynamic Items Table (for UNIQUE items) */}
                       {product.identifierType === 'UNIQUE' && product.items?.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-gray-200">
                           <h5 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
@@ -869,20 +969,32 @@ const StockPurchase = () => {
                           <div className="overflow-x-auto rounded-lg border border-gray-200">
                             <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gradient-to-r from-purple-50 to-pink-50">
-                                <tr>
-                                  <th className="px-3 py-2 text-left text-xs font-bold text-purple-700 uppercase">Serial No</th>
-                                  <th className="px-3 py-2 text-left text-xs font-bold text-purple-700 uppercase">Color</th>
-                                  <th className="px-3 py-2 text-left text-xs font-bold text-purple-700 uppercase">Warranty</th>
-                                  <th className="px-3 py-2 text-left text-xs font-bold text-purple-700 uppercase">MAC Address</th>
-                                </tr>
+                                {dynamicHeaders.length > 0 ? (
+                                  <tr>
+                                    <th className="px-3 py-2 text-left text-xs font-bold text-purple-700 uppercase">S.No</th>
+                                    {dynamicHeaders.map((header, idx) => (
+                                      <th key={idx} className="px-3 py-2 text-left text-xs font-bold text-purple-700 uppercase">
+                                        {formatHeaderName(header)}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                ) : (
+                                  <tr>
+                                    <th colSpan={5} className="px-3 py-2 text-left text-xs font-bold text-purple-700 uppercase">
+                                      No serial item details available
+                                    </th>
+                                  </tr>
+                                )}
                               </thead>
                               <tbody className="divide-y divide-gray-200 bg-white">
                                 {product.items.map((item, idx) => (
                                   <tr key={idx} className="hover:bg-purple-50/50">
-                                    <td className="px-3 py-2 text-sm font-medium text-gray-900">{item.serialno}</td>
-                                    <td className="px-3 py-2 text-sm text-gray-900">{item.color}</td>
-                                    <td className="px-3 py-2 text-sm text-gray-900">{item.warrenty}</td>
-                                    <td className="px-3 py-2 text-sm text-gray-900 font-mono">{item.macaddress}</td>
+                                    <td className="px-3 py-2 text-sm text-gray-900 text-center">{idx + 1}</td>
+                                    {dynamicHeaders.map((header, cellIdx) => (
+                                      <td key={cellIdx} className="px-3 py-2 text-sm text-gray-900">
+                                        {item[header] || 'N/A'}
+                                      </td>
+                                    ))}
                                   </tr>
                                 ))}
                               </tbody>
@@ -890,6 +1002,9 @@ const StockPurchase = () => {
                           </div>
                         </div>
                       )}
+
+                      {/* Dynamic Values Table (for NON_UNIQUE items) */}
+                      {renderDynamicValues(product.dynamicValues)}
                     </div>
                   )
                 })}
@@ -897,7 +1012,7 @@ const StockPurchase = () => {
             </div>
 
             {/* Footer */}
-            <div className="border-t-2 border-gray-200 p-1 mb-2 bg-gradient-to-r from-gray-50 to-blue-50">
+            <div className="border-t-2 border-gray-200 p-4 bg-gradient-to-r from-gray-50 to-blue-50">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="text-center md:text-left">
                   <p className="text-xs text-gray-500">Order Summary</p>
