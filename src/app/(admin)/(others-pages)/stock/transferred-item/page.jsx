@@ -812,103 +812,105 @@ export default function StockTransferPage() {
   };
 
   // FIXED: Update destination warehouse stock with ALL details for NON_UNIQUE
-  const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehouseId, billNo, sourceProductDetails = null) => {
-    try {
-      console.log("🚀 Starting destination stock update...");
-      console.log("Destination Warehouse ID:", warehouseId);
-      console.log("Item:", item);
-      console.log("Source Warehouse ID:", sourceWarehouseId);
-      console.log("Bill No:", billNo);
-      console.log("Source Product Details:", sourceProductDetails);
+// FIXED: Update destination warehouse stock with proper handling for both UNIQUE and NON_UNIQUE
+const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehouseId, billNo, sourceProductDetails = null) => {
+  try {
+    console.log("🚀 Starting destination stock update...");
+    console.log("Destination Warehouse ID:", warehouseId);
+    console.log("Item:", item);
+    console.log("Item Identifier Type:", item.identifierType);
+    console.log("Source Warehouse ID:", sourceWarehouseId);
+    console.log("Bill No:", billNo);
 
-      // First, let's check if stock already exists in destination
-      const existingDestinationStock = stocks.find(stock =>
-        stock.warehouseId === warehouseId &&
-        stock.products?.some(p => p.productId === item.productId)
+    // First, check ALL existing stocks in destination warehouse
+    const existingDestinationStocks = stocks.filter(stock =>
+      stock.warehouseId === warehouseId
+    );
+
+    console.log("Total stocks in destination:", existingDestinationStocks.length);
+
+    // Check if there's already a stock with same product ID AND same identifierType
+    const matchingStock = existingDestinationStocks.find(stock => {
+      const productMatch = stock.products?.some(p =>
+        p.productId === item.productId && p.identifierType === item.identifierType
+      );
+      return productMatch;
+    });
+
+    console.log("Found matching stock (same product + same identifierType):", matchingStock);
+
+    if (matchingStock) {
+      console.log("📦 Updating existing stock with same identifier type...");
+      const productIndex = matchingStock.products.findIndex(p =>
+        p.productId === item.productId && p.identifierType === item.identifierType
       );
 
-      console.log("Existing destination stock found:", existingDestinationStock);
-
-      if (existingDestinationStock) {
-        console.log("📦 Updating existing stock in destination...");
-        const productIndex = existingDestinationStock.products.findIndex(p => p.productId === item.productId);
-
-        if (productIndex !== -1) {
-          if (item.identifierType === "NON_UNIQUE") {
-            existingDestinationStock.products[productIndex].quantity += item.transferQty;
-            console.log(`➕ Added ${item.transferQty} quantity. New total: ${existingDestinationStock.products[productIndex].quantity}`);
-          } else if (item.identifierType === "UNIQUE") {
-            existingDestinationStock.products[productIndex].items = [
-              ...existingDestinationStock.products[productIndex].items,
-              ...(item.selectedItems || [])
-            ];
-            existingDestinationStock.products[productIndex].quantity = existingDestinationStock.products[productIndex].items.length;
-            console.log(`➕ Added ${item.selectedItems?.length || 0} unique items`);
-          }
-
-          // Update PUT request
-          const response = await fetch(`http://localhost:5001/stocks/${existingDestinationStock.id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(existingDestinationStock),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to update destination stock: ${response.statusText}`);
-          }
-
-          console.log("✅ Destination stock updated successfully");
-          return;
+      if (productIndex !== -1) {
+        // Update existing product with same identifierType
+        if (item.identifierType === "NON_UNIQUE") {
+          matchingStock.products[productIndex].quantity += item.transferQty;
+          console.log(`➕ Added ${item.transferQty} NON_UNIQUE quantity. New total: ${matchingStock.products[productIndex].quantity}`);
+        } else if (item.identifierType === "UNIQUE") {
+          const existingItems = matchingStock.products[productIndex].items || [];
+          const newItems = item.selectedItems || [];
+          matchingStock.products[productIndex].items = [...existingItems, ...newItems];
+          matchingStock.products[productIndex].quantity = matchingStock.products[productIndex].items.length;
+          console.log(`➕ Added ${newItems.length} UNIQUE items. New total: ${matchingStock.products[productIndex].quantity}`);
         }
+
+        // Update the stock in database
+        const response = await fetch(`http://localhost:5001/stocks/${matchingStock.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(matchingStock),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("❌ Failed to update destination stock:", errorText);
+          throw new Error(`Failed to update destination stock: ${response.statusText}`);
+        }
+
+        console.log("✅ Destination stock updated successfully");
+        return;
       }
+    }
 
-      // If no existing stock found, create NEW stock
-      console.log("🆕 No existing stock found. Creating new stock...");
+    // If no matching stock with same identifierType found, create NEW stock
+    console.log("🆕 No existing stock with same identifier type found. Creating new stock...");
 
-      // Get source stock to copy details
-      const sourceStock = stocks.find(stock =>
-        stock.warehouseId === sourceWarehouseId &&
-        stock.products?.some(p => p.productId === item.productId)
-      );
+    // Get source stock to copy details
+    const sourceStock = stocks.find(stock =>
+      stock.warehouseId === sourceWarehouseId &&
+      stock.products?.some(p => p.productId === item.productId)
+    );
 
-      console.log("Source stock found:", sourceStock);
+    console.log("Source stock found:", sourceStock);
 
-      let sourceProduct = null;
+    let sourceProduct = null;
+    if (sourceStock) {
+      sourceProduct = sourceStock.products.find(p => p.productId === item.productId);
+      console.log("Source product details:", sourceProduct);
+    }
 
-      if (sourceStock) {
-        sourceProduct = sourceStock.products.find(p => p.productId === item.productId);
-        console.log("Source product details:", sourceProduct);
-      }
+    // Use sourceProductDetails if provided
+    if (!sourceProduct && sourceProductDetails) {
+      sourceProduct = sourceProductDetails;
+      console.log("Using provided source product details");
+    }
 
-      // Use sourceProductDetails if provided
-      if (!sourceProduct && sourceProductDetails) {
-        sourceProduct = sourceProductDetails;
-        console.log("Using provided source product details");
-      }
+    // Check if there's an existing stock entry we can add to (same vendor, same bill)
+    const existingStockToUpdate = existingDestinationStocks.find(stock =>
+      stock.vendorId === (sourceStock?.vendorId || "") &&
+      stock.billNo === billNo
+    );
 
-      // Generate unique stock ID
-      const stockId = `S${Date.now()}-${warehouseId}`;
-
-      // Create new stock object
-      const newStock = {
-        id: stockId,
-        vendorId: sourceStock?.vendorId || "",
-        vendorName: sourceStock?.vendorName || "Transfer Stock",
-        warehouseId: warehouseId,
-        warehouseName: getWarehouseName(warehouseId),
-        purchaseDate: new Date().toISOString().split('T')[0],
-        billNo: billNo,
-        totalProducts: 1,
-        products: [],
-        createdAt: new Date().toISOString(),
-        status: "active"
-      };
-
-      console.log("New stock object created:", newStock);
-
-      // Add product to the stock
+    if (existingStockToUpdate) {
+      console.log("📦 Found existing stock entry with same vendor/bill. Adding product...");
+      
+      // Add the product to existing stock
       if (item.identifierType === "NON_UNIQUE") {
-        newStock.products.push({
+        existingStockToUpdate.products.push({
           productId: item.productId,
           productName: item.productName,
           identifierType: item.identifierType,
@@ -920,9 +922,10 @@ export default function StockTransferPage() {
           dynamicValues: item.dynamicValues || sourceProduct?.dynamicValues || {},
           createdAt: new Date().toISOString()
         });
-        console.log(`📊 Added NON_UNIQUE product: ${item.productName}, Qty: ${item.transferQty}`);
+        existingStockToUpdate.totalProducts = existingStockToUpdate.products.length;
+        console.log(`📊 Added NON_UNIQUE product to existing stock: ${item.productName}, Qty: ${item.transferQty}`);
       } else if (item.identifierType === "UNIQUE") {
-        newStock.products.push({
+        existingStockToUpdate.products.push({
           productId: item.productId,
           productName: item.productName,
           identifierType: item.identifierType,
@@ -933,34 +936,100 @@ export default function StockTransferPage() {
           dynamicValues: item.dynamicValues || sourceProduct?.dynamicValues || {},
           createdAt: new Date().toISOString()
         });
-        console.log(`📊 Added UNIQUE product: ${item.productName}, Items: ${item.selectedItems?.length || 0}`);
+        existingStockToUpdate.totalProducts = existingStockToUpdate.products.length;
+        console.log(`📊 Added UNIQUE product to existing stock: ${item.productName}, Items: ${item.selectedItems?.length || 0}`);
       }
 
-      // POST request to create new stock
-      console.log("📤 Sending POST request to create stock...");
-      const response = await fetch("http://localhost:5001/stocks", {
-        method: "POST",
+      // Update the existing stock
+      const response = await fetch(`http://localhost:5001/stocks/${existingStockToUpdate.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newStock),
+        body: JSON.stringify(existingStockToUpdate),
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Failed to create new stock:", errorText);
-        throw new Error(`Failed to create new stock: ${response.statusText}`);
+        throw new Error(`Failed to update existing stock: ${response.statusText}`);
       }
 
-      const createdStock = await response.json();
-      console.log("✅ New stock created successfully:", createdStock);
-
-      // Refresh stocks data
-      await refreshAllData();
-
-    } catch (error) {
-      console.error("❌ Error updating destination warehouse stock:", error);
-      throw error;
+      console.log("✅ Product added to existing stock successfully");
+      return;
     }
-  };
+
+    // If no suitable existing stock found, create brand new stock
+    console.log("🆕 Creating brand new stock entry...");
+    
+    const stockId = `S${Date.now()}-${warehouseId}`;
+    const newStock = {
+      id: stockId,
+      vendorId: sourceStock?.vendorId || "",
+      vendorName: sourceStock?.vendorName || "Transfer Stock",
+      warehouseId: warehouseId,
+      warehouseName: getWarehouseName(warehouseId),
+      purchaseDate: new Date().toISOString().split('T')[0],
+      billNo: billNo,
+      totalProducts: 1,
+      products: [],
+      createdAt: new Date().toISOString(),
+      status: "active"
+    };
+
+    console.log("New stock object created:", newStock);
+
+    // Add product based on identifier type
+    if (item.identifierType === "NON_UNIQUE") {
+      newStock.products.push({
+        productId: item.productId,
+        productName: item.productName,
+        identifierType: item.identifierType,
+        quantity: item.transferQty,
+        rate: item.rate || sourceProduct?.rate || 0,
+        gst: sourceProduct?.gst || "0%",
+        quantityAlert: sourceProduct?.quantityAlert || 0,
+        items: [],
+        dynamicValues: item.dynamicValues || sourceProduct?.dynamicValues || {},
+        createdAt: new Date().toISOString()
+      });
+      console.log(`📊 Added NON_UNIQUE product to new stock: ${item.productName}, Qty: ${item.transferQty}`);
+    } else if (item.identifierType === "UNIQUE") {
+      newStock.products.push({
+        productId: item.productId,
+        productName: item.productName,
+        identifierType: item.identifierType,
+        quantity: item.selectedItems?.length || 0,
+        rate: item.rate || sourceProduct?.rate || 0,
+        gst: sourceProduct?.gst || "0%",
+        items: item.selectedItems || [],
+        dynamicValues: item.dynamicValues || sourceProduct?.dynamicValues || {},
+        createdAt: new Date().toISOString()
+      });
+      console.log(`📊 Added UNIQUE product to new stock: ${item.productName}, Items: ${item.selectedItems?.length || 0}`);
+    }
+
+    // Create new stock in database
+    console.log("📤 Sending POST request to create new stock...");
+    const response = await fetch("http://localhost:5001/stocks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newStock),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Failed to create new stock:", errorText);
+      throw new Error(`Failed to create new stock: ${response.statusText}`);
+    }
+
+    const createdStock = await response.json();
+    console.log("✅ New stock created successfully:", createdStock);
+
+    // Refresh stocks data
+    await refreshAllData();
+
+  } catch (error) {
+    console.error("❌ Error updating destination warehouse stock:", error);
+    throw error;
+  }
+};
 
 
   // Refresh all data after transfer
