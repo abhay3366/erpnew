@@ -16,7 +16,7 @@ const StockPage = () => {
   const [currentSerialsIdProduct, setCurrentSerialsIdProudct] = useState([]);
   const [selectedStockId, setselectedStockId] = useState(null)
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Fetch stocks from backend
   const fetchStocks = async () => {
     try {
@@ -68,15 +68,15 @@ const StockPage = () => {
 
   return (
     <div>
-      <div className="bg-white p-3 rounded-xl border border-gray-200 mt-4 overflow-x-auto">
+      <div className="bg-white p-1.5 rounded-sm border border-gray-200  overflow-x-auto">
         {!detailsPage && (
           <div>
             <PageBreadcrumb pageTitle="Stock" />
             <div className="flex justify-end gap-4 mt-4">
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={handleAddStock}
-                  className="bg-brand-500 shadow-theme-xs hover:bg-brand-600 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition"
+                  className="bg-brand-500 shadow-theme-xs hover:bg-brand-600 inline-flex items-center justify-center gap-2 rounded-sm px-4 py-3 text-sm font-medium text-white transition"
                 >
                   <IoMdAdd /> Add Stock
                 </button>
@@ -84,11 +84,11 @@ const StockPage = () => {
             </div>
           </div>
         )}
-        
+
         {/* stock table and stock details */}
         {detailsPage ? (
-          <StockDetails 
-            currentSerialsIdProduct={currentSerialsIdProduct} 
+          <StockDetails
+            currentSerialsIdProduct={currentSerialsIdProduct}
             setDetailsPage={setDetailsPage}
           />
         ) : (
@@ -102,7 +102,7 @@ const StockPage = () => {
           />
         )}
       </div>
-      
+
       {/* Form dialog - SAME FORM FOR CREATE AND EDIT */}
       <div>
         <Dialog open={open} onClose={handleFormClose} className="relative z-[99]">
@@ -120,19 +120,19 @@ const StockPage = () => {
                   <div className="relative flex h-full flex-col overflow-y-auto bg-white py-6 shadow-xl after:absolute after:inset-y-0 after:left-0 after:w-px after:bg-white/10">
                     <div className="px-4 sm:px-6 border-b pb-5">
                       <DialogTitle className="text-base font-semibold text-gray-800 flex items-center">
-                        <button 
-                          className="p-2 hover:bg-gray-100 rounded" 
+                        <button
+                          className="p-2 hover:bg-gray-100 rounded"
                           onClick={handleFormClose}
                         >
                           <MdClose size={20} />
-                        </button> 
+                        </button>
                         <span className="ml-2">
                           {selectedStockId ? "Edit Stock" : 'Add New Stock'}
                         </span>
                       </DialogTitle>
                     </div>
                     <div className="relative mt-6 flex-1 px-4 sm:px-6">
-                      <StockForm 
+                      <StockForm
                         stockId={selectedStockId} // Pass stockId for edit mode
                         open={open}
                         onClose={handleFormClose}

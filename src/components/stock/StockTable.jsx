@@ -1,9 +1,9 @@
 // components/stock/StockTable.jsx
 "use client";
 
-import { useState } from 'react';
-import { MdDelete, MdEdit, MdVisibility, MdRestore, MdClose } from "react-icons/md";
-
+import { useState, useEffect } from 'react';
+import { MdDelete, MdEdit, MdVisibility, MdRestore } from "react-icons/md";
+import { useRouter } from 'next/navigation';
 export default function StockTable({ 
   filteredStocks = [], 
   setDetailsPage, 
@@ -13,8 +13,9 @@ export default function StockTable({
   setStocks 
 }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('active');
   const [filterType, setFilterType] = useState('all');
+  
   
   // Modal states
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -22,6 +23,11 @@ export default function StockTable({
   const [selectedStock, setSelectedStock] = useState(null);
   const [stockToDelete, setStockToDelete] = useState(null);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+ const router = useRouter();
   // Check if stock can be deleted (all quantities must be 0)
   const canDeleteStock = (stock) => {
     if (!stock.products || stock.products.length === 0) return true;
@@ -141,6 +147,18 @@ export default function StockTable({
     return matchesSearch && matchesStatus && matchesType;
   });
 
+  // Pagination calculations
+  const totalItems = filteredStocksDisplay.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentStocks = filteredStocksDisplay.slice(indexOfFirstItem, indexOfLastItem);
+  
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterType]);
+
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -165,17 +183,6 @@ export default function StockTable({
     setIsDeleteConfirmOpen(true);
   };
 
-  // Calculate total value of stock
-  const calculateTotalValue = (stock) => {
-    if (!stock.products || stock.products.length === 0) return 0;
-    
-    return stock.products.reduce((total, product) => {
-      const quantity = product.quantity || 0;
-      const rate = product.rate || 0;
-      return total + (quantity * rate);
-    }, 0);
-  };
-
   // Calculate total quantity
   const calculateTotalQuantity = (stock) => {
     if (!stock.products || stock.products.length === 0) return 0;
@@ -185,23 +192,84 @@ export default function StockTable({
     }, 0);
   };
 
-  // Calculate total with GST
-  const calculateTotalWithGST = (stock) => {
-    if (!stock.products || stock.products.length === 0) return 0;
+  // Calculate quantity by product type
+  // const calculateQuantityByType = (stock) => {
+  //   if (!stock.products || stock.products.length === 0) return { unique: 0, nonUnique: 0 };
     
-    return stock.products.reduce((total, product) => {
-      const quantity = product.quantity || 0;
-      const rate = product.rate || 0;
-      const gst = parseFloat(product.gst) || 0;
-      const gstAmount = (quantity * rate * gst) / 100;
-      return total + (quantity * rate) + gstAmount;
-    }, 0);
+  //   return stock.products.reduce((acc, product) => {
+  //     if (product.identifierType === 'UNIQUE') {
+  //       acc.unique += product.quantity || 0;
+  //     } else {
+  //       acc.nonUnique += product.quantity || 0;
+  //     }
+  //     return acc;
+  //   }, { unique: 0, nonUnique: 0 });
+  // };
+
+  // Calculate product counts by type
+  // const calculateProductCountsByType = (stock) => {
+  //   if (!stock.products || stock.products.length === 0) return { unique: 0, nonUnique: 0 };
+    
+  //   return stock.products.reduce((acc, product) => {
+  //     if (product.identifierType === 'UNIQUE') {
+  //       acc.unique += 1;
+  //     } else {
+  //       acc.nonUnique += 1;
+  //     }
+  //     return acc;
+  //   }, { unique: 0, nonUnique: 0 });
+  // };
+
+  // Pagination controls
+  const handlePageChange = (pageNumber) => {
+    if (pageNumber < 1 || pageNumber > totalPages) return;
+    setCurrentPage(pageNumber);
   };
+
+  // Generate page numbers
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      const halfVisible = Math.floor(maxVisiblePages / 2);
+      
+      if (currentPage <= halfVisible + 1) {
+        for (let i = 1; i <= maxVisiblePages - 1; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - halfVisible) {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = totalPages - (maxVisiblePages - 2); i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      }
+    }
+    
+    return pageNumbers;
+  };
+
+  let sr = (currentPage - 1) * itemsPerPage + 1;
 
   return (
     <div className="mt-6">
       {/* Filters Section */}
-      <div className="bg-white rounded-lg p-4 mb-6 border border-gray-200 shadow-sm">
+      <div className="bg-white rounded-lg p-4 mb-2 border border-gray-200 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div className="md:col-span-2">
@@ -223,7 +291,7 @@ export default function StockTable({
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              {/* <option value="inactive">Inactive</option> */}
               <option value="deleted">Deleted</option>
             </select>
           </div>
@@ -245,10 +313,19 @@ export default function StockTable({
         {/* Filter Info */}
         <div className="flex justify-between items-center mt-4">
           <div className="text-gray-600 text-sm">
-            Showing {filteredStocksDisplay.length} of {filteredStocks.length} stocks
+            Showing {currentStocks.length} of {filteredStocksDisplay.length} stocks (Page {currentPage} of {totalPages})
             {searchTerm && ` for "${searchTerm}"`}
           </div>
           <div className="flex gap-2">
+         <button
+    onClick={() => router.push('/stock/stock-alert')}
+  className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 text-sm flex items-center"
+>
+  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+  </svg>
+  Stock Alert
+</button>
             <button
               onClick={() => {
                 setSearchTerm('');
@@ -278,7 +355,13 @@ export default function StockTable({
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Stock Info
+                Sr no
+              </th>
+               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Bill No
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Purchase Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Vendor
@@ -290,7 +373,7 @@ export default function StockTable({
                 Products
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Value
+                Quantity Summary
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
@@ -302,9 +385,9 @@ export default function StockTable({
           </thead>
           
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredStocksDisplay.length === 0 ? (
+            {currentStocks.length === 0 ? (
               <tr>
-                <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
                   <div className="flex flex-col items-center">
                     <svg className="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -317,49 +400,53 @@ export default function StockTable({
                 </td>
               </tr>
             ) : (
-              filteredStocksDisplay.map((stock) => {
+              currentStocks.map((stock) => {
                 const isDeleteDisabled = !canDeleteStock(stock);
-                const totalValue = calculateTotalValue(stock);
                 const totalQuantity = calculateTotalQuantity(stock);
+                {/* const quantityByType = calculateQuantityByType(stock);
+                const productCountsByType = calculateProductCountsByType(stock); */}
+               
                 
                 return (
                   <tr key={stock.id} className={`hover:bg-gray-50 ${stock.isDeleted ? 'bg-red-50' : ''}`}>
                     {/* Stock Info */}
-                    <td className="px-6 py-4">
+                    <td className="px-6">
                       <div className="flex flex-col">
-                        <div className="font-medium text-gray-900">#{stock.id}</div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          <div>Bill No: <span className="font-medium">{stock.billNo || 'N/A'}</span></div>
-                          <div>Date: <span className="font-medium">{formatDate(stock.purchaseDate)}</span></div>
-                          <div>Created: <span className="font-medium">{formatDate(stock.createdAt)}</span></div>
-                        </div>
+                        <div className="font-medium text-gray-900">#{sr++}</div>
                       </div>
                     </td>
-
-                    {/* Vendor */}
-                    <td className="px-6 py-4">
+                     {/* Vendor */}
+                     <td className="px-6">
+                      <div className="flex flex-col">
+                        <div className="font-medium text-gray-900">{stock.billNo || 'N/A'}</div>
+                      </div>
+                    </td>
+                    {/* purchase date */}
+                     <td className="px-6">
+                      <div className="flex flex-col">
+                         <div><span className="font-medium">{formatDate(stock.purchaseDate)}</span></div>
+                      </div>
+                    </td>
+                   
+                    <td className="px-6">
                       <div className="flex flex-col">
                         <div className="font-medium text-gray-900">{stock.vendorName || 'N/A'}</div>
-                        <div className="text-xs text-gray-500">ID: {stock.vendorId}</div>
                       </div>
                     </td>
 
                     {/* Warehouse */}
-                    <td className="px-6 py-4">
+                    <td className="px-6">
                       <div className="flex flex-col">
                         <div className="font-medium text-gray-900">{stock.warehouseName || 'N/A'}</div>
-                        <div className="text-xs text-gray-500">ID: {stock.warehouseId}</div>
                       </div>
                     </td>
 
                     {/* Products */}
-                    <td className="px-6 py-4">
-                      <div className="space-y-2">
-                        <div className="text-sm">
-                          <span className="font-medium">{stock.products?.length || 0}</span> products
-                          <span className="mx-2">•</span>
-                          <span className="font-medium">{totalQuantity}</span> total qty
-                        </div>
+                    <td className="px-6">
+                      <div className="space-y-1">
+                        {/* <div className="text-sm">
+                          <span className="font-medium">{stock.products?.length || 0}</span> total products
+                        </div> */}
                         <div className="space-y-1 max-h-20 overflow-y-auto">
                           {stock.products?.slice(0, 3).map((product, idx) => (
                             <div key={idx} className="flex items-center text-xs">
@@ -367,9 +454,9 @@ export default function StockTable({
                               <div className="truncate">
                                 <div className="font-medium truncate">{product.productName}</div>
                                 <div className="text-gray-500">
-                                  Qty: {product.quantity} 
+                                  Type: <span className="font-medium">{product.identifierType}</span>
                                   <span className="mx-1">•</span>
-                                  ₹{product.rate || '0'}
+                                  Qty: <span className="font-medium">{product.quantity || 0}</span>
                                 </div>
                               </div>
                             </div>
@@ -383,20 +470,19 @@ export default function StockTable({
                       </div>
                     </td>
 
-                    {/* Total Value */}
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <div className="text-lg font-bold text-blue-600">
-                          ₹{totalValue.toFixed(2)}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {stock.products?.length || 0} products
+                    {/* Quantity Summary */}
+                    <td className="px-6">
+                      <div className="flex flex-col space-y-2">
+                        <div className="text-center">
+                          <div className=" font-bold  text-blue-600">
+                            {totalQuantity}
+                          </div>
                         </div>
                       </div>
                     </td>
 
                     {/* Status */}
-                    <td className="px-6 py-4">
+                    <td className="px-6">
                       <div className="flex flex-col gap-1">
                         <span className={`px-2 py-1 text-xs rounded-full text-center ${
                           stock.isDeleted 
@@ -418,8 +504,8 @@ export default function StockTable({
                     </td>
 
                     {/* Actions */}
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-2">
+                    <td className="px-1 py-4">
+                      <div className="flex  gap-2">
                         {/* View Details Button */}
                         <button
                           onClick={() => handleViewDetails(stock)}
@@ -427,7 +513,7 @@ export default function StockTable({
                           title="View Details"
                         >
                           <MdVisibility className="mr-1" size={14} />
-                          View
+                          {/* View */}
                         </button>
 
                         {/* Edit Button - Only for non-deleted stocks */}
@@ -438,7 +524,7 @@ export default function StockTable({
                             title="Edit Stock"
                           >
                             <MdEdit className="mr-1" size={14} />
-                            Edit
+                            {/* Edit */}
                           </button>
                         )}
 
@@ -455,7 +541,7 @@ export default function StockTable({
                             title={isDeleteDisabled ? "Cannot delete. All product quantities must be 0." : "Delete stock"}
                           >
                             <MdDelete className="mr-1" size={14} />
-                            Delete
+                            {/* Delete */}
                           </button>
                         ) : (
                           <button
@@ -476,6 +562,108 @@ export default function StockTable({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
+          {/* Items per page selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Items per page:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span className="text-sm text-gray-600">
+              Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, totalItems)} of {totalItems} items
+            </span>
+          </div>
+
+          {/* Page navigation */}
+          <div className="flex items-center gap-2">
+            {/* Previous button */}
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-3 py-1.5 rounded-md text-sm flex items-center ${
+                currentPage === 1
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              Previous
+            </button>
+
+            {/* Page numbers */}
+            <div className="flex gap-1">
+              {getPageNumbers().map((pageNum, index) => (
+                pageNum === '...' ? (
+                  <span key={`ellipsis-${index}`} className="px-3 py-1.5 text-gray-500">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`px-3 py-1.5 min-w-[2.5rem] rounded-md text-sm ${
+                      currentPage === pageNum
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              ))}
+            </div>
+
+            {/* Next button */}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1.5 rounded-md text-sm flex items-center ${
+                currentPage === totalPages
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Next
+              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Jump to page */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Go to page:</span>
+            <input
+              type="number"
+              min="1"
+              max={totalPages}
+              value={currentPage}
+              onChange={(e) => {
+                const page = Math.min(Math.max(1, Number(e.target.value)), totalPages);
+                handlePageChange(page);
+              }}
+              className="w-16 px-2 py-1 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-600">of {totalPages}</span>
+          </div>
+        </div>
+      )}
 
       {/* Stats Summary */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -535,7 +723,7 @@ export default function StockTable({
             </div>
             <div>
               <div className="text-2xl font-bold text-purple-600">{filteredStocksDisplay.length}</div>
-              <div className="text-sm text-gray-600">Showing</div>
+              <div className="text-sm text-gray-600">Filtered Stocks</div>
             </div>
           </div>
         </div>
@@ -550,7 +738,6 @@ export default function StockTable({
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">Stock Details</h2>
-                  <p className="text-sm text-gray-600">Stock ID: #{selectedStock.id}</p>
                 </div>
                 <button
                   onClick={() => {
@@ -559,18 +746,18 @@ export default function StockTable({
                   }}
                   className="text-gray-500 hover:text-gray-700 text-2xl"
                 >
-                  <MdClose size={24} />
+                  ✕
                 </button>
               </div>
             </div>
 
             {/* Modal Content */}
-            <div className="overflow-y-auto max-h-[70vh] p-6">
+            <div className="overflow-y-auto max-h-[70vh] p-3">
               {/* Stock Basic Info */}
-              <div className="mb-8">
+              <div className="mb-2">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Vendor</label>
                       <div className="flex items-center gap-2">
@@ -588,8 +775,8 @@ export default function StockTable({
                         {formatDate(selectedStock.purchaseDate)}
                       </p>
                     </div>
-                  </div>
-                  <div className="space-y-4">
+                
+                 
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Warehouse</label>
                       <div className="flex items-center gap-2">
@@ -617,32 +804,11 @@ export default function StockTable({
                         {formatDateTime(selectedStock.createdAt)}
                       </p>
                     </div>
-                  </div>
+                 
                 </div>
               </div>
 
-              {/* Summary Stats */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Summary</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Total Products</p>
-                    <p className="text-2xl font-bold text-blue-600">{selectedStock.products?.length || 0}</p>
-                  </div>
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Total Quantity</p>
-                    <p className="text-2xl font-bold text-green-600">{calculateTotalQuantity(selectedStock)}</p>
-                  </div>
-                  <div className="bg-yellow-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Total Value</p>
-                    <p className="text-2xl font-bold text-yellow-600">₹{calculateTotalValue(selectedStock).toFixed(2)}</p>
-                  </div>
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">Total with GST</p>
-                    <p className="text-2xl font-bold text-purple-600">₹{calculateTotalWithGST(selectedStock).toFixed(2)}</p>
-                  </div>
-                </div>
-              </div>
+             
 
               {/* Products Section */}
               <div>
@@ -657,10 +823,6 @@ export default function StockTable({
                 ) : (
                   <div className="space-y-4">
                     {selectedStock.products?.map((product, productIndex) => {
-                      const productTotal = (product.quantity || 0) * (product.rate || 0);
-                      const gstAmount = productTotal * (parseFloat(product.gst) || 0) / 100;
-                      const productTotalWithGST = productTotal + gstAmount;
-                      
                       return (
                         <div key={productIndex} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex justify-between items-start mb-4">
@@ -679,30 +841,7 @@ export default function StockTable({
                             </div>
                             <div className="text-right">
                               <p className="text-sm text-gray-600">Quantity</p>
-                              <p className="text-xl font-bold text-blue-600">{product.quantity || 0}</p>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                            <div>
-                              <label className="block text-sm text-gray-500 mb-1">Rate</label>
-                              <p className="text-gray-800 font-medium">₹{product.rate || '0.00'}</p>
-                            </div>
-                            <div>
-                              <label className="block text-sm text-gray-500 mb-1">GST</label>
-                              <p className="text-gray-800 font-medium">{product.gst || '0%'}</p>
-                            </div>
-                            <div>
-                              <label className="block text-sm text-gray-500 mb-1">Product Total</label>
-                              <p className="text-gray-800 font-medium">
-                                ₹{productTotal.toFixed(2)}
-                              </p>
-                            </div>
-                            <div>
-                              <label className="block text-sm text-gray-500 mb-1">Total with GST</label>
-                              <p className="text-gray-800 font-medium">
-                                ₹{productTotalWithGST.toFixed(2)}
-                              </p>
+                              <p className="text-2xl font-bold text-blue-600">{product.quantity || 0}</p>
                             </div>
                           </div>
 
@@ -808,8 +947,8 @@ export default function StockTable({
                     <span className="font-medium">{stockToDelete.billNo}</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span>Total Products:</span>
-                    <span className="font-medium">{stockToDelete.products?.length || 0}</span>
+                    <span>Total Quantity:</span>
+                    <span className="font-medium">{calculateTotalQuantity(stockToDelete)}</span>
                   </div>
                 </div>
                 

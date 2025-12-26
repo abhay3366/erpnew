@@ -63,8 +63,9 @@ const navItems = [
     icon: <StockIcon className=" w-5" />,
     subItems: [
        { name: "Stock", path: "/stock" },
+        { name: "Stock Alert", path: "/stock/stock-alert" },
        { name: "Print Barcode", path: "/stock/print-barcode" },
-  // { name: "Add Stock", path: "/stock/add-stock" },
+ 
   { name: "Broadband Issue", path: "/stock/broadband-issue" },
   { name: "Lease Issue", path: "/stock/lease-issue" },
   { name: "BPL Issue", path: "/stock/bpl-issue" },

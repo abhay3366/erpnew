@@ -34,6 +34,7 @@ export default function StockForm({
   const [productDynamicValues, setProductDynamicValues] = useState({});
   const [productRates, setProductRates] = useState({});
   const [productGSTs, setProductGSTs] = useState({});
+  const [productStockAlerts, setProductStockAlerts] = useState({}); // नया state
   const [activeTab, setActiveTab] = useState(0);
 
   const [rowError, setRowError] = useState();
@@ -60,6 +61,30 @@ export default function StockForm({
     return rows.some(
       (r, index) => index !== rowIndex && r[key] === value
     );
+  };
+
+  /* ---------- CHECK BILL NUMBER UNIQUENESS ---------- */
+  const checkBillNumberUnique = async (billNo) => {
+    if (!billNo || billNo.trim() === "") return true;
+    
+    try {
+      const response = await fetch("http://localhost:5001/stocks");
+      const allStocks = await response.json();
+      
+      // If editing, exclude the current stock from the check
+      const stocksToCheck = isEditMode && existingStock
+        ? allStocks.filter(stock => stock.id !== existingStock.id)
+        : allStocks;
+      
+      const isDuplicate = stocksToCheck.some(stock => 
+        stock.billNo && stock.billNo.trim().toLowerCase() === billNo.trim().toLowerCase()
+      );
+      
+      return !isDuplicate;
+    } catch (error) {
+      console.error("Error checking bill number:", error);
+      return true; // If error occurs, allow submission
+    }
   };
 
   /* ---------- FETCH DATA ---------- */
@@ -118,6 +143,7 @@ export default function StockForm({
         const newProductDynamicValues = {};
         const newProductRates = {};
         const newProductGSTs = {};
+        const newProductStockAlerts = {}; // नया initialize
         
         stockProducts.forEach(product => {
           const productId = product.productId || product.id;
@@ -134,12 +160,14 @@ export default function StockForm({
           
           newProductRates[productId] = product.rate || 0;
           newProductGSTs[productId] = gstOptions.find(g => g.value === product.gst) || null;
+          newProductStockAlerts[productId] = product.quantityAlert || 10; // Default 10
         });
         
         setProductRows(newProductRows);
         setProductDynamicValues(newProductDynamicValues);
         setProductRates(newProductRates);
         setProductGSTs(newProductGSTs);
+        setProductStockAlerts(newProductStockAlerts); // सेट करें
         
         // Set selected products
         const mappedProducts = stockProducts.map(product => {
@@ -176,6 +204,7 @@ export default function StockForm({
       setProductDynamicValues({});
       setProductRates({});
       setProductGSTs({});
+      setProductStockAlerts({}); // रीसेट करें
       setActiveTab(0);
       setIsInitialized(false);
     }
@@ -198,6 +227,7 @@ export default function StockForm({
       setProductDynamicValues({});
       setProductRates({});
       setProductGSTs({});
+      setProductStockAlerts({}); // रीसेट करें
       setActiveTab(0);
     }
   }, [selectedVendor, products, setValue, isEditMode]);
@@ -209,6 +239,7 @@ export default function StockForm({
     const newProductDynamicValues = { ...productDynamicValues };
     const newProductRates = { ...productRates };
     const newProductGSTs = { ...productGSTs };
+    const newProductStockAlerts = { ...productStockAlerts }; // नया
 
     selectedProductsForm.forEach(product => {
       const productId = product.id;
@@ -225,6 +256,9 @@ export default function StockForm({
       if (!newProductGSTs[productId]) {
         newProductGSTs[productId] = product.gst || null;
       }
+      if (!newProductStockAlerts[productId]) {
+        newProductStockAlerts[productId] = product.quantityAlert || 10; // Default 10
+      }
     });
 
     // Remove data for deselected products
@@ -234,6 +268,7 @@ export default function StockForm({
         delete newProductDynamicValues[productId];
         delete newProductRates[productId];
         delete newProductGSTs[productId];
+        delete newProductStockAlerts[productId]; 
       }
     });
 
@@ -241,6 +276,7 @@ export default function StockForm({
     setProductDynamicValues(newProductDynamicValues);
     setProductRates(newProductRates);
     setProductGSTs(newProductGSTs);
+    setProductStockAlerts(newProductStockAlerts); 
 
     // Reset to first tab if current tab doesn't exist
     if (activeTab >= selectedProductsForm.length) {
@@ -266,26 +302,26 @@ export default function StockForm({
   };
 
   /* ---------- ADD ROWS FOR UNIQUE PRODUCT ---------- */
-  const addRowsToProduct = (productId, count) => {
-    const product = selectedProductsForm.find(p => p.id === productId);
-    if (!product) return;
+const addRowsToProduct = (productId, count) => {
+  const product = selectedProductsForm.find(p => p.id === productId);
+  if (!product) return;
 
-    const dynamicFields = getDynamicFields(product);
+  const dynamicFields = getDynamicFields(product);
 
-    const newRows = Array.from({ length: count }, () => {
-      const row = { id: Date.now() + Math.random() };
-      dynamicFields.forEach(field => {
-        row[field.key] = field.defaultValue || "";
-      });
-      return row;
+  const newRows = Array.from({ length: count }, () => {
+    const row = { id: Date.now() + Math.random() };
+    dynamicFields.forEach(field => {
+      row[field.key] = field.defaultValue || "";
     });
+    return row;
+  });
 
-    setProductRows(prev => ({
-      ...prev,
-      [productId]: [...(prev[productId] || []), ...newRows]
-    }));
-  };
-
+ 
+  setProductRows(prev => ({
+    ...prev,
+    [productId]: [...newRows, ...(prev[productId] || [])]
+  }));
+};
   /* ---------- REMOVE ROW FROM PRODUCT ---------- */
   const removeRowFromProduct = (productId, rowId) => {
     setProductRows(prev => ({
@@ -336,8 +372,16 @@ export default function StockForm({
     }));
   };
 
+  /* ---------- UPDATE PRODUCT STOCK ALERT ---------- */
+  const updateProductStockAlert = (productId, value) => {
+    setProductStockAlerts(prev => ({
+      ...prev,
+      [productId]: value
+    }));
+  };
+
   /* ---------- VALIDATE FORM ---------- */
-  const validateForm = () => {
+  const validateForm = async () => {
     if (!selectedVendor) {
       toast.error("Please select a vendor");
       return false;
@@ -358,8 +402,15 @@ export default function StockForm({
       return false;
     }
 
-    if (!watchBillNo) {
+    if (!watchBillNo || watchBillNo.trim() === "") {
       toast.error("Bill No is required");
+      return false;
+    }
+
+    // Check if bill number is unique
+    const isUnique = await checkBillNumberUnique(watchBillNo);
+    if (!isUnique) {
+      toast.error("This Bill Number already exists. Please use a different bill number.");
       return false;
     }
 
@@ -367,6 +418,7 @@ export default function StockForm({
     for (const product of selectedProductsForm) {
       const productRate = productRates[product.id];
       const productGST = productGSTs[product.id];
+      const productStockAlert = productStockAlerts[product.id];
 
       if (!productRate || Number(productRate) <= 0) {
         toast.error(`Rate is required for ${product.productName} and must be greater than 0`);
@@ -375,6 +427,11 @@ export default function StockForm({
 
       if (!productGST) {
         toast.error(`GST is required for ${product.productName}`);
+        return false;
+      }
+
+      if (!productStockAlert || Number(productStockAlert) < 0) {
+        toast.error(`Stock Alert is required for ${product.productName} and must be non-negative`);
         return false;
       }
 
@@ -394,7 +451,8 @@ export default function StockForm({
 
   /* ---------- SUBMIT FORM ---------- */
   const onSubmitForm = async (formData) => {
-    if (!validateForm()) {
+    // Validate form including bill number uniqueness
+    if (!await validateForm()) {
       return;
     }
 
@@ -404,13 +462,14 @@ export default function StockForm({
       warehouseId: formData.warehouse.id,
       warehouseName: formData.warehouse.fromWarehouse,
       purchaseDate: formData.purchaseDate,
-      billNo: formData.billNo,
+      billNo: formData.billNo.trim(), // Trim bill number
       totalProducts: selectedProductsForm.length,
       products: selectedProductsForm.map(product => {
         const isUnique = product.identifierType === "UNIQUE";
         const rows = productRows[product.id] || [];
         const productRate = productRates[product.id];
         const productGST = productGSTs[product.id];
+        const productStockAlert = productStockAlerts[product.id]; 
         const dyn = productDynamicValues[product.id] || {};
         const dynQty = dyn.quantity;
 
@@ -428,8 +487,8 @@ export default function StockForm({
 
           rate: Number(productRate),
           gst: productGST.value,
+          quantityAlert: Number(productStockAlert), 
           items: isUnique ? rows : [],
-          quantityAlert: 10,
           dynamicValues: !isUnique ? dyn : {},
         };
       }),
@@ -473,6 +532,7 @@ export default function StockForm({
         setProductDynamicValues({});
         setProductRates({});
         setProductGSTs({});
+        setProductStockAlerts({}); 
         setActiveTab(0);
         
         // Close modal and notify parent
@@ -501,6 +561,7 @@ export default function StockForm({
     const dynamicValues = productDynamicValues[product.id] || {};
     const productRate = productRates[product.id] || "";
     const productGST = productGSTs[product.id] || null;
+    const productStockAlert = productStockAlerts[product.id] || 10; // Default value
 
     return (
       <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
@@ -515,8 +576,28 @@ export default function StockForm({
             </p>
           </div>
 
-          {/* Rate and GST per product */}
+          {/* Stock Alert, Rate and GST per product */}
           <div className="flex flex-col md:flex-row gap-3">
+          
+            <div className="min-w-[120px]">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Stock Alert
+                <span className="text-red-500"> *</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={productStockAlert}
+                onChange={(e) => updateProductStockAlert(product.id, e.target.value)}
+                placeholder="10"
+                className="border border-gray-300 rounded px-2 py-1.5 w-full text-sm"
+              />
+              {(!productStockAlert || Number(productStockAlert) < 0) && (
+                <p className="text-xs text-red-500 mt-1">Required & must be ≥ 0</p>
+              )}
+            </div>
+
             {/* Rate Input */}
             <div className="min-w-[150px]">
               <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -864,6 +945,7 @@ export default function StockForm({
                     <input
                       {...field}
                       type="date"
+                      onClick={(e) => e.target.showPicker()}
                       className="border border-gray-300 rounded px-2 py-1.5 w-full text-sm"
                     />
                   )}
