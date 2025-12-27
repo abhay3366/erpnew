@@ -21,7 +21,7 @@ const navItems = [
     name: "Dashboard",
     subItems: [{ name: "Ecommerce", path: "/", pro: false }],
   },
-     {
+  {
     icon: <UserCircleIcon />,
     name: "User Profile",
     path: "/profile",
@@ -33,7 +33,7 @@ const navItems = [
   //    path: "/staff",
   // },
 
-    {
+  {
     icon: <GridIcon />,
     name: "WareHouse",
     subItems: [{ name: "Add Warehouse", path: "/warehouse", pro: false }],
@@ -51,41 +51,44 @@ const navItems = [
     ],
   },
 
-   {
+  {
     name: "Vendors",
     icon: <VendorIcon className=" w-5" />,
     subItems: [
       { name: "Vendor ", path: "/vendor", pro: false }
     ],
   },
-     {
+  {
     name: "Stock",
     icon: <StockIcon className=" w-5" />,
     subItems: [
-       { name: "Stock", path: "/stock" },
-       { name: "Print Barcode", path: "/stock/print-barcode" },
-  // { name: "Add Stock", path: "/stock/add-stock" },
-  { name: "Broadband Issue", path: "/stock/broadband-issue" },
-  { name: "Lease Issue", path: "/stock/lease-issue" },
-  { name: "BPL Issue", path: "/stock/bpl-issue" },
-  { name: "Issued Detail", path: "/stock/issued-detail" },
-  { name: "Assigned Item", path: "/stock/assigned-item" },
-  { name: "Transferred Item", path: "/stock/transferred-item" },
-  { name: "Stock Purchase", path: "/stock/stock-purchase" },
-  { name: "Stock Approval", path: "/stock/stock-approval" },
-  { name: "Stock Return Approval", path: "/stock/stock-return-approval" },
-  { name: "Disconnection/Replacement Approval", path: "/stock/disconnection-replacement-approval" },
-  { name: "Faulty", path: "/stock/faulty" },
-  { name: "Repair Report", path: "/stock/repair-report" },
-  { name: "Approval Pending", path: "/stock/approval-pending" },
-  { name: "Add Site", path: "/stock/add-site" },
-  { name: "Purchase Order", path: "/stock/purchase-order" },
-  { name: "View Purchase Order", path: "/stock/view-purchase-order" },
-  { name: "Serial Status", path: "/stock/serial-status" },
-  { name: "Stock Expire", path: "/stock/stock-expire" }
+      { name: "Stock", path: "/stock" },
+      { name: "Stock Alert", path: "/stock/stock-alert" },
+        { name: "Stock Purchase", path: "/stock/stock-purchase" },
+      { name: "Purchase Order", path: "/stock/purchase-order" },
+      { name: "Print Barcode", path: "/stock/print-barcode" },
+
+      { name: "Broadband Issue", path: "/stock/broadband-issue" },
+      { name: "Lease Issue", path: "/stock/lease-issue" },
+      { name: "BPL Issue", path: "/stock/bpl-issue" },
+      { name: "Issued Detail", path: "/stock/issued-detail" },
+      { name: "Assigned Item", path: "/stock/assigned-item" },
+      { name: "Transferred Item", path: "/stock/transferred-item" },
+    
+      { name: "Stock Approval", path: "/stock/stock-approval" },
+      { name: "Stock Return Approval", path: "/stock/stock-return-approval" },
+      { name: "Disconnection/Replacement Approval", path: "/stock/disconnection-replacement-approval" },
+      { name: "Faulty", path: "/stock/faulty" },
+      { name: "Repair Report", path: "/stock/repair-report" },
+      { name: "Approval Pending", path: "/stock/approval-pending" },
+      { name: "Add Site", path: "/stock/add-site" },
+
+      { name: "View Purchase Order", path: "/stock/view-purchase-order" },
+      { name: "Serial Status", path: "/stock/serial-status" },
+      { name: "Stock Expire", path: "/stock/stock-expire" }
     ],
   },
-     {
+  {
     name: "Tickets",
     icon: <TableIcon />,
     subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
@@ -175,24 +178,21 @@ const AppSidebar = () => {
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group ${
-                openSubmenu?.type === menuType &&
-                openSubmenu?.index === index
+              className={`menu-item group ${openSubmenu?.type === menuType &&
+                  openSubmenu?.index === index
                   ? "menu-item-active"
                   : "menu-item-inactive"
-              } cursor-pointer ${
-                !isExpanded && !isHovered
+                } cursor-pointer ${!isExpanded && !isHovered
                   ? "lg:justify-center"
                   : "lg:justify-start"
-              }`}
+                }`}
             >
               <span
-                className={`${
-                  openSubmenu?.type === menuType &&
-                  openSubmenu?.index === index
+                className={`${openSubmenu?.type === menuType &&
+                    openSubmenu?.index === index
                     ? "menu-item-icon-active"
                     : "menu-item-icon-inactive"
-                }`}
+                  }`}
               >
                 {nav.icon}
               </span>
@@ -203,12 +203,11 @@ const AppSidebar = () => {
 
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
-                  className={`ml-auto w-4 h-4 transition-transform duration-200 ${
-                    openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index
+                  className={`ml-auto w-4 h-4 transition-transform duration-200 ${openSubmenu?.type === menuType &&
+                      openSubmenu?.index === index
                       ? "rotate-180 text-brand-500"
                       : ""
-                  }`}
+                    }`}
                 />
               )}
             </button>
@@ -216,18 +215,16 @@ const AppSidebar = () => {
             nav.path && (
               <Link
                 href={nav.path}
-                className={`menu-item group ${
-                  isActive(nav.path)
+                className={`menu-item group ${isActive(nav.path)
                     ? "menu-item-active"
                     : "menu-item-inactive"
-                }`}
+                  }`}
               >
                 <span
-                  className={`${
-                    isActive(nav.path)
+                  className={`${isActive(nav.path)
                       ? "menu-item-icon-active"
                       : "menu-item-icon-inactive"
-                  }`}
+                    }`}
                 >
                   {nav.icon}
                 </span>
@@ -247,7 +244,7 @@ const AppSidebar = () => {
               style={{
                 height:
                   openSubmenu?.type === menuType &&
-                  openSubmenu?.index === index
+                    openSubmenu?.index === index
                     ? `${subMenuHeight[`${menuType}-${index}`]}px`
                     : "0px",
               }}
@@ -257,11 +254,10 @@ const AppSidebar = () => {
                   <li key={sub.name}>
                     <Link
                       href={sub.path}
-                      className={`menu-dropdown-item text-[0.8em] ${
-                        isActive(sub.path)
+                      className={`menu-dropdown-item text-[0.8em] ${isActive(sub.path)
                           ? "menu-dropdown-item-active"
                           : "menu-dropdown-item-inactive"
-                      }`}
+                        }`}
                     >
                       {sub.name}
                       <span className="flex items-center gap-1 ml-auto">
@@ -319,10 +315,9 @@ const AppSidebar = () => {
   return (
     <aside
       className={`fixed flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
-        ${
-          isExpanded || isMobileOpen
-            ? "w-[220px]"
-            : isHovered
+        ${isExpanded || isMobileOpen
+          ? "w-[220px]"
+          : isHovered
             ? "w-[220px]"
             : "w-[90px]"
         }
@@ -332,9 +327,8 @@ const AppSidebar = () => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className={`py-2 flex ${
-          !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
-        }`}
+        className={`py-2 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
+          }`}
       >
         <Link href="/">
           {isExpanded || isHovered || isMobileOpen ? (
@@ -370,11 +364,10 @@ const AppSidebar = () => {
           <div className="flex flex-col gap-4">
             <div>
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
                     ? "lg:justify-center"
                     : "justify-start"
-                }`}
+                  }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Menu"
@@ -388,11 +381,10 @@ const AppSidebar = () => {
 
             <div>
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
                     ? "lg:justify-center"
                     : "justify-start"
-                }`}
+                  }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Others"
