@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 export default function StockForm({ 
   open,
   onClose,
-  stockId = null, // Pass stockId for edit mode
+  stockId = null,
   onSuccess 
 }) {
   const { control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
@@ -34,7 +34,7 @@ export default function StockForm({
   const [productDynamicValues, setProductDynamicValues] = useState({});
   const [productRates, setProductRates] = useState({});
   const [productGSTs, setProductGSTs] = useState({});
-  const [productStockAlerts, setProductStockAlerts] = useState({}); // नया state
+  const [productStockAlerts, setProductStockAlerts] = useState({});
   const [activeTab, setActiveTab] = useState(0);
 
   const [rowError, setRowError] = useState();
@@ -49,7 +49,6 @@ export default function StockForm({
 
   const isEditMode = !!stockId;
 
-  // ✅ GST options
   const gstOptions = [
     { value: "5%", label: "5%" },
     { value: "12%", label: "12%" },
@@ -71,7 +70,6 @@ export default function StockForm({
       const response = await fetch("http://localhost:5001/stocks");
       const allStocks = await response.json();
       
-      // If editing, exclude the current stock from the check
       const stocksToCheck = isEditMode && existingStock
         ? allStocks.filter(stock => stock.id !== existingStock.id)
         : allStocks;
@@ -83,7 +81,7 @@ export default function StockForm({
       return !isDuplicate;
     } catch (error) {
       console.error("Error checking bill number:", error);
-      return true; // If error occurs, allow submission
+      return true;
     }
   };
 
@@ -111,7 +109,7 @@ export default function StockForm({
   /* ---------- LOAD EXISTING STOCK DATA FOR EDIT ---------- */
   useEffect(() => {
     const loadStockData = async () => {
-      if (!isEditMode || !stockId || vendors.length === 0 || products.length === 0) return;
+      if (!isEditMode || !stockId || vendors.length === 0 || products.length === 0 || warehouses.length === 0) return;
       
       try {
         setIsLoading(true);
@@ -137,49 +135,77 @@ export default function StockForm({
         setValue("purchaseDate", stockData.purchaseDate ? stockData.purchaseDate.split('T')[0] : "");
         setValue("billNo", stockData.billNo || "");
         
-        // Initialize product data structures
+        // Process products for edit mode
         const stockProducts = stockData.products || [];
         const newProductRows = {};
         const newProductDynamicValues = {};
         const newProductRates = {};
         const newProductGSTs = {};
-        const newProductStockAlerts = {}; // नया initialize
+        const newProductStockAlerts = {};
         
-        stockProducts.forEach(product => {
-          const productId = product.productId || product.id;
+        const mappedProducts = stockProducts.map(product => {
+          const fullProduct = products.find(p => p.id === product.productId);
+          const isUnique = product.identifierType === "UNIQUE";
           
-          // For UNIQUE products, load items
-          if (product.identifierType === "UNIQUE") {
-            newProductRows[productId] = product.items || [];
+          // Store rate, gst and stock alert
+          newProductRates[product.productId] = product.rate || 0;
+          newProductGSTs[product.productId] = gstOptions.find(g => g.value === product.gst) || null;
+          newProductStockAlerts[product.productId] = product.quantityAlert || 10;
+          
+          if (isUnique) {
+            // Process items for UNIQUE products
+            const items = product.items || [];
+            newProductRows[product.productId] = items.map(item => {
+              const processedItem = { id: item.id || Date.now() + Math.random() };
+              
+              // Extract field values from nested structure
+              Object.keys(item).forEach(key => {
+                if (key !== 'id') {
+                  // If value is an object (nested structure), extract the value
+                  if (item[key] && typeof item[key] === 'object' && 'value' in item[key]) {
+                    processedItem[key] = item[key].value;
+                  } else {
+                    processedItem[key] = item[key];
+                  }
+                }
+              });
+              
+              return processedItem;
+            });
+          } else {
+            // Process dynamic values for NON_UNIQUE products
+            const dynamicValues = product.dynamicValues || {};
+            const processedValues = {};
+            
+            Object.keys(dynamicValues).forEach(key => {
+              const valueObj = dynamicValues[key];
+              // Extract value from nested structure
+              if (valueObj && typeof valueObj === 'object' && 'value' in valueObj) {
+                processedValues[key] = valueObj.value;
+              } else {
+                processedValues[key] = valueObj;
+              }
+            });
+            
+            newProductDynamicValues[product.productId] = processedValues;
           }
           
-          // For NON_UNIQUE products, load dynamicValues
-          if (product.identifierType === "NON_UNIQUE") {
-            newProductDynamicValues[productId] = product.dynamicValues || {};
-          }
-          
-          newProductRates[productId] = product.rate || 0;
-          newProductGSTs[productId] = gstOptions.find(g => g.value === product.gst) || null;
-          newProductStockAlerts[productId] = product.quantityAlert || 10; // Default 10
-        });
+          return {
+            ...fullProduct,
+            ...product,
+            id: product.productId,
+            productId: product.productId
+          };
+        }).filter(p => p !== undefined);
         
+        // Set state values
         setProductRows(newProductRows);
         setProductDynamicValues(newProductDynamicValues);
         setProductRates(newProductRates);
         setProductGSTs(newProductGSTs);
-        setProductStockAlerts(newProductStockAlerts); // सेट करें
+        setProductStockAlerts(newProductStockAlerts);
         
         // Set selected products
-        const mappedProducts = stockProducts.map(product => {
-          const fullProduct = products.find(p => p.id === (product.productId || product.id));
-          return {
-            ...fullProduct,
-            ...product,
-            id: product.productId || product.id,
-            productId: product.productId || product.id
-          };
-        }).filter(p => p !== undefined);
-        
         setValue("selectedProducts", mappedProducts);
         setIsInitialized(true);
         
@@ -197,14 +223,13 @@ export default function StockForm({
   /* ---------- RESET FORM WHEN MODAL CLOSES ---------- */
   useEffect(() => {
     if (!open) {
-      // Reset form when modal closes
       reset();
       setExistingStock(null);
       setProductRows({});
       setProductDynamicValues({});
       setProductRates({});
       setProductGSTs({});
-      setProductStockAlerts({}); // रीसेट करें
+      setProductStockAlerts({});
       setActiveTab(0);
       setIsInitialized(false);
     }
@@ -220,26 +245,24 @@ export default function StockForm({
     const ids = selectedVendor.products?.map(p => p.id) || [];
     setVendorProducts(products.filter(p => ids.includes(p.id)));
 
-    // Reset products when vendor changes (only in create mode)
     if (!isEditMode) {
       setValue("selectedProducts", []);
       setProductRows({});
       setProductDynamicValues({});
       setProductRates({});
       setProductGSTs({});
-      setProductStockAlerts({}); // रीसेट करें
+      setProductStockAlerts({});
       setActiveTab(0);
     }
   }, [selectedVendor, products, setValue, isEditMode]);
 
   /* ---------- PRODUCTS SELECTION CHANGE ---------- */
   useEffect(() => {
-    // Initialize data structures for selected products
     const newProductRows = { ...productRows };
     const newProductDynamicValues = { ...productDynamicValues };
     const newProductRates = { ...productRates };
     const newProductGSTs = { ...productGSTs };
-    const newProductStockAlerts = { ...productStockAlerts }; // नया
+    const newProductStockAlerts = { ...productStockAlerts };
 
     selectedProductsForm.forEach(product => {
       const productId = product.id;
@@ -257,7 +280,7 @@ export default function StockForm({
         newProductGSTs[productId] = product.gst || null;
       }
       if (!newProductStockAlerts[productId]) {
-        newProductStockAlerts[productId] = product.quantityAlert || 10; // Default 10
+        newProductStockAlerts[productId] = product.quantityAlert || 10;
       }
     });
 
@@ -268,7 +291,7 @@ export default function StockForm({
         delete newProductDynamicValues[productId];
         delete newProductRates[productId];
         delete newProductGSTs[productId];
-        delete newProductStockAlerts[productId]; 
+        delete newProductStockAlerts[productId];
       }
     });
 
@@ -276,9 +299,8 @@ export default function StockForm({
     setProductDynamicValues(newProductDynamicValues);
     setProductRates(newProductRates);
     setProductGSTs(newProductGSTs);
-    setProductStockAlerts(newProductStockAlerts); 
+    setProductStockAlerts(newProductStockAlerts);
 
-    // Reset to first tab if current tab doesn't exist
     if (activeTab >= selectedProductsForm.length) {
       setActiveTab(0);
     }
@@ -302,26 +324,26 @@ export default function StockForm({
   };
 
   /* ---------- ADD ROWS FOR UNIQUE PRODUCT ---------- */
-const addRowsToProduct = (productId, count) => {
-  const product = selectedProductsForm.find(p => p.id === productId);
-  if (!product) return;
+  const addRowsToProduct = (productId, count) => {
+    const product = selectedProductsForm.find(p => p.id === productId);
+    if (!product) return;
 
-  const dynamicFields = getDynamicFields(product);
+    const dynamicFields = getDynamicFields(product);
 
-  const newRows = Array.from({ length: count }, () => {
-    const row = { id: Date.now() + Math.random() };
-    dynamicFields.forEach(field => {
-      row[field.key] = field.defaultValue || "";
+    const newRows = Array.from({ length: count }, () => {
+      const row = { id: Date.now() + Math.random() };
+      dynamicFields.forEach(field => {
+        row[field.key] = field.defaultValue || "";
+      });
+      return row;
     });
-    return row;
-  });
 
- 
-  setProductRows(prev => ({
-    ...prev,
-    [productId]: [...newRows, ...(prev[productId] || [])]
-  }));
-};
+    setProductRows(prev => ({
+      ...prev,
+      [productId]: [...(prev[productId] || []), ...newRows]
+    }));
+  };
+
   /* ---------- REMOVE ROW FROM PRODUCT ---------- */
   const removeRowFromProduct = (productId, rowId) => {
     setProductRows(prev => ({
@@ -407,14 +429,12 @@ const addRowsToProduct = (productId, count) => {
       return false;
     }
 
-    // Check if bill number is unique
     const isUnique = await checkBillNumberUnique(watchBillNo);
     if (!isUnique) {
       toast.error("This Bill Number already exists. Please use a different bill number.");
       return false;
     }
 
-    // Validate each product's rate and GST
     for (const product of selectedProductsForm) {
       const productRate = productRates[product.id];
       const productGST = productGSTs[product.id];
@@ -451,7 +471,6 @@ const addRowsToProduct = (productId, count) => {
 
   /* ---------- SUBMIT FORM ---------- */
   const onSubmitForm = async (formData) => {
-    // Validate form including bill number uniqueness
     if (!await validateForm()) {
       return;
     }
@@ -462,35 +481,97 @@ const addRowsToProduct = (productId, count) => {
       warehouseId: formData.warehouse.id,
       warehouseName: formData.warehouse.fromWarehouse,
       purchaseDate: formData.purchaseDate,
-      billNo: formData.billNo.trim(), // Trim bill number
+      billNo: formData.billNo.trim(),
       totalProducts: selectedProductsForm.length,
       products: selectedProductsForm.map(product => {
         const isUnique = product.identifierType === "UNIQUE";
         const rows = productRows[product.id] || [];
         const productRate = productRates[product.id];
         const productGST = productGSTs[product.id];
-        const productStockAlert = productStockAlerts[product.id]; 
+        const productStockAlert = productStockAlerts[product.id];
         const dyn = productDynamicValues[product.id] || {};
-        const dynQty = dyn.quantity;
 
-        return {
+        // Get dynamic fields for this product
+        const dynamicFields = getDynamicFields(product);
+        
+        // Create unified product structure
+        const unifiedProduct = {
           productId: product.id,
           productName: product.productName,
           identifierType: product.identifierType,
-
-          // 🔑 quantity logic (FINAL)
-          ...(isUnique
-            ? { quantity: rows.length }
-            : dynQty
-              ? { quantity: Number(dynQty) }
-              : { quantity: product.quantity || 0 }),
-
           rate: Number(productRate),
           gst: productGST.value,
-          quantityAlert: Number(productStockAlert), 
-          items: isUnique ? rows : [],
-          dynamicValues: !isUnique ? dyn : {},
+          quantityAlert: Number(productStockAlert),
+          items: [],
+          dynamicValues: {}
         };
+
+        // Process dynamic fields into dynamicValues with nested structure
+        dynamicFields.forEach(field => {
+          const fieldValue = dyn[field.key];
+          if (fieldValue !== undefined) {
+            unifiedProduct.dynamicValues[field.key] = {
+              value: fieldValue.toString(),
+              fieldId: field.id
+            };
+          }
+        });
+
+        // Handle based on product type
+        if (isUnique) {
+          // UNIQUE PRODUCTS
+          unifiedProduct.items = rows.map((item, index) => {
+            const processedItem = {
+              id: item.id || Date.now() + index
+            };
+            
+            // Convert all item fields to nested structure
+            Object.keys(item).forEach(key => {
+              if (key !== 'id' && item[key] !== undefined) {
+                // Find corresponding fieldId from dynamicFields
+                const field = dynamicFields.find(f => f.key === key);
+                processedItem[key] = {
+                  value: item[key].toString(),
+                  fieldId: field?.id || `ITEM_${key}_${index}`
+                };
+              }
+            });
+            
+            return processedItem;
+          });
+          
+          // Add quantity to dynamicValues
+          unifiedProduct.dynamicValues.quantity = {
+            value: rows.length.toString(),
+            fieldId: "QUANTITY_FIELD"
+          };
+          
+        } else {
+          // NON_UNIQUE PRODUCTS
+          unifiedProduct.items = [];
+          
+          // Ensure all dynamic values are in the nested structure
+          Object.keys(dyn).forEach(key => {
+            if (!unifiedProduct.dynamicValues[key]) {
+              const field = dynamicFields.find(f => f.key === key);
+              unifiedProduct.dynamicValues[key] = {
+                value: dyn[key].toString(),
+                fieldId: field?.id || key
+              };
+            }
+          });
+          
+          // Ensure quantity is present
+          if (!unifiedProduct.dynamicValues.quantity) {
+            const quantityValue = dyn.quantity || "0";
+            unifiedProduct.dynamicValues.quantity = {
+              value: quantityValue.toString(),
+              fieldId: "QUANTITY_FIELD"
+            };
+          }
+        }
+
+        return unifiedProduct;
       }),
       status: "active"
     };
@@ -526,16 +607,14 @@ const addRowsToProduct = (productId, count) => {
         const savedData = await response.json();
         toast.success(isEditMode ? "Stock updated successfully!" : "Stock saved successfully!");
         
-        // Reset form
         reset();
         setProductRows({});
         setProductDynamicValues({});
         setProductRates({});
         setProductGSTs({});
-        setProductStockAlerts({}); 
+        setProductStockAlerts({});
         setActiveTab(0);
         
-        // Close modal and notify parent
         if (onClose) onClose();
         if (onSuccess) onSuccess(savedData);
         
@@ -561,11 +640,10 @@ const addRowsToProduct = (productId, count) => {
     const dynamicValues = productDynamicValues[product.id] || {};
     const productRate = productRates[product.id] || "";
     const productGST = productGSTs[product.id] || null;
-    const productStockAlert = productStockAlerts[product.id] || 10; // Default value
+    const productStockAlert = productStockAlerts[product.id] || 10;
 
     return (
       <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-        {/* Product Header with Rate and GST */}
         <div className="flex flex-wrap justify-between items-start mb-4 gap-3">
           <div>
             <h3 className="text-lg font-semibold text-gray-800">
@@ -576,9 +654,7 @@ const addRowsToProduct = (productId, count) => {
             </p>
           </div>
 
-          {/* Stock Alert, Rate and GST per product */}
           <div className="flex flex-col md:flex-row gap-3">
-          
             <div className="min-w-[120px]">
               <label className="block text-xs font-semibold text-gray-700 mb-1">
                 Stock Alert
@@ -593,15 +669,11 @@ const addRowsToProduct = (productId, count) => {
                 placeholder="10"
                 className="border border-gray-300 rounded px-2 py-1.5 w-full text-sm"
               />
-              {(!productStockAlert || Number(productStockAlert) < 0) && (
-                <p className="text-xs text-red-500 mt-1">Required & must be ≥ 0</p>
-              )}
             </div>
 
-            {/* Rate Input */}
             <div className="min-w-[150px]">
               <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Rate (₹) for this product
+                Rate (₹)
                 <span className="text-red-500"> *</span>
               </label>
               <input
@@ -613,15 +685,11 @@ const addRowsToProduct = (productId, count) => {
                 placeholder="0.00"
                 className="border border-gray-300 rounded px-2 py-1.5 w-full text-sm"
               />
-              {(!productRate || Number(productRate) <= 0) && (
-                <p className="text-xs text-red-500 mt-1">Required & must be &gt; 0</p>
-              )}
             </div>
 
-            {/* GST Select */}
             <div className="min-w-[150px]">
               <label className="block text-xs font-semibold text-gray-700 mb-1">
-                GST % for this product
+                GST %
                 <span className="text-red-500"> *</span>
               </label>
               <Select
@@ -632,12 +700,8 @@ const addRowsToProduct = (productId, count) => {
                 className="text-sm"
                 classNamePrefix="select"
               />
-              {!productGST && (
-                <p className="text-xs text-red-500 mt-1">Required</p>
-              )}
             </div>
 
-            {/* Item Count Badge */}
             <div className="min-w-[100px]">
               <div className="text-xs text-gray-600 mb-1">Item Count</div>
               {isUnique ? (
@@ -697,7 +761,6 @@ const addRowsToProduct = (productId, count) => {
         {/* Rows for Unique Products */}
         {isUnique && (
           <>
-            {/* Add Rows Buttons */}
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
                 <h4 className="font-medium text-sm text-gray-700">Add Items</h4>
@@ -730,7 +793,6 @@ const addRowsToProduct = (productId, count) => {
               </div>
             </div>
 
-            {/* Rows Table */}
             {rows.length > 0 && (
               <div className="overflow-x-auto rounded border">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -803,7 +865,6 @@ const addRowsToProduct = (productId, count) => {
           </>
         )}
 
-        {/* Message if no dynamic fields for non-unique product */}
         {isNonUnique && dynamicFields.length === 0 && (
           <div className="text-center py-4 bg-yellow-50 rounded border border-yellow-200 text-sm">
             <div className="text-yellow-700">No additional details required</div>
@@ -818,7 +879,6 @@ const addRowsToProduct = (productId, count) => {
       onSubmit={handleSubmit(onSubmitForm)}
       className="max-w-7xl mx-auto p-4 bg-white"
     >
-      {/* Loading State */}
       {isLoading && isEditMode && (
         <div className="text-center py-8">
           <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
@@ -828,7 +888,6 @@ const addRowsToProduct = (productId, count) => {
 
       {(!isLoading || !isEditMode) && (
         <>
-          {/* Header for Edit Mode */}
           {isEditMode && (
             <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center">
@@ -843,10 +902,8 @@ const addRowsToProduct = (productId, count) => {
             </div>
           )}
 
-          {/* COMPACT FORM LAYOUT */}
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-              {/* Vendor */}
               <div className="col-span-1">
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Vendor
@@ -865,7 +922,7 @@ const addRowsToProduct = (productId, count) => {
                       getOptionValue={(v) => v.id}
                       className="text-sm"
                       classNamePrefix="select"
-                      isDisabled={isEditMode} // Disable vendor change in edit mode
+                      isDisabled={isEditMode}
                     />
                   )}
                 />
@@ -874,7 +931,6 @@ const addRowsToProduct = (productId, count) => {
                 )}
               </div>
 
-              {/* Products select */}
               <div className="col-span-1">
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Products
@@ -903,7 +959,6 @@ const addRowsToProduct = (productId, count) => {
                 )}
               </div>
 
-              {/* Warehouse */}
               <div className="col-span-1">
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Warehouse
@@ -931,7 +986,6 @@ const addRowsToProduct = (productId, count) => {
                 )}
               </div>
 
-              {/* Purchase Date */}
               <div className="col-span-1">
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Purchase Date
@@ -957,7 +1011,6 @@ const addRowsToProduct = (productId, count) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {/* Bill No */}
               <div className="col-span-1">
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Bill No
@@ -984,7 +1037,6 @@ const addRowsToProduct = (productId, count) => {
                 )}
               </div>
 
-              {/* Selected Products Summary */}
               <div className="col-span-1">
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Selected Products
@@ -1015,7 +1067,6 @@ const addRowsToProduct = (productId, count) => {
                 </div>
               </div>
 
-              {/* Total Summary */}
               <div className="col-span-1">
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Rate & GST Summary
@@ -1044,7 +1095,6 @@ const addRowsToProduct = (productId, count) => {
             </div>
           </div>
 
-          {/* PRODUCT TABS SECTION - Only show when products selected */}
           {selectedProductsForm.length > 0 && (
             <div className="mb-6">
               <div className="flex items-center mb-3">
@@ -1054,7 +1104,6 @@ const addRowsToProduct = (productId, count) => {
                 </div>
               </div>
 
-              {/* Compact Tab Navigation */}
               <div className="border-b border-gray-200">
                 <nav className="flex space-x-0.5 overflow-x-auto" aria-label="Tabs">
                   {selectedProductsForm.map((product, index) => (
@@ -1084,10 +1133,8 @@ const addRowsToProduct = (productId, count) => {
                 </nav>
               </div>
 
-              {/* Tab Content */}
               {renderProductTabContent()}
 
-              {/* Tab Navigation Buttons */}
               {selectedProductsForm.length > 1 && (
                 <div className="flex justify-between mt-4">
                   <button
@@ -1156,7 +1203,6 @@ const addRowsToProduct = (productId, count) => {
             </div>
           )}
           
-          {/* Show Save button if no products selected */}
           {selectedProductsForm.length === 0 && (
             <div className="mt-6 pt-4 border-t border-gray-200">
               <div className="flex justify-between items-center">

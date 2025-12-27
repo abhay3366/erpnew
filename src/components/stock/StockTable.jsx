@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { MdDelete, MdEdit, MdVisibility, MdRestore } from "react-icons/md";
 import { useRouter } from 'next/navigation';
+
 export default function StockTable({ 
   filteredStocks = [], 
   setDetailsPage, 
@@ -16,7 +17,6 @@ export default function StockTable({
   const [filterStatus, setFilterStatus] = useState('active');
   const [filterType, setFilterType] = useState('all');
   
-  
   // Modal states
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -27,13 +27,56 @@ export default function StockTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
- const router = useRouter();
+  const router = useRouter();
+
+  // Extract quantity from dynamic values - Dynamic approach
+  const getProductQuantity = (product) => {
+    // UNIQUE products के लिए items की length quantity है
+    if (product.identifierType === 'UNIQUE') {
+      return product.items?.length || 0;
+    }
+    
+    // NON_UNIQUE products के लिए dynamicValues से quantity निकालें
+    if (product.identifierType === 'NON_UNIQUE' && product.dynamicValues) {
+      // Dynamic तरीके से quantity फील्ड ढूंढें
+      const quantityEntries = Object.entries(product.dynamicValues);
+      
+      // पहले quantity नाम वाला फील्ड ढूंढें
+      const quantityField = quantityEntries.find(([key, value]) => 
+        key.toLowerCase().includes('quantity') || 
+        key.toLowerCase().includes('qty') ||
+        (typeof value === 'string' && value.fieldType === 'quantity')
+      );
+      
+      if (quantityField) {
+        // value object या string हो सकता है
+        const quantityValue = typeof quantityField[1] === 'object' 
+          ? quantityField[1].value 
+          : quantityField[1];
+        
+        const parsedQuantity = parseInt(quantityValue || 0);
+        return isNaN(parsedQuantity) ? 0 : parsedQuantity;
+      }
+      
+      // अगर quantity नाम का फील्ड नहीं मिला, तो पहले numeric value वाला फील्ड चेक करें
+      for (const [key, value] of quantityEntries) {
+        const val = typeof value === 'object' ? value.value : value;
+        const num = parseInt(val);
+        if (!isNaN(num)) {
+          return num;
+        }
+      }
+    }
+    
+    return 0;
+  };
+
   // Check if stock can be deleted (all quantities must be 0)
   const canDeleteStock = (stock) => {
     if (!stock.products || stock.products.length === 0) return true;
     
     return stock.products.every(product => 
-      (product.quantity || 0) === 0
+      getProductQuantity(product) === 0
     );
   };
 
@@ -147,6 +190,27 @@ export default function StockTable({
     return matchesSearch && matchesStatus && matchesType;
   });
 
+  // Calculate total quantity for a stock
+  const calculateTotalQuantity = (stock) => {
+    if (!stock.products || stock.products.length === 0) return 0;
+    
+    return stock.products.reduce((total, product) => {
+      return total + getProductQuantity(product);
+    }, 0);
+  };
+
+  // Format dynamic values for display
+  const formatDynamicValues = (dynamicValues) => {
+    if (!dynamicValues) return [];
+    
+    return Object.entries(dynamicValues).map(([key, value]) => {
+      // value object हो सकता है {value: "...", fieldId: "..."}
+      // या direct string भी हो सकता है
+      const displayValue = typeof value === 'object' ? value.value : value;
+      return { key, value: displayValue };
+    });
+  };
+
   // Pagination calculations
   const totalItems = filteredStocksDisplay.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -182,43 +246,6 @@ export default function StockTable({
     setStockToDelete(stock);
     setIsDeleteConfirmOpen(true);
   };
-
-  // Calculate total quantity
-  const calculateTotalQuantity = (stock) => {
-    if (!stock.products || stock.products.length === 0) return 0;
-    
-    return stock.products.reduce((total, product) => {
-      return total + (product.quantity || 0);
-    }, 0);
-  };
-
-  // Calculate quantity by product type
-  // const calculateQuantityByType = (stock) => {
-  //   if (!stock.products || stock.products.length === 0) return { unique: 0, nonUnique: 0 };
-    
-  //   return stock.products.reduce((acc, product) => {
-  //     if (product.identifierType === 'UNIQUE') {
-  //       acc.unique += product.quantity || 0;
-  //     } else {
-  //       acc.nonUnique += product.quantity || 0;
-  //     }
-  //     return acc;
-  //   }, { unique: 0, nonUnique: 0 });
-  // };
-
-  // Calculate product counts by type
-  // const calculateProductCountsByType = (stock) => {
-  //   if (!stock.products || stock.products.length === 0) return { unique: 0, nonUnique: 0 };
-    
-  //   return stock.products.reduce((acc, product) => {
-  //     if (product.identifierType === 'UNIQUE') {
-  //       acc.unique += 1;
-  //     } else {
-  //       acc.nonUnique += 1;
-  //     }
-  //     return acc;
-  //   }, { unique: 0, nonUnique: 0 });
-  // };
 
   // Pagination controls
   const handlePageChange = (pageNumber) => {
@@ -291,7 +318,6 @@ export default function StockTable({
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
-              {/* <option value="inactive">Inactive</option> */}
               <option value="deleted">Deleted</option>
             </select>
           </div>
@@ -317,15 +343,15 @@ export default function StockTable({
             {searchTerm && ` for "${searchTerm}"`}
           </div>
           <div className="flex gap-2">
-         <button
-    onClick={() => router.push('/stock/stock-alert')}
-  className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 text-sm flex items-center"
->
-  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-  </svg>
-  Stock Alert
-</button>
+            <button
+              onClick={() => router.push('/stock/stock-alert')}
+              className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 text-sm flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Stock Alert
+            </button>
             <button
               onClick={() => {
                 setSearchTerm('');
@@ -357,7 +383,7 @@ export default function StockTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Sr no
               </th>
-               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Bill No
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -403,28 +429,22 @@ export default function StockTable({
               currentStocks.map((stock) => {
                 const isDeleteDisabled = !canDeleteStock(stock);
                 const totalQuantity = calculateTotalQuantity(stock);
-                {/* const quantityByType = calculateQuantityByType(stock);
-                const productCountsByType = calculateProductCountsByType(stock); */}
-               
                 
                 return (
                   <tr key={stock.id} className={`hover:bg-gray-50 ${stock.isDeleted ? 'bg-red-50' : ''}`}>
-                    {/* Stock Info */}
                     <td className="px-6">
                       <div className="flex flex-col">
                         <div className="font-medium text-gray-900">#{sr++}</div>
                       </div>
                     </td>
-                     {/* Vendor */}
-                     <td className="px-6">
+                    <td className="px-6">
                       <div className="flex flex-col">
                         <div className="font-medium text-gray-900">{stock.billNo || 'N/A'}</div>
                       </div>
                     </td>
-                    {/* purchase date */}
-                     <td className="px-6">
+                    <td className="px-6">
                       <div className="flex flex-col">
-                         <div><span className="font-medium">{formatDate(stock.purchaseDate)}</span></div>
+                        <div><span className="font-medium">{formatDate(stock.purchaseDate)}</span></div>
                       </div>
                     </td>
                    
@@ -434,33 +454,32 @@ export default function StockTable({
                       </div>
                     </td>
 
-                    {/* Warehouse */}
                     <td className="px-6">
                       <div className="flex flex-col">
                         <div className="font-medium text-gray-900">{stock.warehouseName || 'N/A'}</div>
                       </div>
                     </td>
 
-                    {/* Products */}
                     <td className="px-6">
                       <div className="space-y-1">
-                        {/* <div className="text-sm">
-                          <span className="font-medium">{stock.products?.length || 0}</span> total products
-                        </div> */}
                         <div className="space-y-1 max-h-20 overflow-y-auto">
-                          {stock.products?.slice(0, 3).map((product, idx) => (
-                            <div key={idx} className="flex items-center text-xs">
-                              <span className={`w-2 h-2 rounded-full mr-2 ${product.identifierType === 'UNIQUE' ? 'bg-blue-500' : 'bg-green-500'}`}></span>
-                              <div className="truncate">
-                                <div className="font-medium truncate">{product.productName}</div>
-                                <div className="text-gray-500">
-                                  Type: <span className="font-medium">{product.identifierType}</span>
-                                  <span className="mx-1">•</span>
-                                  Qty: <span className="font-medium">{product.quantity || 0}</span>
+                          {stock.products?.slice(0, 3).map((product, idx) => {
+                            const productQuantity = getProductQuantity(product);
+                            
+                            return (
+                              <div key={idx} className="flex items-center text-xs">
+                                <span className={`w-2 h-2 rounded-full mr-2 ${product.identifierType === 'UNIQUE' ? 'bg-blue-500' : 'bg-green-500'}`}></span>
+                                <div className="truncate">
+                                  <div className="font-medium truncate">{product.productName}</div>
+                                  <div className="text-gray-500">
+                                    Type: <span className="font-medium">{product.identifierType}</span>
+                                    <span className="mx-1">•</span>
+                                    Qty: <span className="font-medium">{productQuantity}</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                           {stock.products?.length > 3 && (
                             <div className="text-xs text-gray-500">
                               +{stock.products.length - 3} more products
@@ -470,7 +489,6 @@ export default function StockTable({
                       </div>
                     </td>
 
-                    {/* Quantity Summary */}
                     <td className="px-6">
                       <div className="flex flex-col space-y-2">
                         <div className="text-center">
@@ -481,7 +499,6 @@ export default function StockTable({
                       </div>
                     </td>
 
-                    {/* Status */}
                     <td className="px-6">
                       <div className="flex flex-col gap-1">
                         <span className={`px-2 py-1 text-xs rounded-full text-center ${
@@ -503,20 +520,16 @@ export default function StockTable({
                       </div>
                     </td>
 
-                    {/* Actions */}
                     <td className="px-1 py-4">
                       <div className="flex  gap-2">
-                        {/* View Details Button */}
                         <button
                           onClick={() => handleViewDetails(stock)}
                           className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 text-sm flex items-center justify-center transition-colors"
                           title="View Details"
                         >
                           <MdVisibility className="mr-1" size={14} />
-                          {/* View */}
                         </button>
 
-                        {/* Edit Button - Only for non-deleted stocks */}
                         {!stock.isDeleted && onEditStock && (
                           <button
                             onClick={() => onEditStock(stock.id)}
@@ -524,11 +537,9 @@ export default function StockTable({
                             title="Edit Stock"
                           >
                             <MdEdit className="mr-1" size={14} />
-                            {/* Edit */}
                           </button>
                         )}
 
-                        {/* Delete/Restore Buttons */}
                         {!stock.isDeleted ? (
                           <button
                             onClick={() => openDeleteConfirm(stock)}
@@ -541,7 +552,6 @@ export default function StockTable({
                             title={isDeleteDisabled ? "Cannot delete. All product quantities must be 0." : "Delete stock"}
                           >
                             <MdDelete className="mr-1" size={14} />
-                            {/* Delete */}
                           </button>
                         ) : (
                           <button
@@ -563,7 +573,7 @@ export default function StockTable({
         </table>
       </div>
 
-      {/* Pagination Controls */}
+      {/* Pagination Controls - Same as before */}
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
           {/* Items per page selector */}
@@ -590,7 +600,6 @@ export default function StockTable({
 
           {/* Page navigation */}
           <div className="flex items-center gap-2">
-            {/* Previous button */}
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
@@ -606,7 +615,6 @@ export default function StockTable({
               Previous
             </button>
 
-            {/* Page numbers */}
             <div className="flex gap-1">
               {getPageNumbers().map((pageNum, index) => (
                 pageNum === '...' ? (
@@ -629,7 +637,6 @@ export default function StockTable({
               ))}
             </div>
 
-            {/* Next button */}
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
@@ -646,7 +653,6 @@ export default function StockTable({
             </button>
           </div>
 
-          {/* Jump to page */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Go to page:</span>
             <input
@@ -665,7 +671,7 @@ export default function StockTable({
         </div>
       )}
 
-      {/* Stats Summary */}
+      {/* Stats Summary - Same as before */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
           <div className="flex items-center">
@@ -729,7 +735,7 @@ export default function StockTable({
         </div>
       </div>
 
-      {/* View Details Modal */}
+      {/* View Details Modal - Updated for dynamic values */}
       {isViewModalOpen && selectedStock && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
@@ -757,58 +763,53 @@ export default function StockTable({
               <div className="mb-2">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Vendor</label>
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium text-gray-800">{selectedStock.vendorName || 'N/A'}</div>
-                        <span className="text-xs text-gray-500">(ID: {selectedStock.vendorId})</span>
-                      </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Vendor</label>
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium text-gray-800">{selectedStock.vendorName || 'N/A'}</div>
+                      <span className="text-xs text-gray-500">(ID: {selectedStock.vendorId})</span>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Bill Number</label>
-                      <p className="text-gray-800 font-medium">{selectedStock.billNo || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Purchase Date</label>
-                      <p className="text-gray-800 font-medium">
-                        {formatDate(selectedStock.purchaseDate)}
-                      </p>
-                    </div>
-                
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Bill Number</label>
+                    <p className="text-gray-800 font-medium">{selectedStock.billNo || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Purchase Date</label>
+                    <p className="text-gray-800 font-medium">
+                      {formatDate(selectedStock.purchaseDate)}
+                    </p>
+                  </div>
                  
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Warehouse</label>
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium text-gray-800">{selectedStock.warehouseName || 'N/A'}</div>
-                        <span className="text-xs text-gray-500">(ID: {selectedStock.warehouseId})</span>
-                      </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Warehouse</label>
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium text-gray-800">{selectedStock.warehouseName || 'N/A'}</div>
+                      <span className="text-xs text-gray-500">(ID: {selectedStock.warehouseId})</span>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Status</label>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedStock.isDeleted 
-                          ? 'bg-red-100 text-red-800'
-                          : selectedStock.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : selectedStock.status === 'inactive'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {selectedStock.isDeleted ? 'DELETED' : selectedStock.status?.toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Created At</label>
-                      <p className="text-gray-800 font-medium">
-                        {formatDateTime(selectedStock.createdAt)}
-                      </p>
-                    </div>
-                 
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Status</label>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedStock.isDeleted 
+                        ? 'bg-red-100 text-red-800'
+                        : selectedStock.status === 'active'
+                        ? 'bg-green-100 text-green-800'
+                        : selectedStock.status === 'inactive'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedStock.isDeleted ? 'DELETED' : selectedStock.status?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Created At</label>
+                    <p className="text-gray-800 font-medium">
+                      {formatDateTime(selectedStock.createdAt)}
+                    </p>
+                  </div>
                 </div>
               </div>
-
-             
 
               {/* Products Section */}
               <div>
@@ -823,6 +824,9 @@ export default function StockTable({
                 ) : (
                   <div className="space-y-4">
                     {selectedStock.products?.map((product, productIndex) => {
+                      const productQuantity = getProductQuantity(product);
+                      const formattedDynamicValues = formatDynamicValues(product.dynamicValues);
+                      
                       return (
                         <div key={productIndex} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex justify-between items-start mb-4">
@@ -841,7 +845,27 @@ export default function StockTable({
                             </div>
                             <div className="text-right">
                               <p className="text-sm text-gray-600">Quantity</p>
-                              <p className="text-2xl font-bold text-blue-600">{product.quantity || 0}</p>
+                              <p className="text-2xl font-bold text-blue-600">{productQuantity}</p>
+                            </div>
+                          </div>
+
+                          {/* Basic Product Details */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">Rate</label>
+                              <p className="text-sm font-medium text-gray-800">₹{product.rate || '0'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">GST</label>
+                              <p className="text-sm font-medium text-gray-800">{product.gst || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">Quantity Alert</label>
+                              <p className="text-sm font-medium text-gray-800">{product.quantityAlert || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-1">Product ID</label>
+                              <p className="text-sm font-medium text-gray-800 truncate">{product.productId}</p>
                             </div>
                           </div>
 
@@ -875,13 +899,15 @@ export default function StockTable({
                           )}
 
                           {/* For NON_UNIQUE products - Show Dynamic Values */}
-                          {product.identifierType === 'NON_UNIQUE' && product.dynamicValues && Object.keys(product.dynamicValues).length > 0 && (
+                          {product.identifierType === 'NON_UNIQUE' && formattedDynamicValues.length > 0 && (
                             <div className="mt-4 pt-4 border-t">
                               <h5 className="font-medium text-gray-700 mb-3">Additional Details</h5>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {Object.entries(product.dynamicValues).map(([key, value], index) => (
+                                {formattedDynamicValues.map(({ key, value }, index) => (
                                   <div key={index} className="flex">
-                                    <div className="w-1/3 font-medium text-gray-700">{key}:</div>
+                                    <div className="w-1/3 font-medium text-gray-700 capitalize">
+                                      {key.replace(/([A-Z])/g, ' $1').trim()}:
+                                    </div>
                                     <div className="w-2/3 text-gray-600">{value}</div>
                                   </div>
                                 ))}

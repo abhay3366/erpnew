@@ -29,42 +29,94 @@ const StockAlert = () => {
     fetchStocks();
   }, []);
 
-  // Filter and process products that need alert
-  const alertProducts = useMemo(() => {
-    const allProducts = [];
+  // Extract quantity from dynamicValues
+  const extractQuantity = (product) => {
+    if (!product.dynamicValues) return 0;
     
-    // Extract all products from stocks
+    // Try to get quantity from dynamicValues
+    const quantityObj = product.dynamicValues.quantity;
+    if (quantityObj && quantityObj.value) {
+      const quantity = parseInt(quantityObj.value, 10);
+      return isNaN(quantity) ? 0 : quantity;
+    }
+    
+    // If quantity is not found, try to find any field with "quantity" in key
+    for (const key in product.dynamicValues) {
+      if (key.toLowerCase().includes('quantity') && product.dynamicValues[key].value) {
+        const quantity = parseInt(product.dynamicValues[key].value, 10);
+        return isNaN(quantity) ? 0 : quantity;
+      }
+    }
+    
+    return 0;
+  };
+
+  // Calculate total quantity per product across all stocks
+  const calculateProductQuantities = useMemo(() => {
+    const productMap = new Map(); // Map to store productId -> {totalQuantity, details}
+    console.log("🚀 ~ StockAlert ~ productMap:", productMap)
+    
     stocks.forEach(stock => {
-      if (stock.status === 'active') { // Only consider active stocks
+      if (stock.status === 'active') {
         stock.products.forEach(product => {
-          allProducts.push({
-            ...product,
-            vendorName: stock.vendorName,
-            warehouseName: stock.warehouseName,
-            purchaseDate: stock.purchaseDate,
-            billNo: stock.billNo,
-            stockId: stock.id
-          });
+          const productId = product.productId;
+          const quantity = extractQuantity(product);
+          const quantityAlert = product.quantityAlert || 10;
+          
+          if (productMap.has(productId)) {
+            // Update existing product
+            const existing = productMap.get(productId);
+            existing.totalQuantity += quantity;
+            existing.stocks.push({
+              quantity,
+              warehouseName: stock.warehouseName,
+              vendorName: stock.vendorName,
+              purchaseDate: stock.purchaseDate,
+              billNo: stock.billNo,
+              stockId: stock.id
+            });
+          } else {
+            // Add new product
+            productMap.set(productId, {
+              productId: product.productId,
+              productName: product.productName,
+              identifierType: product.identifierType,
+              rate: product.rate,
+              gst: product.gst,
+              quantityAlert: quantityAlert,
+              totalQuantity: quantity,
+              stocks: [{
+                quantity,
+                warehouseName: stock.warehouseName,
+                vendorName: stock.vendorName,
+                purchaseDate: stock.purchaseDate,
+                billNo: stock.billNo,
+                stockId: stock.id
+              }]
+            });
+          }
         });
       }
     });
- console.log("🚀 ~ StockAlert ~ allProducts:", allProducts)
-    // Filter products with low stock
-    return allProducts.filter(product => {
-      const quantity = product.quantity || 0;
-      const quantityAlert = product.quantityAlert || 10;
-      return quantity <= quantityAlert;
-    });
-   
+    
+    // Convert map to array
+    return Array.from(productMap.values());
   }, [stocks]);
+
+  // Filter products with low stock
+  const alertProducts = useMemo(() => {
+    return calculateProductQuantities.filter(product => {
+      return product.totalQuantity <= product.quantityAlert;
+    });
+  }, [calculateProductQuantities]);
 
   // Filter based on selected filter
   const filteredProducts = useMemo(() => {
     if (filter === 'out-of-stock') {
-      return alertProducts.filter(product => product.quantity === 0);
+      return alertProducts.filter(product => product.totalQuantity === 0);
     } else if (filter === 'low-stock') {
       return alertProducts.filter(product => 
-        product.quantity > 0 && product.quantity <= product.quantityAlert
+        product.totalQuantity > 0 && product.totalQuantity <= product.quantityAlert
       );
     }
     return alertProducts;
@@ -75,15 +127,11 @@ const StockAlert = () => {
     const sorted = [...filteredProducts];
     sorted.sort((a, b) => {
       if (sortBy === 'quantity') {
-        return sortOrder === 'asc' ? a.quantity - b.quantity : b.quantity - a.quantity;
+        return sortOrder === 'asc' ? a.totalQuantity - b.totalQuantity : b.totalQuantity - a.totalQuantity;
       } else if (sortBy === 'productName') {
         return sortOrder === 'asc' 
           ? a.productName.localeCompare(b.productName)
           : b.productName.localeCompare(a.productName);
-      } else if (sortBy === 'date') {
-        return sortOrder === 'asc'
-          ? new Date(a.purchaseDate) - new Date(b.purchaseDate)
-          : new Date(b.purchaseDate) - new Date(a.purchaseDate);
       }
       return 0;
     });
@@ -110,11 +158,23 @@ const StockAlert = () => {
   // Calculate statistics
   const stats = useMemo(() => {
     const totalAlerts = alertProducts.length;
-    const outOfStock = alertProducts.filter(p => p.quantity === 0).length;
-    const lowStock = alertProducts.filter(p => p.quantity > 0 && p.quantity <= p.quantityAlert).length;
+    const outOfStock = alertProducts.filter(p => p.totalQuantity === 0).length;
+    const lowStock = alertProducts.filter(p => p.totalQuantity > 0 && p.totalQuantity <= p.quantityAlert).length;
     
     return { totalAlerts, outOfStock, lowStock };
   }, [alertProducts]);
+
+  // Get warehouses for a product
+  const getWarehousesForProduct = (product) => {
+    const warehouses = product.stocks.map(stock => stock.warehouseName);
+    return [...new Set(warehouses)]; // Remove duplicates
+  };
+
+  // Get vendors for a product
+  const getVendorsForProduct = (product) => {
+    const vendors = product.stocks.map(stock => stock.vendorName);
+    return [...new Set(vendors)]; // Remove duplicates
+  };
 
   if (loading) {
     return (
@@ -143,7 +203,7 @@ const StockAlert = () => {
               <h3 className="text-sm font-medium text-red-800">Error loading data</h3>
               <div className="mt-2 text-sm text-red-700">
                 <p>{error}</p>
-                <p className="mt-2">Make sure your JSON Server is running on http://localhost:3001</p>
+                <p className="mt-2">Make sure your JSON Server is running on http://localhost:5001</p>
               </div>
             </div>
           </div>
@@ -260,7 +320,6 @@ const StockAlert = () => {
               >
                 <option value="quantity">Quantity</option>
                 <option value="productName">Product Name</option>
-                <option value="date">Purchase Date</option>
               </select>
             </div>
             <button
@@ -289,23 +348,17 @@ const StockAlert = () => {
                   Alert Level
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vendor
+                  Warehouses
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Warehouse
+                  Details
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Purchase
-                </th>
-                {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th> */}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {sortedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center">
+                  <td colSpan="5" className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -339,29 +392,32 @@ const StockAlert = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {product.quantity} units
+                          {product.totalQuantity} units
                         </div>
                         <div className="text-sm text-gray-500">
                           Alert at: {product.quantityAlert} units
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          Distributed across {product.stocks.length} stock entries
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        getAlertLevel(product.quantity) === 'critical'
+                        getAlertLevel(product.totalQuantity) === 'critical'
                           ? 'bg-red-100 text-red-800'
-                          : getAlertLevel(product.quantity) === 'high'
+                          : getAlertLevel(product.totalQuantity) === 'high'
                           ? 'bg-orange-100 text-orange-800'
                           : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {getAlertLevel(product.quantity) === 'critical' ? (
+                        {getAlertLevel(product.totalQuantity) === 'critical' ? (
                           <>
                             <svg className="mr-1 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                             </svg>
                             Critical
                           </>
-                        ) : getAlertLevel(product.quantity) === 'high' ? (
+                        ) : getAlertLevel(product.totalQuantity) === 'high' ? (
                           <>
                             <svg className="mr-1 w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -378,24 +434,39 @@ const StockAlert = () => {
                         )}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{product.vendorName}</div>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {getWarehousesForProduct(product).map((warehouse, idx) => (
+                          <span key={idx} className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs mr-1 mb-1">
+                            {warehouse}
+                          </span>
+                        ))}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{product.warehouseName}</div>
+                    <td className="px-6 py-4">
+                      <div className="text-sm">
+                        <div className="text-gray-900 mb-1">
+                          <span className="font-medium">Vendors: </span>
+                          {getVendorsForProduct(product).join(', ')}
+                        </div>
+                        <div className="text-gray-600">
+                          <span className="font-medium">Stock Entries: </span>
+                          {product.stocks.length}
+                        </div>
+                        <button 
+                          className="mt-2 text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                          onClick={() => {
+                            console.log('Product details:', product);
+                            alert(`Product: ${product.productName}\nTotal Quantity: ${product.totalQuantity}\nStock Entries: ${product.stocks.length}\nSee console for full details.`);
+                          }}
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          View Details
+                        </button>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{product.purchaseDate}</div>
-                      <div className="text-sm text-gray-500">Bill: {product.billNo}</div>
-                    </td>
-                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900 mr-4">
-                        Reorder
-                      </button>
-                      <button className="text-gray-600 hover:text-gray-900">
-                        View Details
-                      </button>
-                    </td> */}
                   </tr>
                 ))
               )}
@@ -404,21 +475,47 @@ const StockAlert = () => {
         </div>
       </div>
 
-      {/* Legend */}
+      {/* Summary Section */}
       <div className="mt-8 bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Alert Legend</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
-            <span className="text-sm text-gray-700">Critical: Out of Stock (0 units)</span>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Stock Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Product Distribution</h4>
+            <div className="space-y-2">
+              {calculateProductQuantities.map((product, index) => (
+                <div key={index} className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600 truncate max-w-[200px]">{product.productName}</span>
+                  <span className={`text-sm font-medium ${
+                    product.totalQuantity <= product.quantityAlert 
+                      ? 'text-red-600' 
+                      : 'text-green-600'
+                  }`}>
+                    {product.totalQuantity} units
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-orange-500 rounded-full mr-3"></div>
-            <span className="text-sm text-gray-700">High Alert: Very Low Stock (1-5 units)</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
-            <span className="text-sm text-gray-700">Medium Alert: Low Stock (6+ units)</span>
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Alert Legend</h4>
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-700">Critical: Out of Stock (0 units)</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-orange-500 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-700">High Alert: Very Low Stock (1-5 units)</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-700">Medium Alert: Low Stock (6+ units)</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-700">Safe: Above alert threshold</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
