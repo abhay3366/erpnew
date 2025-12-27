@@ -529,9 +529,7 @@ const StockPurchase = () => {
                                 <div className="text-sm font-bold text-gray-900">
                                   {formatDate(order.purchaseDate)}
                                 </div>
-                                <div className="text-xs text-gray-500 mt-0.5">
-                                  Click anywhere to expand
-                                </div>
+                               
                               </div>
                             </div>
                           </td>
