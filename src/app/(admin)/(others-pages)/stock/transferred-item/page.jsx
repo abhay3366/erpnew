@@ -54,7 +54,11 @@ import {
   FileText,
   ArrowRight,
   ArrowLeft,
-  Info
+  Info,
+  Check,
+  Clock,
+  XCircle,
+  AlertCircle
 } from "lucide-react";
 
 export default function StockTransferPage() {
@@ -87,10 +91,16 @@ export default function StockTransferPage() {
   const [showItemSelection, setShowItemSelection] = useState(false);
   const [selectedProductIndex, setSelectedProductIndex] = useState(null);
   const [randomQtyInput, setRandomQtyInput] = useState("");
+  const [itemSearchTerm, setItemSearchTerm] = useState("");
 
-  // NEW: Transfer Details Modal state
+  // Transfer Details Modal state
   const [showTransferDetails, setShowTransferDetails] = useState(false);
   const [selectedTransfer, setSelectedTransfer] = useState(null);
+
+  // NEW: Approval Dialog state
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [transferToApprove, setTransferToApprove] = useState(null);
+  const [isProcessingApproval, setIsProcessingApproval] = useState(false);
 
   const {
     register,
@@ -354,6 +364,53 @@ export default function StockTransferPage() {
 
   const totalTransferPages = Math.ceil(filteredTransfers.length / transfersPerPage);
 
+  // NEW: Get unique dynamic fields from ALL items for the selected product
+  const getDynamicFieldsFromItems = (productIndex) => {
+    if (selectedProductIndex === null) return [];
+    const product = selectedProducts[selectedProductIndex];
+    if (!product || !product.items || product.items.length === 0) return [];
+    
+    // Get all fields that have at least one non-empty value
+    const fieldMap = new Map();
+    
+    product.items.forEach(item => {
+      Object.entries(item).forEach(([key, value]) => {
+        if (key !== 'id' && value && String(value).trim() !== '') {
+          if (!fieldMap.has(key)) {
+            fieldMap.set(key, {
+              key,
+              hasData: true,
+              // Check field type for formatting
+              isSerial: key.toLowerCase().includes('serial'),
+              isMac: key.toLowerCase().includes('mac'),
+              isWarranty: key.toLowerCase().includes('warranty') || key.toLowerCase().includes('warrenty')
+            });
+          }
+        }
+      });
+    });
+    
+    return Array.from(fieldMap.values());
+  };
+
+  // NEW: Filter items based on search term
+  const getFilteredItems = () => {
+    if (selectedProductIndex === null) return [];
+    const product = selectedProducts[selectedProductIndex];
+    if (!product || !product.items) return [];
+    
+    if (!itemSearchTerm) return product.items;
+    
+    const searchLower = itemSearchTerm.toLowerCase();
+    return product.items.filter(item => {
+      // Search in all item properties
+      return Object.entries(item).some(([key, value]) => {
+        if (key === 'id') return false;
+        return String(value).toLowerCase().includes(searchLower);
+      });
+    });
+  };
+
   // Handle product selection from ProductTable
   const handleProductSelect = (product) => {
     // Check if product is already selected
@@ -426,40 +483,84 @@ export default function StockTransferPage() {
     }
 
     if (product.identifierType === "UNIQUE" && product.items.length > 0) {
-      // Shuffle items and select random ones
-      const shuffledItems = [...product.items].sort(() => 0.5 - Math.random());
+      // Filter items based on search if any
+      const filteredItems = itemSearchTerm 
+        ? product.items.filter(item => {
+            const searchLower = itemSearchTerm.toLowerCase();
+            return Object.entries(item).some(([key, value]) => {
+              if (key === 'id') return false;
+              return String(value).toLowerCase().includes(searchLower);
+            });
+          })
+        : product.items;
+
+      if (filteredItems.length === 0) {
+        toast.error("No items match your search criteria");
+        return;
+      }
+
+      if (qty > filteredItems.length) {
+        toast.error(`Cannot select more than ${filteredItems.length} matching items`);
+        return;
+      }
+
+      // Shuffle filtered items and select random ones
+      const shuffledItems = [...filteredItems].sort(() => 0.5 - Math.random());
       const selectedItems = shuffledItems.slice(0, qty);
 
-      product.selectedItems = selectedItems;
-      product.transferQty = selectedItems.length;
+      // Get all currently selected items (including those not in filtered list)
+      const currentSelected = product.selectedItems || [];
+      const newSelected = [...currentSelected, ...selectedItems];
+      
+      // Remove duplicates
+      const uniqueSelected = Array.from(new Set(newSelected.map(item => item.id)))
+        .map(id => newSelected.find(item => item.id === id));
+
+      product.selectedItems = uniqueSelected;
+      product.transferQty = uniqueSelected.length;
 
       setSelectedProducts(items);
 
       // Update form
-      setValue(`items.${productIndex}.selectedItems`, selectedItems);
-      setValue(`items.${productIndex}.transferQty`, selectedItems.length);
+      setValue(`items.${productIndex}.selectedItems`, uniqueSelected);
+      setValue(`items.${productIndex}.transferQty`, uniqueSelected.length);
 
-      toast.success(`Randomly selected ${qty} items`);
+      toast.success(`Randomly selected ${selectedItems.length} items`);
       setRandomQtyInput("");
     }
   };
 
-  // Select all items
-  const handleSelectAllItems = (productIndex) => {
+  // Select all filtered items
+  const handleSelectAllFilteredItems = (productIndex) => {
     const items = [...selectedProducts];
     const product = items[productIndex];
 
     if (product.identifierType === "UNIQUE" && product.items.length > 0) {
-      product.selectedItems = [...product.items];
-      product.transferQty = product.items.length;
+      const filteredItems = getFilteredItems();
+      
+      if (filteredItems.length === 0) {
+        toast.error("No items to select");
+        return;
+      }
+
+      // Get current selected items
+      const currentSelected = product.selectedItems || [];
+      const newSelected = [...currentSelected, ...filteredItems];
+      
+      // Remove duplicates
+      const uniqueSelected = Array.from(new Set(newSelected.map(item => item.id)))
+        .map(id => newSelected.find(item => item.id === id));
+
+      product.selectedItems = uniqueSelected;
+      product.transferQty = uniqueSelected.length;
 
       setSelectedProducts(items);
 
       // Update form
-      setValue(`items.${productIndex}.selectedItems`, product.selectedItems);
-      setValue(`items.${productIndex}.transferQty`, product.transferQty);
+      setValue(`items.${productIndex}.selectedItems`, uniqueSelected);
+      setValue(`items.${productIndex}.transferQty`, uniqueSelected.length);
 
-      toast.success(`Selected all ${product.items.length} items`);
+      toast.success(`Selected all ${filteredItems.length} matching items`);
     }
   };
 
@@ -479,6 +580,32 @@ export default function StockTransferPage() {
       setValue(`items.${productIndex}.transferQty`, 0);
 
       toast.success("Cleared selection");
+    }
+  };
+
+  // Clear filtered selection only
+  const handleClearFilteredSelection = (productIndex) => {
+    const items = [...selectedProducts];
+    const product = items[productIndex];
+
+    if (product.identifierType === "UNIQUE") {
+      const filteredItems = getFilteredItems();
+      const filteredItemIds = filteredItems.map(item => item.id);
+      
+      // Remove only filtered items from selection
+      const currentSelected = product.selectedItems || [];
+      const newSelected = currentSelected.filter(item => !filteredItemIds.includes(item.id));
+
+      product.selectedItems = newSelected;
+      product.transferQty = newSelected.length;
+
+      setSelectedProducts(items);
+
+      // Update form
+      setValue(`items.${productIndex}.selectedItems`, newSelected);
+      setValue(`items.${productIndex}.transferQty`, newSelected.length);
+
+      toast.success(`Cleared ${filteredItems.length} matching items from selection`);
     }
   };
 
@@ -517,6 +644,121 @@ export default function StockTransferPage() {
   const openTransferDetails = (transfer) => {
     setSelectedTransfer(transfer);
     setShowTransferDetails(true);
+  };
+
+  // NEW: Open approve dialog
+  const openApproveDialog = (transfer) => {
+    setTransferToApprove(transfer);
+    setShowApproveDialog(true);
+  };
+
+  // NEW: Handle transfer approval
+  const handleApproveTransfer = async (transferId) => {
+    setIsProcessingApproval(true);
+    
+    try {
+      // Find the transfer
+      const transfer = transfers.find(t => t.id === transferId);
+      if (!transfer) {
+        toast.error("Transfer not found");
+        return;
+      }
+
+      console.log("✅ Approving transfer:", transferId);
+
+      // 1. UPDATE SOURCE WAREHOUSE STOCK (Subtract) - Only when approved
+      console.log("📉 Updating source warehouse stock...");
+      await updateSourceWarehouseStock(transfer.sourceWarehouse.id, {
+        productId: transfer.productId,
+        identifierType: transfer.identifierType,
+        transferQty: transfer.quantity,
+        selectedItems: transfer.items || []
+      });
+
+      // 2. UPDATE/CREATE DESTINATION WAREHOUSE STOCK - Only when approved
+      console.log("📈 Updating destination warehouse stock...");
+      
+      // Get original bill number
+      const itemBillNo = getOriginalBillNo(transfer.sourceWarehouse.id, transfer.productId);
+      
+      // Get source product details
+      const sourceProductDetails = getSourceProductDetails(
+        transfer.sourceWarehouse.id, 
+        transfer.productId
+      );
+
+      await updateDestinationWarehouseStock(
+        transfer.destinationWarehouse.id,
+        {
+          productId: transfer.productId,
+          productName: transfer.productName,
+          identifierType: transfer.identifierType,
+          transferQty: transfer.quantity,
+          rate: transfer.rate,
+          selectedItems: transfer.items || [],
+          dynamicValues: transfer.dynamicValues || {}
+        },
+        transfer.sourceWarehouse.id,
+        itemBillNo,
+        sourceProductDetails
+      );
+
+      // 3. Update transfer status to "completed"
+      console.log("🔄 Updating transfer status to 'completed'...");
+      const response = await fetch(`http://localhost:5001/transfers/${transferId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "completed" }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update transfer status");
+      }
+
+      // Refresh data
+      await refreshAllData();
+
+      toast.success("Transfer approved successfully!");
+      setShowApproveDialog(false);
+      
+    } catch (error) {
+      console.error("❌ Error approving transfer:", error);
+      toast.error("Failed to approve transfer: " + error.message);
+    } finally {
+      setIsProcessingApproval(false);
+    }
+  };
+
+  // NEW: Handle transfer rejection
+  const handleRejectTransfer = async (transferId) => {
+    setIsProcessingApproval(true);
+    
+    try {
+      console.log("❌ Rejecting transfer:", transferId);
+
+      // Update transfer status to "rejected"
+      const response = await fetch(`http://localhost:5001/transfers/${transferId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "rejected" }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update transfer status");
+      }
+
+      // Refresh data
+      await refreshAllData();
+
+      toast.success("Transfer rejected successfully!");
+      setShowApproveDialog(false);
+      
+    } catch (error) {
+      console.error("❌ Error rejecting transfer:", error);
+      toast.error("Failed to reject transfer: " + error.message);
+    } finally {
+      setIsProcessingApproval(false);
+    }
   };
 
   // Validate form
@@ -576,7 +818,7 @@ export default function StockTransferPage() {
     return sourceStock ? sourceStock.billNo : `TR-${Date.now()}`;
   };
 
-  // FIXED: Get ALL product details from source stock (including quantityAlert, gst, etc.)
+  // Get ALL product details from source stock
   const getSourceProductDetails = (warehouseId, productId) => {
     const sourceStock = stocks.find(stock =>
       stock.warehouseId === warehouseId &&
@@ -591,7 +833,7 @@ export default function StockTransferPage() {
     return null;
   };
 
-  // Confirm and process transfer - FIXED FOR NON_UNIQUE
+  // Confirm and process transfer - NOW CREATES PENDING TRANSFER
   const confirmTransfer = async () => {
     setShowConfirmDialog(false);
     setIsSubmitting(true);
@@ -605,7 +847,7 @@ export default function StockTransferPage() {
       }
     });
 
-    console.log("🎯 Starting transfer process...");
+    console.log("🎯 Creating transfer request...");
     console.log("Form Data:", formData);
     console.log("Transfer Items:", transferItems);
 
@@ -616,7 +858,7 @@ export default function StockTransferPage() {
 
       // Process each item
       for (const [index, item] of transferItems.entries()) {
-        console.log(`\n🔸 Processing item ${index + 1}/${transferItems.length}: ${item.productName}`);
+        console.log(`\n🔸 Creating transfer request for item ${index + 1}/${transferItems.length}: ${item.productName}`);
 
         const sourceWarehouseName = getWarehouseName(formData.sourceWarehouse);
         const sourceLocation = getWarehouseLocation(formData.sourceWarehouse);
@@ -630,7 +872,7 @@ export default function StockTransferPage() {
         const sourceProductDetails = getSourceProductDetails(formData.sourceWarehouse, item.productId);
         console.log("Source Product Details:", sourceProductDetails);
 
-        // Create transfer data
+        // Create transfer data with PENDING status
         const transferData = {
           id: `${transferId}-${index}`,
           productId: item.productId,
@@ -669,11 +911,13 @@ export default function StockTransferPage() {
 
           identifierType: item.identifierType,
           dynamicValues: item.dynamicValues || {},
-          status: "completed",
+          status: "pending", // CHANGED: Now pending instead of completed
           remarks: formData.remarks,
           transferDate: new Date().toISOString(),
           createdAt: new Date().toISOString(),
-          createdBy: "admin"
+          createdBy: "admin",
+          // NEW: Add items array for UNIQUE products
+          items: item.identifierType === "UNIQUE" ? item.selectedItems || [] : []
         };
 
         // Add items array for UNIQUE products
@@ -681,7 +925,7 @@ export default function StockTransferPage() {
           transferData.items = item.selectedItems || [];
         }
 
-        console.log("📝 Creating transfer record...");
+        console.log("📝 Creating pending transfer record...");
         // POST to transfers
         const transferResponse = await fetch("http://localhost:5001/transfers", {
           method: "POST",
@@ -696,32 +940,14 @@ export default function StockTransferPage() {
         }
 
         const createdTransfer = await transferResponse.json();
-        console.log("✅ Transfer record created:", createdTransfer);
+        console.log("✅ Transfer request created (pending):", createdTransfer);
 
-        // Get bill number
-        const itemBillNo = getOriginalBillNo(formData.sourceWarehouse, item.productId);
-        console.log("Using Bill No:", itemBillNo);
-
-        // 1. UPDATE SOURCE WAREHOUSE STOCK (Subtract)
-        console.log("📉 Updating source warehouse stock...");
-        await updateSourceWarehouseStock(formData.sourceWarehouse, item);
-
-        // 2. UPDATE/CREATE DESTINATION WAREHOUSE STOCK
-        console.log("📈 Updating destination warehouse stock...");
-        await updateDestinationWarehouseStock(
-          formData.destinationWarehouse,
-          item,
-          formData.sourceWarehouse,
-          itemBillNo,
-          sourceProductDetails
-        );
-
-        console.log(`✅ Item ${index + 1} processed successfully`);
+        console.log(`✅ Item ${index + 1} transfer request created successfully`);
       }
 
-      // Success
-      console.log("🎉 All items processed successfully!");
-      toast.success("Stock transfer completed successfully!");
+      // Success - Transfer request created (not executed yet)
+      console.log("🎉 All transfer requests created successfully!");
+      toast.success("Transfer request created! Awaiting approval from destination warehouse.");
 
       // Wait a bit for data to sync
       setTimeout(async () => {
@@ -732,7 +958,7 @@ export default function StockTransferPage() {
         const sourceName = getWarehouseName(formData.sourceWarehouse);
         const destName = getWarehouseName(formData.destinationWarehouse);
 
-        toast.success(`Transfer completed! Items moved from ${sourceName} to ${destName}`, {
+        toast.success(`Transfer request sent to ${destName}! Awaiting approval.`, {
           duration: 5000,
         });
 
@@ -743,13 +969,13 @@ export default function StockTransferPage() {
 
     } catch (error) {
       console.error("❌ Transfer error:", error);
-      toast.error("Failed to complete transfer: " + error.message);
+      toast.error("Failed to create transfer request: " + error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Update source warehouse stock (Subtract)
+  // Update source warehouse stock (Subtract) - Only when approved
   const updateSourceWarehouseStock = async (warehouseId, item) => {
     try {
       // Find existing stock in source warehouse
@@ -811,106 +1037,172 @@ export default function StockTransferPage() {
     }
   };
 
-  // FIXED: Update destination warehouse stock with ALL details for NON_UNIQUE
-// FIXED: Update destination warehouse stock with proper handling for both UNIQUE and NON_UNIQUE
-const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehouseId, billNo, sourceProductDetails = null) => {
-  try {
-    console.log("🚀 Starting destination stock update...");
-    console.log("Destination Warehouse ID:", warehouseId);
-    console.log("Item:", item);
-    console.log("Item Identifier Type:", item.identifierType);
-    console.log("Source Warehouse ID:", sourceWarehouseId);
-    console.log("Bill No:", billNo);
+  // Update destination warehouse stock - Only when approved
+  const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehouseId, billNo, sourceProductDetails = null) => {
+    try {
+      console.log("🚀 Starting destination stock update...");
+      console.log("Destination Warehouse ID:", warehouseId);
+      console.log("Item:", item);
+      console.log("Item Identifier Type:", item.identifierType);
+      console.log("Source Warehouse ID:", sourceWarehouseId);
+      console.log("Bill No:", billNo);
 
-    // First, check ALL existing stocks in destination warehouse
-    const existingDestinationStocks = stocks.filter(stock =>
-      stock.warehouseId === warehouseId
-    );
-
-    console.log("Total stocks in destination:", existingDestinationStocks.length);
-
-    // Check if there's already a stock with same product ID AND same identifierType
-    const matchingStock = existingDestinationStocks.find(stock => {
-      const productMatch = stock.products?.some(p =>
-        p.productId === item.productId && p.identifierType === item.identifierType
-      );
-      return productMatch;
-    });
-
-    console.log("Found matching stock (same product + same identifierType):", matchingStock);
-
-    if (matchingStock) {
-      console.log("📦 Updating existing stock with same identifier type...");
-      const productIndex = matchingStock.products.findIndex(p =>
-        p.productId === item.productId && p.identifierType === item.identifierType
+      // First, check ALL existing stocks in destination warehouse
+      const existingDestinationStocks = stocks.filter(stock =>
+        stock.warehouseId === warehouseId
       );
 
-      if (productIndex !== -1) {
-        // Update existing product with same identifierType
+      console.log("Total stocks in destination:", existingDestinationStocks.length);
+
+      // Check if there's already a stock with same product ID AND same identifierType
+      const matchingStock = existingDestinationStocks.find(stock => {
+        const productMatch = stock.products?.some(p =>
+          p.productId === item.productId && p.identifierType === item.identifierType
+        );
+        return productMatch;
+      });
+
+      console.log("Found matching stock (same product + same identifierType):", matchingStock);
+
+      if (matchingStock) {
+        console.log("📦 Updating existing stock with same identifier type...");
+        const productIndex = matchingStock.products.findIndex(p =>
+          p.productId === item.productId && p.identifierType === item.identifierType
+        );
+
+        if (productIndex !== -1) {
+          // Update existing product with same identifierType
+          if (item.identifierType === "NON_UNIQUE") {
+            matchingStock.products[productIndex].quantity += item.transferQty;
+            console.log(`➕ Added ${item.transferQty} NON_UNIQUE quantity. New total: ${matchingStock.products[productIndex].quantity}`);
+          } else if (item.identifierType === "UNIQUE") {
+            const existingItems = matchingStock.products[productIndex].items || [];
+            const newItems = item.selectedItems || [];
+            matchingStock.products[productIndex].items = [...existingItems, ...newItems];
+            matchingStock.products[productIndex].quantity = matchingStock.products[productIndex].items.length;
+            console.log(`➕ Added ${newItems.length} UNIQUE items. New total: ${matchingStock.products[productIndex].quantity}`);
+          }
+
+          // Update the stock in database
+          const response = await fetch(`http://localhost:5001/stocks/${matchingStock.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(matchingStock),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("❌ Failed to update destination stock:", errorText);
+            throw new Error(`Failed to update destination stock: ${response.statusText}`);
+          }
+
+          console.log("✅ Destination stock updated successfully");
+          return;
+        }
+      }
+
+      // If no matching stock with same identifierType found, create NEW stock
+      console.log("🆕 No existing stock with same identifier type found. Creating new stock...");
+
+      // Get source stock to copy details
+      const sourceStock = stocks.find(stock =>
+        stock.warehouseId === sourceWarehouseId &&
+        stock.products?.some(p => p.productId === item.productId)
+      );
+
+      console.log("Source stock found:", sourceStock);
+
+      let sourceProduct = null;
+      if (sourceStock) {
+        sourceProduct = sourceStock.products.find(p => p.productId === item.productId);
+        console.log("Source product details:", sourceProduct);
+      }
+
+      // Use sourceProductDetails if provided
+      if (!sourceProduct && sourceProductDetails) {
+        sourceProduct = sourceProductDetails;
+        console.log("Using provided source product details");
+      }
+
+      // Check if there's an existing stock entry we can add to (same vendor, same bill)
+      const existingStockToUpdate = existingDestinationStocks.find(stock =>
+        stock.vendorId === (sourceStock?.vendorId || "") &&
+        stock.billNo === billNo
+      );
+
+      if (existingStockToUpdate) {
+        console.log("📦 Found existing stock entry with same vendor/bill. Adding product...");
+        
+        // Add the product to existing stock
         if (item.identifierType === "NON_UNIQUE") {
-          matchingStock.products[productIndex].quantity += item.transferQty;
-          console.log(`➕ Added ${item.transferQty} NON_UNIQUE quantity. New total: ${matchingStock.products[productIndex].quantity}`);
+          existingStockToUpdate.products.push({
+            productId: item.productId,
+            productName: item.productName,
+            identifierType: item.identifierType,
+            quantity: item.transferQty,
+            rate: item.rate || sourceProduct?.rate || 0,
+            gst: sourceProduct?.gst || "0%",
+            quantityAlert: sourceProduct?.quantityAlert || 0,
+            items: [],
+            dynamicValues: item.dynamicValues || sourceProduct?.dynamicValues || {},
+            createdAt: new Date().toISOString()
+          });
+          existingStockToUpdate.totalProducts = existingStockToUpdate.products.length;
+          console.log(`📊 Added NON_UNIQUE product to existing stock: ${item.productName}, Qty: ${item.transferQty}`);
         } else if (item.identifierType === "UNIQUE") {
-          const existingItems = matchingStock.products[productIndex].items || [];
-          const newItems = item.selectedItems || [];
-          matchingStock.products[productIndex].items = [...existingItems, ...newItems];
-          matchingStock.products[productIndex].quantity = matchingStock.products[productIndex].items.length;
-          console.log(`➕ Added ${newItems.length} UNIQUE items. New total: ${matchingStock.products[productIndex].quantity}`);
+          existingStockToUpdate.products.push({
+            productId: item.productId,
+            productName: item.productName,
+            identifierType: item.identifierType,
+            quantity: item.selectedItems?.length || 0,
+            rate: item.rate || sourceProduct?.rate || 0,
+            gst: sourceProduct?.gst || "0%",
+            items: item.selectedItems || [],
+            dynamicValues: item.dynamicValues || sourceProduct?.dynamicValues || {},
+            createdAt: new Date().toISOString()
+          });
+          existingStockToUpdate.totalProducts = existingStockToUpdate.products.length;
+          console.log(`📊 Added UNIQUE product to existing stock: ${item.productName}, Items: ${item.selectedItems?.length || 0}`);
         }
 
-        // Update the stock in database
-        const response = await fetch(`http://localhost:5001/stocks/${matchingStock.id}`, {
+        // Update the existing stock
+        const response = await fetch(`http://localhost:5001/stocks/${existingStockToUpdate.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(matchingStock),
+          body: JSON.stringify(existingStockToUpdate),
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error("❌ Failed to update destination stock:", errorText);
-          throw new Error(`Failed to update destination stock: ${response.statusText}`);
+          throw new Error(`Failed to update existing stock: ${response.statusText}`);
         }
 
-        console.log("✅ Destination stock updated successfully");
+        console.log("✅ Product added to existing stock successfully");
         return;
       }
-    }
 
-    // If no matching stock with same identifierType found, create NEW stock
-    console.log("🆕 No existing stock with same identifier type found. Creating new stock...");
-
-    // Get source stock to copy details
-    const sourceStock = stocks.find(stock =>
-      stock.warehouseId === sourceWarehouseId &&
-      stock.products?.some(p => p.productId === item.productId)
-    );
-
-    console.log("Source stock found:", sourceStock);
-
-    let sourceProduct = null;
-    if (sourceStock) {
-      sourceProduct = sourceStock.products.find(p => p.productId === item.productId);
-      console.log("Source product details:", sourceProduct);
-    }
-
-    // Use sourceProductDetails if provided
-    if (!sourceProduct && sourceProductDetails) {
-      sourceProduct = sourceProductDetails;
-      console.log("Using provided source product details");
-    }
-
-    // Check if there's an existing stock entry we can add to (same vendor, same bill)
-    const existingStockToUpdate = existingDestinationStocks.find(stock =>
-      stock.vendorId === (sourceStock?.vendorId || "") &&
-      stock.billNo === billNo
-    );
-
-    if (existingStockToUpdate) {
-      console.log("📦 Found existing stock entry with same vendor/bill. Adding product...");
+      // If no suitable existing stock found, create brand new stock
+      console.log("🆕 Creating brand new stock entry...");
       
-      // Add the product to existing stock
+      const stockId = `S${Date.now()}-${warehouseId}`;
+      const newStock = {
+        id: stockId,
+        vendorId: sourceStock?.vendorId || "",
+        vendorName: sourceStock?.vendorName || "Transfer Stock",
+        warehouseId: warehouseId,
+        warehouseName: getWarehouseName(warehouseId),
+        purchaseDate: new Date().toISOString().split('T')[0],
+        billNo: billNo,
+        totalProducts: 1,
+        products: [],
+        createdAt: new Date().toISOString(),
+        status: "active"
+      };
+
+      console.log("New stock object created:", newStock);
+
+      // Add product based on identifier type
       if (item.identifierType === "NON_UNIQUE") {
-        existingStockToUpdate.products.push({
+        newStock.products.push({
           productId: item.productId,
           productName: item.productName,
           identifierType: item.identifierType,
@@ -922,10 +1214,9 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
           dynamicValues: item.dynamicValues || sourceProduct?.dynamicValues || {},
           createdAt: new Date().toISOString()
         });
-        existingStockToUpdate.totalProducts = existingStockToUpdate.products.length;
-        console.log(`📊 Added NON_UNIQUE product to existing stock: ${item.productName}, Qty: ${item.transferQty}`);
+        console.log(`📊 Added NON_UNIQUE product to new stock: ${item.productName}, Qty: ${item.transferQty}`);
       } else if (item.identifierType === "UNIQUE") {
-        existingStockToUpdate.products.push({
+        newStock.products.push({
           productId: item.productId,
           productName: item.productName,
           identifierType: item.identifierType,
@@ -936,101 +1227,34 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
           dynamicValues: item.dynamicValues || sourceProduct?.dynamicValues || {},
           createdAt: new Date().toISOString()
         });
-        existingStockToUpdate.totalProducts = existingStockToUpdate.products.length;
-        console.log(`📊 Added UNIQUE product to existing stock: ${item.productName}, Items: ${item.selectedItems?.length || 0}`);
+        console.log(`📊 Added UNIQUE product to new stock: ${item.productName}, Items: ${item.selectedItems?.length || 0}`);
       }
 
-      // Update the existing stock
-      const response = await fetch(`http://localhost:5001/stocks/${existingStockToUpdate.id}`, {
-        method: "PUT",
+      // Create new stock in database
+      console.log("📤 Sending POST request to create new stock...");
+      const response = await fetch("http://localhost:5001/stocks", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(existingStockToUpdate),
+        body: JSON.stringify(newStock),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to update existing stock: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error("❌ Failed to create new stock:", errorText);
+        throw new Error(`Failed to create new stock: ${response.statusText}`);
       }
 
-      console.log("✅ Product added to existing stock successfully");
-      return;
+      const createdStock = await response.json();
+      console.log("✅ New stock created successfully:", createdStock);
+
+      // Refresh stocks data
+      await refreshAllData();
+
+    } catch (error) {
+      console.error("❌ Error updating destination warehouse stock:", error);
+      throw error;
     }
-
-    // If no suitable existing stock found, create brand new stock
-    console.log("🆕 Creating brand new stock entry...");
-    
-    const stockId = `S${Date.now()}-${warehouseId}`;
-    const newStock = {
-      id: stockId,
-      vendorId: sourceStock?.vendorId || "",
-      vendorName: sourceStock?.vendorName || "Transfer Stock",
-      warehouseId: warehouseId,
-      warehouseName: getWarehouseName(warehouseId),
-      purchaseDate: new Date().toISOString().split('T')[0],
-      billNo: billNo,
-      totalProducts: 1,
-      products: [],
-      createdAt: new Date().toISOString(),
-      status: "active"
-    };
-
-    console.log("New stock object created:", newStock);
-
-    // Add product based on identifier type
-    if (item.identifierType === "NON_UNIQUE") {
-      newStock.products.push({
-        productId: item.productId,
-        productName: item.productName,
-        identifierType: item.identifierType,
-        quantity: item.transferQty,
-        rate: item.rate || sourceProduct?.rate || 0,
-        gst: sourceProduct?.gst || "0%",
-        quantityAlert: sourceProduct?.quantityAlert || 0,
-        items: [],
-        dynamicValues: item.dynamicValues || sourceProduct?.dynamicValues || {},
-        createdAt: new Date().toISOString()
-      });
-      console.log(`📊 Added NON_UNIQUE product to new stock: ${item.productName}, Qty: ${item.transferQty}`);
-    } else if (item.identifierType === "UNIQUE") {
-      newStock.products.push({
-        productId: item.productId,
-        productName: item.productName,
-        identifierType: item.identifierType,
-        quantity: item.selectedItems?.length || 0,
-        rate: item.rate || sourceProduct?.rate || 0,
-        gst: sourceProduct?.gst || "0%",
-        items: item.selectedItems || [],
-        dynamicValues: item.dynamicValues || sourceProduct?.dynamicValues || {},
-        createdAt: new Date().toISOString()
-      });
-      console.log(`📊 Added UNIQUE product to new stock: ${item.productName}, Items: ${item.selectedItems?.length || 0}`);
-    }
-
-    // Create new stock in database
-    console.log("📤 Sending POST request to create new stock...");
-    const response = await fetch("http://localhost:5001/stocks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newStock),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Failed to create new stock:", errorText);
-      throw new Error(`Failed to create new stock: ${response.statusText}`);
-    }
-
-    const createdStock = await response.json();
-    console.log("✅ New stock created successfully:", createdStock);
-
-    // Refresh stocks data
-    await refreshAllData();
-
-  } catch (error) {
-    console.error("❌ Error updating destination warehouse stock:", error);
-    throw error;
-  }
-};
-
+  };
 
   // Refresh all data after transfer
   const refreshAllData = async () => {
@@ -1072,6 +1296,7 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
     setProductTypeFilter("all");
     setCurrentProductPage(1);
     setRandomQtyInput("");
+    setItemSearchTerm("");
   };
 
   // Calculate total transfer value
@@ -1134,13 +1359,41 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
   // Open item selection
   const openItemSelection = (index) => {
     setSelectedProductIndex(index);
+    setItemSearchTerm("");
+    setRandomQtyInput("");
     setShowItemSelection(true);
   };
 
   const closeItemSelection = () => {
     setShowItemSelection(false);
     setSelectedProductIndex(null);
+    setItemSearchTerm("");
     setRandomQtyInput("");
+  };
+
+  // Reset item search
+  const resetItemSearch = () => {
+    setItemSearchTerm("");
+  };
+
+  // NEW: Get status badge color
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+          <Clock className="h-3 w-3 mr-1" /> Pending
+        </Badge>;
+      case 'completed':
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+          <Check className="h-3 w-3 mr-1" /> Completed
+        </Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
+          <XCircle className="h-3 w-3 mr-1" /> Rejected
+        </Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
   };
 
   if (isLoading) {
@@ -1613,7 +1866,7 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                         Processing...
                       </>
                     ) : (
-                      "Submit Transfer"
+                      "Submit Transfer Request"
                     )}
                   </Button>
                 </div>
@@ -1645,6 +1898,26 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                   />
                 </div>
 
+                {/* Status Filter */}
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) => {
+                    setStatusFilter(value);
+                    setCurrentTransferPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 {/* Date Filter */}
                 <div className="relative w-full sm:w-auto">
                   <Calendar className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
@@ -1661,7 +1934,7 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                 </div>
 
                 {/* Reset Filters */}
-                {(transferSearch || dateFilter) && (
+                {(transferSearch || dateFilter || statusFilter !== "all") && (
                   <Button
                     variant="outline"
                     onClick={resetTransferFilters}
@@ -1696,7 +1969,7 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                       <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                         <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                         <p className="mb-2">No transfer records found</p>
-                        {transferSearch || dateFilter ? (
+                        {transferSearch || dateFilter || statusFilter !== "all" ? (
                           <p className="text-sm">Try changing your filters</p>
                         ) : (
                           <p className="text-sm">Transfer some items to see history here</p>
@@ -1750,26 +2023,31 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                           {formatDateTime(transfer.transferDate || transfer.createdAt)}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            className={
-                              transfer.status === 'completed'
-                                ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                                : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
-                            }
-                          >
-                            {transfer.status || 'completed'}
-                          </Badge>
+                          {getStatusBadge(transfer.status)}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openTransferDetails(transfer)}
-                            className="gap-2"
-                          >
-                            <Eye className="h-4 w-4" />
-                            View Details
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openTransferDetails(transfer)}
+                              className="gap-2"
+                            >
+                              <Eye className="h-4 w-4" />
+                              View
+                            </Button>
+                            {transfer.status === "pending" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openApproveDialog(transfer)}
+                                className="gap-2 text-green-600 border-green-200 hover:bg-green-50"
+                              >
+                                <Check className="h-4 w-4" />
+                                Approve
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -1839,7 +2117,7 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
           </DialogHeader>
 
           {selectedProductIndex !== null && (
-            <div >
+            <div>
               <div className="mb-2">
                 <h3 className="font-semibold text-lg">
                   {selectedProducts[selectedProductIndex]?.productName}
@@ -1848,6 +2126,32 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                   Available: {selectedProducts[selectedProductIndex]?.availableQty} items •
                   Selected: {selectedProducts[selectedProductIndex]?.selectedItems?.length || 0} items
                 </p>
+
+                {/* Search Bar for Items */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search items by serial number, MAC address, warranty, etc."
+                      value={itemSearchTerm}
+                      onChange={(e) => setItemSearchTerm(e.target.value)}
+                      className="pl-8"
+                    />
+                    {itemSearchTerm && (
+                      <button
+                        onClick={resetItemSearch}
+                        className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  {itemSearchTerm && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Searching in all item fields...
+                    </p>
+                  )}
+                </div>
 
                 {/* Random Selection Controls */}
                 <div className="bg-gray-50 p-4 rounded-lg mb-4">
@@ -1859,11 +2163,22 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => handleSelectAllItems(selectedProductIndex)}
+                          onClick={() => handleSelectAllFilteredItems(selectedProductIndex)}
                           className="gap-2"
                         >
                           <CheckSquare className="h-4 w-4" />
-                          Select All
+                          Select All (Filtered)
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleClearFilteredSelection(selectedProductIndex)}
+                          className="gap-2"
+                        >
+                          <Square className="h-4 w-4" />
+                          Clear Filtered
                         </Button>
 
                         <Button
@@ -1871,17 +2186,17 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                           variant="outline"
                           size="sm"
                           onClick={() => handleClearSelection(selectedProductIndex)}
-                          className="gap-2"
+                          className="gap-2 text-red-600"
                         >
                           <Square className="h-4 w-4" />
-                          Clear Selection
+                          Clear All
                         </Button>
                       </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                       <div>
-                        <Label className="text-sm font-medium mb-2 block">Select Random Items</Label>
+                        <Label className="text-sm font-medium mb-2 block">Select Random Items {itemSearchTerm && "(Filtered)"}</Label>
                         <div className="flex gap-2">
                           <Input
                             type="number"
@@ -1889,7 +2204,7 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                             value={randomQtyInput}
                             onChange={(e) => setRandomQtyInput(e.target.value)}
                             min="1"
-                            max={selectedProducts[selectedProductIndex]?.availableQty || 0}
+                            max={getFilteredItems().length || 0}
                             className="w-32"
                           />
                           <Button
@@ -1899,11 +2214,28 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                             className="gap-2"
                           >
                             <Shuffle className="h-4 w-4" />
-                            Random
+                            Random {itemSearchTerm && "(Filtered)"}
                           </Button>
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Info */}
+              <div className="mb-4">
+                <div className="flex justify-between items-center text-sm">
+                  <div>
+                    <span className="font-medium">Total Items: {selectedProducts[selectedProductIndex]?.items?.length || 0}</span>
+                    {itemSearchTerm && (
+                      <span className="text-gray-600 ml-2">
+                        • Filtered: {getFilteredItems().length}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-green-600 font-medium">
+                    Selected: {selectedProducts[selectedProductIndex]?.selectedItems?.length || 0}
                   </div>
                 </div>
               </div>
@@ -1916,82 +2248,146 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                         <input
                           type="checkbox"
                           checked={
-                            selectedProducts[selectedProductIndex]?.selectedItems?.length ===
-                            selectedProducts[selectedProductIndex]?.items?.length
+                            getFilteredItems().length > 0 &&
+                            getFilteredItems().every(item =>
+                              selectedProducts[selectedProductIndex]?.selectedItems?.some(
+                                selected => selected.id === item.id
+                              )
+                            )
                           }
                           onChange={(e) => {
-                            const allItems = selectedProducts[selectedProductIndex]?.items || [];
+                            const filteredItems = getFilteredItems();
+                            if (filteredItems.length === 0) return;
+                            
+                            const currentSelected = selectedProducts[selectedProductIndex]?.selectedItems || [];
+                            const filteredItemIds = filteredItems.map(item => item.id);
+                            
                             if (e.target.checked) {
-                              handleSelectAllItems(selectedProductIndex);
+                              // Select all filtered items
+                              const newSelected = [...currentSelected, ...filteredItems];
+                              // Remove duplicates
+                              const uniqueSelected = Array.from(new Set(newSelected.map(item => item.id)))
+                                .map(id => newSelected.find(item => item.id === id));
+                              
+                              handleSelectUniqueItems(
+                                selectedProductIndex,
+                                uniqueSelected.map(item => item.id)
+                              );
                             } else {
-                              handleClearSelection(selectedProductIndex);
+                              // Deselect all filtered items
+                              const newSelected = currentSelected.filter(
+                                item => !filteredItemIds.includes(item.id)
+                              );
+                              
+                              handleSelectUniqueItems(
+                                selectedProductIndex,
+                                newSelected.map(item => item.id)
+                              );
                             }
                           }}
                         />
                       </TableHead>
                       <TableHead className="w-20">#</TableHead>
-                      <TableHead>Serial No</TableHead>
-                      <TableHead>MAC Address</TableHead>
-                      <TableHead>Warranty</TableHead>
-                      <TableHead>Other Details</TableHead>
+                      {/* Dynamic Table Headers based on ACTUAL data in items */}
+                      {(() => {
+                        const dynamicFields = getDynamicFieldsFromItems(selectedProductIndex);
+                        
+                        // Sort fields: serialno/macaddress first, then warranty, then others
+                        return dynamicFields
+                          .sort((a, b) => {
+                            if (a.isSerial || a.isMac) return -1;
+                            if (b.isSerial || b.isMac) return 1;
+                            if (a.isWarranty) return -1;
+                            if (b.isWarranty) return 1;
+                            return a.key.localeCompare(b.key);
+                          })
+                          .map(field => (
+                            <TableHead key={field.key} className="capitalize">
+                              {field.key.replace(/_/g, ' ')}
+                            </TableHead>
+                          ));
+                      })()}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedProducts[selectedProductIndex]?.items?.map((item, itemIndex) => (
-                      <TableRow key={item.id} className="hover:bg-gray-50">
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts[selectedProductIndex]?.selectedItems?.some(
-                              selected => selected.id === item.id
-                            )}
-                            onChange={(e) => {
-                              const currentSelected = selectedProducts[selectedProductIndex]?.selectedItems || [];
-                              let newSelected;
-
-                              if (e.target.checked) {
-                                newSelected = [...currentSelected, item];
-                              } else {
-                                newSelected = currentSelected.filter(selected => selected.id !== item.id);
-                              }
-
-                              handleSelectUniqueItems(
-                                selectedProductIndex,
-                                newSelected.map(selected => selected.id)
-                              );
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium text-gray-500">
-                          {itemIndex + 1}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {item.serialno || "N/A"}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {item.macaddress || "N/A"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {item.warrenty || "N/A"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-xs text-gray-500">
-                            {Object.entries(item).map(([key, value]) => {
-                              if (!['id', 'serialno', 'macaddress', 'warrenty'].includes(key) && value) {
-                                return (
-                                  <div key={key} className="mb-1">
-                                    <span className="font-medium">{key}:</span> {value}
-                                  </div>
-                                );
-                              }
-                              return null;
-                            })}
-                          </div>
+                    {getFilteredItems().length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={10} className="text-center py-8 text-gray-500">
+                          <Package className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                          <p className="mb-1">No items found</p>
+                          {itemSearchTerm && (
+                            <p className="text-xs">Try changing your search criteria</p>
+                          )}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      getFilteredItems().map((item, itemIndex) => {
+                        const dynamicFields = getDynamicFieldsFromItems(selectedProductIndex);
+                        
+                        return (
+                          <TableRow key={item.id} className="hover:bg-gray-50">
+                            <TableCell>
+                              <input
+                                type="checkbox"
+                                checked={selectedProducts[selectedProductIndex]?.selectedItems?.some(
+                                  selected => selected.id === item.id
+                                )}
+                                onChange={(e) => {
+                                  const currentSelected = selectedProducts[selectedProductIndex]?.selectedItems || [];
+                                  let newSelected;
+
+                                  if (e.target.checked) {
+                                    newSelected = [...currentSelected, item];
+                                  } else {
+                                    newSelected = currentSelected.filter(selected => selected.id !== item.id);
+                                  }
+
+                                  handleSelectUniqueItems(
+                                    selectedProductIndex,
+                                    newSelected.map(selected => selected.id)
+                                  );
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium text-gray-500">
+                              {itemIndex + 1}
+                            </TableCell>
+                            
+                            {/* Dynamic Table Cells based on ACTUAL fields that have data */}
+                            {dynamicFields.map(field => {
+                              const value = item[field.key];
+                              
+                              // Special formatting based on field type
+                              if (field.isSerial || field.isMac) {
+                                return (
+                                  <TableCell key={field.key} className="font-mono text-sm">
+                                    {value || "N/A"}
+                                  </TableCell>
+                                );
+                              } else if (field.isWarranty) {
+                                return (
+                                  <TableCell key={field.key}>
+                                    {value ? (
+                                      <Badge variant="outline" className="text-xs">
+                                        {value}
+                                      </Badge>
+                                    ) : (
+                                      "N/A"
+                                    )}
+                                  </TableCell>
+                                );
+                              } else {
+                                return (
+                                  <TableCell key={field.key} className="text-sm">
+                                    {value || "N/A"}
+                                  </TableCell>
+                                );
+                              }
+                            })}
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -2015,7 +2411,7 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
         </DialogContent>
       </Dialog>
 
-      {/* NEW: Transfer Details Modal with Item Preview */}
+      {/* Transfer Details Modal with Item Preview */}
       <Dialog open={showTransferDetails} onOpenChange={setShowTransferDetails}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -2048,13 +2444,7 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Status:</span>
-                            <Badge className={
-                              selectedTransfer.status === 'completed'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }>
-                              {selectedTransfer.status}
-                            </Badge>
+                            {getStatusBadge(selectedTransfer.status)}
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Product Type:</span>
@@ -2147,45 +2537,93 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                         <TableHeader>
                           <TableRow>
                             <TableHead className="w-20">#</TableHead>
-                            <TableHead>Serial No</TableHead>
-                            <TableHead>MAC Address</TableHead>
-                            <TableHead>Warranty</TableHead>
-                            <TableHead>Other Details</TableHead>
+                            {/* Dynamic headers based on actual data in items */}
+                            {(() => {
+                              if (selectedTransfer.items.length === 0) return null;
+                              
+                              // Get all fields that have at least one non-empty value
+                              const fieldMap = new Map();
+                              
+                              selectedTransfer.items.forEach(item => {
+                                Object.entries(item).forEach(([key, value]) => {
+                                  if (key !== 'id' && value && String(value).trim() !== '') {
+                                    if (!fieldMap.has(key)) {
+                                      fieldMap.set(key, {
+                                        key,
+                                        isSerial: key.toLowerCase().includes('serial'),
+                                        isMac: key.toLowerCase().includes('mac'),
+                                        isWarranty: key.toLowerCase().includes('warranty') || key.toLowerCase().includes('warrenty')
+                                      });
+                                    }
+                                  }
+                                });
+                              });
+                              
+                              const fields = Array.from(fieldMap.values());
+                              
+                              // Sort fields
+                              const sortedFields = fields.sort((a, b) => {
+                                if (a.isSerial || a.isMac) return -1;
+                                if (b.isSerial || b.isMac) return 1;
+                                if (a.isWarranty) return -1;
+                                if (b.isWarranty) return 1;
+                                return a.key.localeCompare(b.key);
+                              });
+                              
+                              return sortedFields.map(field => (
+                                <TableHead key={field.key} className="capitalize">
+                                  {field.key.replace(/_/g, ' ')}
+                                </TableHead>
+                              ));
+                            })()}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {selectedTransfer.items.map((item, index) => (
-                            <TableRow key={item.id || index} className="hover:bg-gray-50">
-                              <TableCell className="font-medium text-gray-500">
-                                {index + 1}
-                              </TableCell>
-                              <TableCell className="font-mono text-sm">
-                                {item.serialno || "N/A"}
-                              </TableCell>
-                              <TableCell className="font-mono text-sm">
-                                {item.macaddress || "N/A"}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="text-xs">
-                                  {item.warrenty || "N/A"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-xs text-gray-500">
-                                  {Object.entries(item).map(([key, value]) => {
-                                    if (!['id', 'serialno', 'macaddress', 'warrenty'].includes(key) && value) {
-                                      return (
-                                        <div key={key} className="mb-1">
-                                          <span className="font-medium">{key}:</span> {value}
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {selectedTransfer.items.map((item, index) => {
+                            // Get fields from the actual item data
+                            const itemFields = Object.keys(item).filter(key => key !== 'id' && item[key]);
+                            
+                            return (
+                              <TableRow key={item.id || index} className="hover:bg-gray-50">
+                                <TableCell className="font-medium text-gray-500">
+                                  {index + 1}
+                                </TableCell>
+                                
+                                {itemFields.map(key => {
+                                  const value = item[key];
+                                  const isSerial = key.toLowerCase().includes('serial');
+                                  const isMac = key.toLowerCase().includes('mac');
+                                  const isWarranty = key.toLowerCase().includes('warranty') || key.toLowerCase().includes('warrenty');
+                                  
+                                  if (isSerial || isMac) {
+                                    return (
+                                      <TableCell key={key} className="font-mono text-sm">
+                                        {value || "N/A"}
+                                      </TableCell>
+                                    );
+                                  } else if (isWarranty) {
+                                    return (
+                                      <TableCell key={key}>
+                                        {value ? (
+                                          <Badge variant="outline" className="text-xs">
+                                            {value}
+                                          </Badge>
+                                        ) : (
+                                          "N/A"
+                                        )}
+                                      </TableCell>
+                                    );
+                                  } else {
+                                    return (
+                                      <TableCell key={key} className="text-sm">
+                                        {value || "N/A"}
+                                      </TableCell>
+                                    );
+                                  }
+                                })}
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
@@ -2215,8 +2653,8 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                 </Card>
               )}
 
-              {/* Stock Movements */}
-              {selectedTransfer.movements && selectedTransfer.movements.length > 0 && (
+              {/* Stock Movements - Only show if completed */}
+              {selectedTransfer.status === "completed" && selectedTransfer.movements && selectedTransfer.movements.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Stock Movements</CardTitle>
@@ -2251,19 +2689,136 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                   </CardContent>
                 </Card>
               )}
+
+              {/* Show message for pending transfers */}
+              {selectedTransfer.status === "pending" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Transfer Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="p-4 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Clock className="h-5 w-5 text-yellow-600" />
+                        <div>
+                          <p className="font-medium text-yellow-800">Awaiting Approval</p>
+                          <p className="text-sm text-yellow-600">
+                            This transfer is pending approval from the destination warehouse. 
+                            Stock will only be moved after approval.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Show message for rejected transfers */}
+              {selectedTransfer.status === "rejected" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Transfer Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="p-4 bg-red-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <XCircle className="h-5 w-5 text-red-600" />
+                        <div>
+                          <p className="font-medium text-red-800">Transfer Rejected</p>
+                          <p className="text-sm text-red-600">
+                            This transfer was rejected by the destination warehouse. 
+                            No stock was moved.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Dialog */}
+      {/* NEW: Approval Dialog */}
+      <AlertDialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Approve Transfer</AlertDialogTitle>
+            <AlertDialogDescription>
+              <div className="space-y-2 mt-2">
+                <p>Are you sure you want to approve this transfer?</p>
+                {transferToApprove && (
+                  <div className="border rounded-lg p-3">
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Product:</span>
+                        <span className="font-medium">{transferToApprove.productName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Quantity:</span>
+                        <span className="font-medium">{transferToApprove.quantity} units</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">From:</span>
+                        <span className="font-medium">{transferToApprove.sourceWarehouse?.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">To:</span>
+                        <span className="font-medium">{transferToApprove.destinationWarehouse?.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Value:</span>
+                        <span className="font-medium">₹{(transferToApprove.quantity * (transferToApprove.rate || 0)).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="pt-2">
+                  <p className="text-sm text-amber-600">
+                    <AlertCircle className="h-4 w-4 inline mr-1" />
+                    Once approved, stock will be deducted from source warehouse and added to this warehouse.
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+            <AlertDialogCancel disabled={isProcessingApproval}>Cancel</AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={() => handleRejectTransfer(transferToApprove?.id)}
+              disabled={isProcessingApproval}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+            >
+              {isProcessingApproval ? "Processing..." : "Reject Transfer"}
+            </Button>
+            <AlertDialogAction
+              onClick={() => handleApproveTransfer(transferToApprove?.id)}
+              disabled={isProcessingApproval}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isProcessingApproval ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Processing...
+                </>
+              ) : (
+                "Approve Transfer"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation Dialog for Transfer Request */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Stock Transfer</AlertDialogTitle>
+            <AlertDialogTitle>Create Transfer Request</AlertDialogTitle>
             <AlertDialogDescription>
               <div className="space-y-2 mt-2">
-                <p>This will transfer the following items:</p>
+                <p>This will create a transfer request for the following items:</p>
                 <div className="border rounded-lg p-3 max-h-40 overflow-y-auto">
                   {selectedProducts
                     .filter(item => {
@@ -2298,6 +2853,12 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
                     <span>₹{calculateTotal()}</span>
                   </div>
                 </div>
+                <div className="pt-2">
+                  <p className="text-sm text-amber-600">
+                    <AlertCircle className="h-4 w-4 inline mr-1" />
+                    Note: This will create a pending transfer request. Stock will only move after approval from destination warehouse.
+                  </p>
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -2308,7 +2869,7 @@ const updateDestinationWarehouseStock = async (warehouseId, item, sourceWarehous
               disabled={isSubmitting}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {isSubmitting ? "Processing..." : "Confirm Transfer"}
+              {isSubmitting ? "Processing..." : "Create Request"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

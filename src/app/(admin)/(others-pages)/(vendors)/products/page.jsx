@@ -21,6 +21,7 @@ export default function CreateProductsPage() {
   const [formData, setFormData] = useState({
     name: "",
     productGroupId: "",
+    quantityAlert: '',
     unit: "pieces",
     imageUrl: "",
     identifierType: null,
@@ -185,7 +186,8 @@ export default function CreateProductsPage() {
         unit: existingProduct.unit || "pieces",
         imageUrl: existingProduct.image || "",
         identifierType: existingProduct.identifierType || null,
-        selectedFieldIds: existingProduct.selectedFieldIds || []
+        selectedFieldIds: existingProduct.selectedFieldIds || [],
+        quantityAlert: existingProduct.quantityAlert || ''
       })
 
       // Select category
@@ -385,7 +387,9 @@ export default function CreateProductsPage() {
   const navigateBackToCategories = () => {
     if (returnCategoryId) {
       router.push(`/products-group?returnCategoryId=${returnCategoryId}`)
-    }
+    }else if (selectedCategory) {
+      router.push(`/product-table`)
+    } 
   }
 
   const toggleField = (fieldId, checked) => {
@@ -453,10 +457,11 @@ export default function CreateProductsPage() {
     const productData = {
       id: isEditMode ? editingProductId : `P${Date.now()}`,
       productGroupId: formData.productGroupId,
-      productName: formData.name.trim(), // Trim here too
+      productName: formData.name.trim(),
       unit: formData.unit,
       sku: isEditMode ? `SKU-${editingProductId}` : `SKU-${Date.now()}`,
       image: formData.imageUrl,
+      quantityAlert: formData.quantityAlert,
       identifierType: formData.identifierType,
       selectedFieldIds: formData.selectedFieldIds,
       createdAt: isEditMode ? new Date().toISOString() : new Date().toISOString(),
@@ -490,6 +495,7 @@ export default function CreateProductsPage() {
 
         if (response.ok) {
           alert("✅ Product updated successfully!")
+           resetForm()
           navigateBackToCategories()
         } else {
           throw new Error(`Failed to update: ${response.status}`)
@@ -541,6 +547,7 @@ export default function CreateProductsPage() {
       name: "",
       productGroupId: "",
       unit: "pieces",
+      quantityAlert: '',
       imageUrl: "",
       identifierType: null,
       selectedFieldIds: []
@@ -733,7 +740,7 @@ export default function CreateProductsPage() {
               </div>
 
               {/* Product Name and Unit in same row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 {/* Product Name */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -798,8 +805,23 @@ export default function CreateProductsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
+                {/* Stock Alert Threshold */}
+                <div className="space-y-2">
+                  <Label htmlFor="quantityAlert" className="text-xs font-medium">
+                    Stock Alert Threshold *
+                  </Label>
+                  <Input
+                    id="quantityAlert"
+                    type="number"
+                    min={0}
+                    placeholder="Enter stock alert threshold"
+                    value={formData.quantityAlert}
+                    onChange={(e) => updateField("quantityAlert", Number(e.target.value))}
+                    className="text-sm h-9"
+                  />  
+              </div>
+              </div>
               {/* Image URL */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
