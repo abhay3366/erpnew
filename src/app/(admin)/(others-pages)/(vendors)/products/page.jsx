@@ -930,7 +930,7 @@ export default function CreateProductsPage() {
                           }))
                           setValidationError("")
                         }}
-                        disabled={isEditMode && formData.identifierType !== "NON_UNIQUE"}
+              
                       />
                     </div>
 
@@ -994,7 +994,7 @@ export default function CreateProductsPage() {
                           }))
                           setValidationError("")
                         }}
-                        disabled={isEditMode && formData.identifierType !== "UNIQUE"}
+                        
                       />
                     </div>
 
